@@ -1,0 +1,175 @@
+# POA - Point of Accident
+# Docker Compose for Local Development
+# Version 1.0
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Frontend - Next.js
+  # ===========================================
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    container_name: poa-web
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/public:/app/apps/web/public
+      - ./packages/shared/src:/app/packages/shared/src
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - WATCHPACK_POLLING=true
+    depends_on:
+      - api
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Backend - NestJS API
+  # ===========================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: poa-api
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+      - ./packages/database/src:/app/packages/database/src
+      - ./packages/database/prisma:/app/packages/database/prisma
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/poa_dev
+      - JWT_SECRET=dev-secret-change-in-production-min-32-chars-long
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - STORAGE_ENDPOINT=http://storage:9000
+      - STORAGE_ACCESS_KEY=minioadmin
+      - STORAGE_SECRET_KEY=minioadmin
+      - STORAGE_BUCKET=poa-uploads
+      - EMAIL_PROVIDER=smtp
+      - SMTP_HOST=maildev
+      - SMTP_PORT=1025
+      - EMAIL_FROM=noreply@poa-local.dev
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      storage:
+        condition: service_started
+      maildev:
+        condition: service_started
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Database - PostgreSQL
+  # ===========================================
+  db:
+    image: postgres:15-alpine
+    container_name: poa-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=poa_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Object Storage - MinIO (S3-compatible)
+  # ===========================================
+  storage:
+    image: minio/minio
+    container_name: poa-storage
+    ports:
+      - "9000:9000"   # API
+      - "9001:9001"   # Console
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - poa-network
+
+  # MinIO Setup - Creates bucket on startup
+  storage-setup:
+    image: minio/mc
+    container_name: poa-storage-setup
+    depends_on:
+      - storage
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set myminio http://storage:9000 minioadmin minioadmin;
+      mc mb myminio/poa-uploads --ignore-existing;
+      mc anonymous set download myminio/poa-uploads;
+      exit 0;
+      "
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Email Testing - MailDev
+  # ===========================================
+  maildev:
+    image: maildev/maildev
+    container_name: poa-maildev
+    ports:
+      - "1080:1080"   # Web UI
+      - "1025:1025"   # SMTP
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Database Admin - Adminer (optional)
+  # ===========================================
+  adminer:
+    image: adminer
+    container_name: poa-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+    depends_on:
+      - db
+    networks:
+      - poa-network
+    profiles:
+      - tools
+
+# ===========================================
+# Volumes
+# ===========================================
+volumes:
+  postgres_data:
+    name: poa-postgres-data
+  minio_data:
+    name: poa-minio-data
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  poa-network:
+    name: poa-network
+    driver: bridge

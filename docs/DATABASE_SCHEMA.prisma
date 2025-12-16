@@ -1,0 +1,461 @@
+// POA - Point of Accident
+// Prisma Schema Definition
+// Version 1.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  EMPLOYEE
+  COMPANY_ADMIN
+  BROKER
+  SUPERADMIN
+}
+
+enum ClaimStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  SENT
+  ACKNOWLEDGED
+  CLOSED
+  REJECTED
+}
+
+enum DamageCategory {
+  LIABILITY        // Haftpflichtschaden
+  COMPREHENSIVE    // Kaskoschaden
+  GLASS           // Glasschaden
+  WILDLIFE        // Wildschaden
+  PARKING         // Parkschaden
+  THEFT           // Diebstahl
+  VANDALISM       // Vandalismus
+  OTHER           // Sonstiges
+}
+
+enum VehicleType {
+  CAR         // PKW
+  TRUCK       // LKW
+  VAN         // Transporter
+  MOTORCYCLE  // Motorrad
+  OTHER       // Sonstiges
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  PDF
+  OTHER
+}
+
+enum CoverageType {
+  FLEET       // Flottenvertrag
+  SINGLE      // Einzelvertrag
+  PARTIAL     // Teilkasko
+  FULL        // Vollkasko
+}
+
+enum PricingModel {
+  QUOTA       // Quotenmodell (Schäden/Beitrag)
+  PER_PIECE   // Stückpreismodell
+  SMALL_FLEET // Kleinflotte
+}
+
+enum ClaimEventType {
+  CREATED
+  UPDATED
+  STATUS_CHANGED
+  EMAIL_SENT
+  COMMENT_ADDED
+  ATTACHMENT_ADDED
+  ATTACHMENT_REMOVED
+  ASSIGNED
+}
+
+enum NotificationType {
+  NEW_CLAIM
+  CLAIM_APPROVED
+  CLAIM_REJECTED
+  CLAIM_SENT
+  NEW_COMMENT
+  INVITATION
+  SYSTEM
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+// --- Companies ---
+model Company {
+  id            String    @id @default(uuid())
+  name          String
+  address       String?
+  city          String?
+  postalCode    String?   @map("postal_code")
+  country       String?   @default("DE")
+  phone         String?
+  website       String?
+  numEmployees  Int?      @map("num_employees")
+  numVehicles   Int?      @map("num_vehicles")
+  settings      Json?     @default("{}")
+
+  // Stripe
+  stripeCustomerId   String?   @unique @map("stripe_customer_id")
+  subscriptionStatus String?   @map("subscription_status")
+  subscriptionId     String?   @map("subscription_id")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  users         User[]
+  vehicles      Vehicle[]
+  policies      Policy[]
+  claims        Claim[]
+  invitations   Invitation[]
+  brokerLinks   BrokerCompanyLink[]
+
+  @@map("companies")
+}
+
+// --- Users ---
+model User {
+  id                    String    @id @default(uuid())
+  companyId             String?   @map("company_id")
+  email                 String    @unique
+  passwordHash          String    @map("password_hash")
+  role                  UserRole  @default(EMPLOYEE)
+  firstName             String    @map("first_name")
+  lastName              String    @map("last_name")
+  phone                 String?
+  position              String?
+  avatarUrl             String?   @map("avatar_url")
+  isActive              Boolean   @default(true) @map("is_active")
+  emailVerifiedAt       DateTime? @map("email_verified_at")
+  lastLoginAt           DateTime? @map("last_login_at")
+  notificationSettings  Json?     @default("{}") @map("notification_settings")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  company               Company?  @relation(fields: [companyId], references: [id])
+  reportedClaims        Claim[]   @relation("ClaimReporter")
+  driverClaims          Claim[]   @relation("ClaimDriver")
+  claimEvents           ClaimEvent[]
+  claimComments         ClaimComment[]
+  sentInvitations       Invitation[]
+  notifications         Notification[]
+  brokerLinks           BrokerCompanyLink[]
+  passwordResets        PasswordReset[]
+
+  @@index([companyId])
+  @@index([email])
+  @@map("users")
+}
+
+// --- Vehicles ---
+model Vehicle {
+  id              String      @id @default(uuid())
+  companyId       String      @map("company_id")
+  licensePlate    String      @map("license_plate")
+  brand           String?
+  model           String?
+  year            Int?
+  vin             String?     // Fahrzeug-Identnummer
+  hsn             String?     // Herstellerschlüsselnummer
+  tsn             String?     // Typschlüsselnummer
+  internalName    String?     @map("internal_name")
+  vehicleType     VehicleType @default(CAR) @map("vehicle_type")
+  color           String?
+  isActive        Boolean     @default(true) @map("is_active")
+
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  company         Company     @relation(fields: [companyId], references: [id])
+  claims          Claim[]
+
+  @@unique([companyId, licensePlate])
+  @@index([companyId])
+  @@map("vehicles")
+}
+
+// --- Insurers (Global) ---
+model Insurer {
+  id            String    @id @default(uuid())
+  name          String    @unique
+  claimsEmail   String    @map("claims_email")
+  contactPhone  String?   @map("contact_phone")
+  website       String?
+  logoUrl       String?   @map("logo_url")
+  isActive      Boolean   @default(true) @map("is_active")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  policies      Policy[]
+
+  @@map("insurers")
+}
+
+// --- Policies (Versicherungsverträge) ---
+model Policy {
+  id              String        @id @default(uuid())
+  companyId       String        @map("company_id")
+  insurerId       String        @map("insurer_id")
+  policyNumber    String        @map("policy_number")
+  coverageType    CoverageType  @default(FLEET) @map("coverage_type")
+  pricingModel    PricingModel? @map("pricing_model")
+  annualPremium   Decimal?      @map("annual_premium") @db.Decimal(10, 2)
+  deductible      Decimal?      @db.Decimal(10, 2)
+  quotaThreshold  Decimal?      @map("quota_threshold") @db.Decimal(5, 2) // z.B. 0.65 = 65%
+  validFrom       DateTime      @map("valid_from")
+  validTo         DateTime?     @map("valid_to")
+  isActive        Boolean       @default(true) @map("is_active")
+  notes           String?
+
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  company         Company       @relation(fields: [companyId], references: [id])
+  insurer         Insurer       @relation(fields: [insurerId], references: [id])
+  claims          Claim[]
+
+  @@unique([companyId, policyNumber])
+  @@index([companyId])
+  @@map("policies")
+}
+
+// --- Claims (Schäden) ---
+model Claim {
+  id                    String          @id @default(uuid())
+  companyId             String          @map("company_id")
+  vehicleId             String          @map("vehicle_id")
+  policyId              String?         @map("policy_id")
+  reporterUserId        String          @map("reporter_user_id")
+  driverUserId          String?         @map("driver_user_id")
+
+  // Status & Identifiers
+  status                ClaimStatus     @default(DRAFT)
+  claimNumber           String          @unique @map("claim_number")
+  insurerClaimNumber    String?         @map("insurer_claim_number")
+
+  // Accident Details
+  accidentDate          DateTime        @map("accident_date") @db.Date
+  accidentTime          DateTime?       @map("accident_time") @db.Time()
+  accidentLocation      String?         @map("accident_location")
+  gpsLat                Decimal?        @map("gps_lat") @db.Decimal(10, 8)
+  gpsLng                Decimal?        @map("gps_lng") @db.Decimal(11, 8)
+
+  // Damage Info
+  damageCategory        DamageCategory  @map("damage_category")
+  damageSubcategory     String?         @map("damage_subcategory")
+  description           String?
+
+  // Circumstances
+  policeInvolved        Boolean         @default(false) @map("police_involved")
+  policeFileNumber      String?         @map("police_file_number")
+  hasInjuries           Boolean         @default(false) @map("has_injuries")
+  injuryDetails         String?         @map("injury_details")
+
+  // Third Party & Witnesses (JSON for flexibility)
+  thirdPartyInfo        Json?           @map("third_party_info")
+  // Structure: { licensePlate, ownerName, ownerPhone, insurerName, policyNumber }
+  witnessInfo           Json?           @map("witness_info")
+  // Structure: [{ name, phone, email }]
+
+  // Costs
+  estimatedCost         Decimal?        @map("estimated_cost") @db.Decimal(10, 2)
+  finalCost             Decimal?        @map("final_cost") @db.Decimal(10, 2)
+
+  // Additional structured data (flexible extension)
+  claimData             Json?           @map("claim_data")
+
+  // Workflow
+  rejectionReason       String?         @map("rejection_reason")
+  sentAt                DateTime?       @map("sent_at")
+  acknowledgedAt        DateTime?       @map("acknowledged_at")
+  closedAt              DateTime?       @map("closed_at")
+
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  company               Company         @relation(fields: [companyId], references: [id])
+  vehicle               Vehicle         @relation(fields: [vehicleId], references: [id])
+  policy                Policy?         @relation(fields: [policyId], references: [id])
+  reporter              User            @relation("ClaimReporter", fields: [reporterUserId], references: [id])
+  driver                User?           @relation("ClaimDriver", fields: [driverUserId], references: [id])
+  attachments           ClaimAttachment[]
+  events                ClaimEvent[]
+  comments              ClaimComment[]
+
+  @@index([companyId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([accidentDate])
+  @@map("claims")
+}
+
+// --- Claim Attachments ---
+model ClaimAttachment {
+  id          String    @id @default(uuid())
+  claimId     String    @map("claim_id")
+  fileUrl     String    @map("file_url")
+  fileName    String    @map("file_name")
+  fileType    FileType  @map("file_type")
+  fileSize    Int       @map("file_size") // in bytes
+  mimeType    String    @map("mime_type")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  claim       Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@map("claim_attachments")
+}
+
+// --- Claim Events (Audit Log) ---
+model ClaimEvent {
+  id          String          @id @default(uuid())
+  claimId     String          @map("claim_id")
+  userId      String?         @map("user_id")
+  eventType   ClaimEventType  @map("event_type")
+  oldValue    Json?           @map("old_value")
+  newValue    Json?           @map("new_value")
+  meta        Json?           // Additional info (email message id, etc.)
+
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  claim       Claim           @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  user        User?           @relation(fields: [userId], references: [id])
+
+  @@index([claimId])
+  @@map("claim_events")
+}
+
+// --- Claim Comments ---
+model ClaimComment {
+  id          String    @id @default(uuid())
+  claimId     String    @map("claim_id")
+  userId      String    @map("user_id")
+  content     String
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  claim       Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([claimId])
+  @@map("claim_comments")
+}
+
+// --- Broker Company Links ---
+model BrokerCompanyLink {
+  id            String    @id @default(uuid())
+  brokerUserId  String    @map("broker_user_id")
+  companyId     String    @map("company_id")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  broker        User      @relation(fields: [brokerUserId], references: [id])
+  company       Company   @relation(fields: [companyId], references: [id])
+
+  @@unique([brokerUserId, companyId])
+  @@map("broker_company_links")
+}
+
+// --- Invitations ---
+model Invitation {
+  id              String    @id @default(uuid())
+  companyId       String    @map("company_id")
+  email           String
+  role            UserRole  @default(EMPLOYEE)
+  tokenHash       String    @unique @map("token_hash")
+  invitedByUserId String    @map("invited_by_user_id")
+  expiresAt       DateTime  @map("expires_at")
+  acceptedAt      DateTime? @map("accepted_at")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  company         Company   @relation(fields: [companyId], references: [id])
+  invitedBy       User      @relation(fields: [invitedByUserId], references: [id])
+
+  @@index([email])
+  @@index([tokenHash])
+  @@map("invitations")
+}
+
+// --- Password Resets ---
+model PasswordReset {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([tokenHash])
+  @@map("password_resets")
+}
+
+// --- Notifications ---
+model Notification {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?             // Link, claimId, etc.
+  readAt      DateTime?         @map("read_at")
+
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  user        User              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([readAt])
+  @@map("notifications")
+}
+
+// --- Email Logs (optional, for tracking) ---
+model EmailLog {
+  id            String    @id @default(uuid())
+  claimId       String?   @map("claim_id")
+  recipient     String
+  subject       String
+  messageId     String?   @map("message_id")
+  status        String    // sent, bounced, failed
+  errorMessage  String?   @map("error_message")
+
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([claimId])
+  @@map("email_logs")
+}
