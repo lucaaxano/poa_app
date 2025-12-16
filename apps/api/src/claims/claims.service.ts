@@ -1,11 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Claim, Vehicle, ClaimAttachment, ClaimEvent, ClaimComment, Policy, Insurer } from '@poa/database';
+
+export interface UserSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+export interface UserWithAvatar {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+}
+
+export interface VehicleSummary {
+  id: string;
+  licensePlate: string;
+  brand: string | null;
+  model: string | null;
+}
+
+export interface ClaimListItem extends Claim {
+  vehicle: VehicleSummary;
+  reporter: UserSummary;
+}
+
+export interface PolicyWithInsurer extends Policy {
+  insurer: Insurer;
+}
+
+export interface CommentWithUser extends ClaimComment {
+  user: UserWithAvatar;
+}
+
+export interface ClaimDetail extends Claim {
+  vehicle: Vehicle;
+  reporter: UserSummary;
+  driver: UserSummary | null;
+  policy: PolicyWithInsurer | null;
+  attachments: ClaimAttachment[];
+  events: ClaimEvent[];
+  comments: CommentWithUser[];
+}
 
 @Injectable()
 export class ClaimsService {
   constructor(private prisma: PrismaService) {}
 
-  async findByCompanyId(companyId: string) {
+  async findByCompanyId(companyId: string): Promise<ClaimListItem[]> {
     return this.prisma.claim.findMany({
       where: { companyId },
       include: {
@@ -27,10 +72,10 @@ export class ClaimsService {
         },
       },
       orderBy: { createdAt: 'desc' },
-    });
+    }) as Promise<ClaimListItem[]>;
   }
 
-  async findById(id: string, companyId: string) {
+  async findById(id: string, companyId: string): Promise<ClaimDetail> {
     const claim = await this.prisma.claim.findFirst({
       where: { id, companyId },
       include: {
@@ -80,6 +125,6 @@ export class ClaimsService {
       throw new NotFoundException('Schaden nicht gefunden');
     }
 
-    return claim;
+    return claim as ClaimDetail;
   }
 }

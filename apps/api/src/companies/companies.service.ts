@@ -1,11 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Company } from '@poa/database';
+
+export interface CompanyStats {
+  totalClaims: number;
+  totalVehicles: number;
+  totalUsers: number;
+  claimsByStatus: Record<string, number>;
+}
 
 @Injectable()
 export class CompaniesService {
   constructor(private prisma: PrismaService) {}
 
-  async findById(id: string) {
+  async findById(id: string): Promise<Company> {
     const company = await this.prisma.company.findUnique({
       where: { id },
     });
@@ -17,7 +25,7 @@ export class CompaniesService {
     return company;
   }
 
-  async getStats(companyId: string) {
+  async getStats(companyId: string): Promise<CompanyStats> {
     const [claimsCount, vehiclesCount, usersCount, claimsByStatus] =
       await Promise.all([
         this.prisma.claim.count({ where: { companyId } }),

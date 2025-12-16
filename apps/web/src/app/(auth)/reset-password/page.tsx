@@ -10,9 +10,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
+import { Eye, EyeOff, ArrowLeft, ArrowRight, KeyRound, AlertCircle } from 'lucide-react';
 
 const resetPasswordFormSchema = z
   .object({
@@ -54,22 +54,30 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Ungueltiger Link</CardTitle>
-            <CardDescription>
-              Der Link zum Zuruecksetzen des Passworts ist ungueltig oder abgelaufen.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link href="/forgot-password" className="w-full">
-              <Button variant="outline" className="w-full">
-                Neuen Link anfordern
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm text-center">
+          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+              P
+            </div>
+            <span className="text-xl font-semibold">POA</span>
+          </Link>
+
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Ungueltiger Link
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Der Link zum Zuruecksetzen des Passworts ist ungueltig oder abgelaufen.
+          </p>
+          <Link href="/forgot-password" className="mt-8 block">
+            <Button variant="outline" className="h-12 w-full rounded-xl">
+              Neuen Link anfordern
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -91,62 +99,96 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Neues Passwort festlegen</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+            P
+          </div>
+          <span className="text-xl font-semibold">POA</span>
+        </Link>
+
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
+            <KeyRound className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Neues Passwort festlegen
+          </h1>
+          <p className="mt-3 text-muted-foreground">
             Geben Sie Ihr neues Passwort ein.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Neues Passwort</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 Zeichen"
-                  {...register('password')}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
-                >
-                  {showPassword ? 'Verbergen' : 'Anzeigen'}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Passwort bestaetigen</Label>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium">
+              Neues Passwort
+            </Label>
+            <div className="relative">
               <Input
-                id="confirmPassword"
+                id="password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Passwort wiederholen"
-                {...register('confirmPassword')}
+                placeholder="Min. 8 Zeichen"
+                className="h-12 rounded-xl pr-12"
+                {...register('password')}
                 disabled={isLoading}
               />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Wird gespeichert...' : 'Passwort speichern'}
-            </Button>
-            <Link href="/login" className="text-sm text-primary hover:underline">
-              Zurueck zum Login
-            </Link>
-          </CardFooter>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium">
+              Passwort bestaetigen
+            </Label>
+            <Input
+              id="confirmPassword"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Passwort wiederholen"
+              className="h-12 rounded-xl"
+              {...register('confirmPassword')}
+              disabled={isLoading}
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-xl text-base"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Wird gespeichert...' : 'Passwort speichern'}
+            {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
+          </Button>
         </form>
-      </Card>
+
+        <div className="mt-8 text-center">
+          <Link
+            href="/login"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Zurueck zum Login
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

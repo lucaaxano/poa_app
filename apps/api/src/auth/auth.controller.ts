@@ -21,6 +21,7 @@ import {
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
+import { AuthenticatedRequest } from './interfaces/authenticated-request.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -58,28 +59,28 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: AuthenticatedRequest) {
     return this.authService.getProfile(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Post('invite')
-  async inviteUser(@Request() req, @Body() dto: InviteUserDto) {
-    return this.authService.createInvitation(req.user.companyId, dto, req.user.id);
+  async inviteUser(@Request() req: AuthenticatedRequest, @Body() dto: InviteUserDto) {
+    return this.authService.createInvitation(req.user.companyId!, dto, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Get('invitations')
-  async getInvitations(@Request() req) {
-    return this.authService.getInvitations(req.user.companyId);
+  async getInvitations(@Request() req: AuthenticatedRequest) {
+    return this.authService.getInvitations(req.user.companyId!);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Delete('invitations/:id')
-  async cancelInvitation(@Request() req, @Param('id') id: string) {
-    return this.authService.cancelInvitation(id, req.user.companyId);
+  async cancelInvitation(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.authService.cancelInvitation(id, req.user.companyId!);
   }
 }

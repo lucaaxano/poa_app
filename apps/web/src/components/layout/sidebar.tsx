@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface NavItem {
@@ -79,32 +78,25 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-background transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
+        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-all duration-300',
+        collapsed ? 'w-[72px]' : 'w-64'
       )}
     >
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b px-4">
-          {!collapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-                P
-              </div>
-              <span className="text-lg font-semibold">POA</span>
-            </Link>
-          )}
-          {collapsed && (
-            <Link href="/dashboard" className="mx-auto">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-                P
-              </div>
-            </Link>
-          )}
+        <div className="flex h-16 items-center border-b px-4">
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+              P
+            </div>
+            {!collapsed && (
+              <span className="text-lg font-semibold tracking-tight">POA</span>
+            )}
+          </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-2 py-4">
+        <nav className="flex-1 space-y-1 px-3 py-4">
           {filteredNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
@@ -112,9 +104,9 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-soft'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   collapsed && 'justify-center px-2'
                 )}
@@ -128,11 +120,14 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         </nav>
 
         {/* Collapse Button */}
-        <div className="border-t p-2">
+        <div className="border-t p-3">
           <Button
             variant="ghost"
             size="sm"
-            className={cn('w-full', collapsed ? 'px-2' : 'justify-start')}
+            className={cn(
+              'w-full rounded-xl text-muted-foreground hover:text-foreground',
+              collapsed ? 'px-2' : 'justify-start'
+            )}
             onClick={() => onCollapsedChange?.(!collapsed)}
           >
             {collapsed ? (

@@ -10,10 +10,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage, setTokens } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/auth-store';
+import { Eye, EyeOff, ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
 
 const acceptInvitationSchema = z
   .object({
@@ -66,22 +66,30 @@ function AcceptInvitationForm() {
 
   if (!token) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Ungueltiger Link</CardTitle>
-            <CardDescription>
-              Der Einladungslink ist ungueltig oder abgelaufen. Bitte kontaktieren Sie Ihren Administrator fuer eine neue Einladung.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Link href="/login" className="w-full">
-              <Button variant="outline" className="w-full">
-                Zum Login
-              </Button>
-            </Link>
-          </CardFooter>
-        </Card>
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm text-center">
+          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+              P
+            </div>
+            <span className="text-xl font-semibold">POA</span>
+          </Link>
+
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Ungueltiger Link
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Der Einladungslink ist ungueltig oder abgelaufen. Bitte kontaktieren Sie Ihren Administrator fuer eine neue Einladung.
+          </p>
+          <Link href="/login" className="mt-8 block">
+            <Button variant="outline" className="h-12 w-full rounded-xl">
+              Zum Login
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -107,85 +115,119 @@ function AcceptInvitationForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Einladung annehmen</CardTitle>
-          <CardDescription>
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+            P
+          </div>
+          <span className="text-xl font-semibold">POA</span>
+        </Link>
+
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
+            <UserPlus className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Einladung annehmen
+          </h1>
+          <p className="mt-3 text-muted-foreground">
             Vervollstaendigen Sie Ihr Profil, um Ihr Konto zu aktivieren.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Vorname</Label>
-                <Input
-                  id="firstName"
-                  placeholder="Max"
-                  {...register('firstName')}
-                  disabled={isLoading}
-                />
-                {errors.firstName && (
-                  <p className="text-sm text-destructive">{errors.firstName.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Nachname</Label>
-                <Input
-                  id="lastName"
-                  placeholder="Mustermann"
-                  {...register('lastName')}
-                  disabled={isLoading}
-                />
-                {errors.lastName && (
-                  <p className="text-sm text-destructive">{errors.lastName.message}</p>
-                )}
-              </div>
-            </div>
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="password">Passwort</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 Zeichen"
-                  {...register('password')}
-                  disabled={isLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
-                >
-                  {showPassword ? 'Verbergen' : 'Anzeigen'}
-                </button>
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Passwort bestaetigen</Label>
+              <Label htmlFor="firstName" className="text-sm font-medium">
+                Vorname
+              </Label>
               <Input
-                id="confirmPassword"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Passwort wiederholen"
-                {...register('confirmPassword')}
+                id="firstName"
+                placeholder="Max"
+                className="h-12 rounded-xl"
+                {...register('firstName')}
                 disabled={isLoading}
               />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              {errors.firstName && (
+                <p className="text-sm text-destructive">{errors.firstName.message}</p>
               )}
             </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Wird erstellt...' : 'Konto aktivieren'}
-            </Button>
-          </CardFooter>
+            <div className="space-y-2">
+              <Label htmlFor="lastName" className="text-sm font-medium">
+                Nachname
+              </Label>
+              <Input
+                id="lastName"
+                placeholder="Mustermann"
+                className="h-12 rounded-xl"
+                {...register('lastName')}
+                disabled={isLoading}
+              />
+              {errors.lastName && (
+                <p className="text-sm text-destructive">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password" className="text-sm font-medium">
+              Passwort
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min. 8 Zeichen"
+                className="h-12 rounded-xl pr-12"
+                {...register('password')}
+                disabled={isLoading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword" className="text-sm font-medium">
+              Passwort bestaetigen
+            </Label>
+            <Input
+              id="confirmPassword"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Passwort wiederholen"
+              className="h-12 rounded-xl"
+              {...register('confirmPassword')}
+              disabled={isLoading}
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-xl text-base"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Wird erstellt...' : 'Konto aktivieren'}
+            {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
+          </Button>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

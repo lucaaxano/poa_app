@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, VehicleType, CoverageType, PricingModel, ClaimStatus, DamageCategory, ClaimEventType } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 

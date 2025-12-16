@@ -7,10 +7,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole } from '@poa/database';
+import { UserRole, User, Company } from '@poa/database';
 import {
   LoginDto,
   RegisterDto,
@@ -20,6 +20,53 @@ import {
   InviteUserDto,
 } from './dto/auth.dto';
 
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface SanitizedUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  companyId: string | null;
+  phone: string | null;
+  position: string | null;
+  isActive: boolean;
+  emailVerifiedAt: Date | null;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AuthResponse {
+  user: SanitizedUser;
+  company: Company | null;
+  tokens: AuthTokens;
+}
+
+export interface ProfileResponse {
+  user: SanitizedUser;
+  company: Company | null;
+}
+
+export interface InvitationResponse {
+  id: string;
+  email: string;
+  role: UserRole;
+  expiresAt: Date;
+}
+
+export interface InvitationListItem {
+  id: string;
+  email: string;
+  role: UserRole;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -28,7 +75,7 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto): Promise<AuthResponse> {
     // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -79,7 +126,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       include: { company: true },
@@ -114,7 +161,7 @@ export class AuthService {
     };
   }
 
-  async validateUser(userId: string) {
+  async validateUser(userId: string): Promise<(User & { company: Company | null }) | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { company: true },
@@ -127,7 +174,7 @@ export class AuthService {
     return user;
   }
 
-  async getProfile(userId: string) {
+  async getProfile(userId: string): Promise<ProfileResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { company: true },
@@ -143,7 +190,7 @@ export class AuthService {
     };
   }
 
-  private async generateTokens(userId: string, role: UserRole) {
+  private async generateTokens(userId: string, role: UserRole): Promise<AuthTokens> {
     const payload = { sub: userId, role };
 
     const accessToken = this.jwtService.sign(payload);
@@ -158,12 +205,12 @@ export class AuthService {
     };
   }
 
-  private sanitizeUser(user: any) {
-    const { passwordHash, ...sanitized } = user;
+  private sanitizeUser(user: User & { company?: Company | null }): SanitizedUser {
+    const { passwordHash, avatarUrl, notificationSettings, ...sanitized } = user;
     return sanitized;
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string): Promise<AuthResponse> {
     try {
       const payload = this.jwtService.verify(refreshToken);
       const user = await this.prisma.user.findUnique({
@@ -187,7 +234,7 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(dto: ForgotPasswordDto) {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -223,7 +270,7 @@ export class AuthService {
     return { message: 'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.' };
   }
 
-  async resetPassword(dto: ResetPasswordDto) {
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     // Find all non-expired reset tokens
     const resets = await this.prisma.passwordReset.findMany({
       where: {
@@ -263,7 +310,7 @@ export class AuthService {
     return { message: 'Passwort wurde erfolgreich zurückgesetzt' };
   }
 
-  async createInvitation(companyId: string, dto: InviteUserDto, invitedByUserId: string) {
+  async createInvitation(companyId: string, dto: InviteUserDto, invitedByUserId: string): Promise<InvitationResponse> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -314,7 +361,7 @@ export class AuthService {
     };
   }
 
-  async acceptInvitation(dto: AcceptInvitationDto) {
+  async acceptInvitation(dto: AcceptInvitationDto): Promise<AuthResponse> {
     // Find all non-expired invitations
     const invitations = await this.prisma.invitation.findMany({
       where: {
@@ -384,7 +431,7 @@ export class AuthService {
     };
   }
 
-  async getInvitations(companyId: string) {
+  async getInvitations(companyId: string): Promise<InvitationListItem[]> {
     return this.prisma.invitation.findMany({
       where: {
         companyId,
@@ -402,7 +449,7 @@ export class AuthService {
     });
   }
 
-  async cancelInvitation(invitationId: string, companyId: string) {
+  async cancelInvitation(invitationId: string, companyId: string): Promise<{ message: string }> {
     const invitation = await this.prisma.invitation.findFirst({
       where: {
         id: invitationId,
