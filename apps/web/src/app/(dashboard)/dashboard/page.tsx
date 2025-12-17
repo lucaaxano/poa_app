@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle } from 'lucide-react';
+import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
+import { useCompanyStats } from '@/hooks/use-company-stats';
+import { useRecentClaims } from '@/hooks/use-claims';
+import { ClaimStatus, DamageCategory } from '@poa/shared';
 
 interface StatCardProps {
   title: string;
@@ -13,13 +16,14 @@ interface StatCardProps {
   description?: string;
   icon: React.ReactNode;
   iconBg: string;
+  isLoading?: boolean;
   trend?: {
     value: number;
     isPositive: boolean;
   };
 }
 
-function StatCard({ title, value, description, icon, iconBg, trend }: StatCardProps) {
+function StatCard({ title, value, description, icon, iconBg, isLoading, trend }: StatCardProps) {
   return (
     <Card className="rounded-2xl border shadow-soft hover:shadow-soft-lg transition-all">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -29,15 +33,24 @@ function StatCard({ title, value, description, icon, iconBg, trend }: StatCardPr
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold">{value}</div>
-        {description && (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        )}
-        {trend && (
-          <div className={`mt-2 flex items-center text-sm ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            <TrendingUp className={`h-4 w-4 mr-1 ${!trend.isPositive && 'rotate-180'}`} />
-            {trend.isPositive ? '+' : ''}{trend.value}% zum Vormonat
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">Laden...</span>
           </div>
+        ) : (
+          <>
+            <div className="text-3xl font-bold">{value}</div>
+            {description && (
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            )}
+            {trend && (
+              <div className={`mt-2 flex items-center text-sm ${trend.isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                <TrendingUp className={`h-4 w-4 mr-1 ${!trend.isPositive && 'rotate-180'}`} />
+                {trend.isPositive ? '+' : ''}{trend.value}% zum Vormonat
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
@@ -68,9 +81,54 @@ function QuickAction({ icon, title, description, href }: QuickActionProps) {
   );
 }
 
+// Status Badge Component
+function StatusBadge({ status }: { status: ClaimStatus }) {
+  const statusConfig: Record<ClaimStatus, { label: string; className: string }> = {
+    [ClaimStatus.DRAFT]: { label: 'Entwurf', className: 'bg-gray-100 text-gray-700' },
+    [ClaimStatus.SUBMITTED]: { label: 'Eingereicht', className: 'bg-blue-100 text-blue-700' },
+    [ClaimStatus.APPROVED]: { label: 'Freigegeben', className: 'bg-green-100 text-green-700' },
+    [ClaimStatus.SENT]: { label: 'Gesendet', className: 'bg-purple-100 text-purple-700' },
+    [ClaimStatus.ACKNOWLEDGED]: { label: 'Bestaetigt', className: 'bg-teal-100 text-teal-700' },
+    [ClaimStatus.CLOSED]: { label: 'Abgeschlossen', className: 'bg-gray-100 text-gray-700' },
+    [ClaimStatus.REJECTED]: { label: 'Abgelehnt', className: 'bg-red-100 text-red-700' },
+  };
+
+  const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${config.className}`}>
+      {config.label}
+    </span>
+  );
+}
+
+// Damage Category Label
+function getDamageCategoryLabel(category: DamageCategory): string {
+  const labels: Record<DamageCategory, string> = {
+    [DamageCategory.LIABILITY]: 'Haftpflicht',
+    [DamageCategory.COMPREHENSIVE]: 'Kasko',
+    [DamageCategory.GLASS]: 'Glas',
+    [DamageCategory.WILDLIFE]: 'Wild',
+    [DamageCategory.PARKING]: 'Parkschaden',
+    [DamageCategory.THEFT]: 'Diebstahl',
+    [DamageCategory.VANDALISM]: 'Vandalismus',
+    [DamageCategory.OTHER]: 'Sonstiges',
+  };
+  return labels[category] || category;
+}
+
 export default function DashboardPage() {
   const { user, company } = useAuthStore();
   const isAdmin = user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPERADMIN';
+
+  // Fetch data
+  const { data: stats, isLoading: isLoadingStats } = useCompanyStats();
+  const { data: recentClaims, isLoading: isLoadingClaims } = useRecentClaims(5);
+
+  // Calculate open claims (SUBMITTED + APPROVED)
+  const openClaims = stats?.claimsByStatus
+    ? (stats.claimsByStatus['SUBMITTED'] || 0) + (stats.claimsByStatus['APPROVED'] || 0)
+    : 0;
 
   return (
     <div className="space-y-8">
@@ -88,33 +146,37 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Offene Schaeden"
-          value="--"
+          value={openClaims}
           description="Warten auf Bearbeitung"
           icon={<AlertCircle className="h-5 w-5 text-orange-600" />}
           iconBg="bg-orange-50"
+          isLoading={isLoadingStats}
         />
         <StatCard
           title="Schaeden gesamt"
-          value="--"
+          value={stats?.totalClaims ?? 0}
           description="Dieses Jahr"
           icon={<FileWarning className="h-5 w-5 text-primary" />}
           iconBg="bg-primary/5"
+          isLoading={isLoadingStats}
         />
         {isAdmin && (
           <>
             <StatCard
               title="Fahrzeuge"
-              value="--"
+              value={stats?.totalVehicles ?? 0}
               description="Aktive Fahrzeuge"
               icon={<Car className="h-5 w-5 text-blue-600" />}
               iconBg="bg-blue-50"
+              isLoading={isLoadingStats}
             />
             <StatCard
               title="Mitarbeiter"
-              value="--"
+              value={stats?.totalUsers ?? 0}
               description="Aktive Benutzer"
               icon={<Users className="h-5 w-5 text-green-600" />}
               iconBg="bg-green-50"
+              isLoading={isLoadingStats}
             />
           </>
         )}
@@ -175,21 +237,59 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-                <Clock className="h-8 w-8 text-muted-foreground" />
+            {isLoadingClaims ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-              <h3 className="font-medium">Noch keine Schaeden</h3>
-              <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-                Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.
-              </p>
-              <Link href={'/claims/new' as Route} className="mt-6">
-                <Button className="rounded-xl">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ersten Schaden melden
-                </Button>
-              </Link>
-            </div>
+            ) : recentClaims && recentClaims.length > 0 ? (
+              <div className="space-y-3">
+                {recentClaims.map((claim) => (
+                  <Link
+                    key={claim.id}
+                    href={`/claims/${claim.id}` as Route}
+                    className="block"
+                  >
+                    <div className="flex items-center justify-between rounded-xl border p-4 transition-all hover:border-primary/20 hover:shadow-soft">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                          <FileWarning className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{claim.claimNumber}</span>
+                            <StatusBadge status={claim.status} />
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{claim.vehicle.licensePlate}</span>
+                            <span>•</span>
+                            <span>{getDamageCategoryLabel(claim.damageCategory)}</span>
+                            <span>•</span>
+                            <span>{new Date(claim.accidentDate).toLocaleDateString('de-DE')}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+                  <Clock className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-medium">Noch keine Schaeden</h3>
+                <p className="mt-1 text-sm text-muted-foreground max-w-xs">
+                  Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.
+                </p>
+                <Link href={'/claims/new' as Route} className="mt-6">
+                  <Button className="rounded-xl">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ersten Schaden melden
+                  </Button>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

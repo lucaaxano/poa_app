@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Company } from '@poa/database';
+import { UpdateCompanyDto } from './dto/company.dto';
 
 export interface CompanyStats {
   totalClaims: number;
@@ -23,6 +24,24 @@ export class CompaniesService {
     }
 
     return company;
+  }
+
+  async update(id: string, dto: UpdateCompanyDto): Promise<Company> {
+    // Verify company exists
+    await this.findById(id);
+
+    return this.prisma.company.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.address !== undefined && { address: dto.address || null }),
+        ...(dto.city !== undefined && { city: dto.city || null }),
+        ...(dto.postalCode !== undefined && { postalCode: dto.postalCode || null }),
+        ...(dto.country !== undefined && { country: dto.country || null }),
+        ...(dto.phone !== undefined && { phone: dto.phone || null }),
+        ...(dto.website !== undefined && { website: dto.website || null }),
+      },
+    });
   }
 
   async getStats(companyId: string): Promise<CompanyStats> {

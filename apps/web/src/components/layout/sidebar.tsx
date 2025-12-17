@@ -98,7 +98,11 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
           {filteredNavItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            // Special handling for settings: only exact match for /settings
+            // For other items: match exact or starts with + /
+            const isActive = item.href === '/settings'
+              ? pathname === '/settings'
+              : pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.href}

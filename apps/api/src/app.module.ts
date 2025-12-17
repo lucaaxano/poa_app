@@ -8,12 +8,14 @@ import { UsersModule } from './users/users.module';
 import { CompaniesModule } from './companies/companies.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { ClaimsModule } from './claims/claims.module';
+import { PoliciesModule } from './policies/policies.module';
+import { InsurersModule } from './insurers/insurers.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ['.env.local', '.env', '../../.env.local', '../../.env'],
     }),
     PrismaModule,
     AuthModule,
@@ -21,6 +23,8 @@ import { ClaimsModule } from './claims/claims.module';
     CompaniesModule,
     VehiclesModule,
     ClaimsModule,
+    PoliciesModule,
+    InsurersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

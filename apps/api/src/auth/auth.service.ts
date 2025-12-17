@@ -339,11 +339,24 @@ export class AuthService {
     const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
+    // Map role string to UserRole enum
+    let role: UserRole;
+    switch (dto.role) {
+      case 'BROKER':
+        role = UserRole.BROKER;
+        break;
+      case 'COMPANY_ADMIN':
+        role = UserRole.COMPANY_ADMIN;
+        break;
+      default:
+        role = UserRole.EMPLOYEE;
+    }
+
     const invitation = await this.prisma.invitation.create({
       data: {
         companyId,
         email: dto.email,
-        role: dto.role === 'BROKER' ? UserRole.BROKER : UserRole.EMPLOYEE,
+        role,
         tokenHash,
         invitedByUserId,
         expiresAt,
@@ -431,7 +444,7 @@ export class AuthService {
     };
   }
 
-  async getInvitations(companyId: string): Promise<InvitationListItem[]> {
+  async getInvitations(companyId: string) {
     return this.prisma.invitation.findMany({
       where: {
         companyId,
@@ -444,6 +457,12 @@ export class AuthService {
         role: true,
         expiresAt: true,
         createdAt: true,
+        invitedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

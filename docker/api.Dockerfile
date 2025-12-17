@@ -9,19 +9,19 @@ RUN apk add --no-cache openssl openssl-dev
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # Copy package files
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml .npmrc ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/database/package.json ./packages/database/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile || pnpm install
+RUN pnpm install
 
 # Copy source code
 COPY . .
 
 # Generate Prisma Client
-RUN pnpm --filter @poa/database db:generate || true
+RUN cd /app/packages/database && pnpm exec prisma generate || true
 
 WORKDIR /app/apps/api
 

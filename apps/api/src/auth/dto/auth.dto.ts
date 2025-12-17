@@ -78,6 +78,6 @@ export class InviteUserDto {
   @IsEmail({}, { message: 'Ungueltige E-Mail-Adresse' })
   email: string;
 
-  @IsEnum(['EMPLOYEE', 'BROKER'], { message: 'Ungueltige Rolle' })
-  role: 'EMPLOYEE' | 'BROKER';
+  @IsEnum(['EMPLOYEE', 'COMPANY_ADMIN', 'BROKER'], { message: 'Ungueltige Rolle' })
+  role: 'EMPLOYEE' | 'COMPANY_ADMIN' | 'BROKER';
 }
