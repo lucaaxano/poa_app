@@ -14,6 +14,7 @@ export const claimKeys = {
   detail: (id: string) => [...claimKeys.details(), id] as const,
   comments: (id: string) => [...claimKeys.detail(id), 'comments'] as const,
   events: (id: string) => [...claimKeys.detail(id), 'events'] as const,
+  attachments: (id: string) => [...claimKeys.detail(id), 'attachments'] as const,
 };
 
 // Hooks
@@ -138,6 +139,41 @@ export function useAddClaimComment() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: claimKeys.comments(id) });
       queryClient.invalidateQueries({ queryKey: claimKeys.detail(id) });
+    },
+  });
+}
+
+// Attachment Hooks
+export function useClaimAttachments(id: string) {
+  return useQuery({
+    queryKey: claimKeys.attachments(id),
+    queryFn: () => claimsApi.getAttachments(id),
+    enabled: !!id,
+  });
+}
+
+export function useUploadAttachment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      claimsApi.uploadAttachment(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: claimKeys.attachments(id) });
+      queryClient.invalidateQueries({ queryKey: claimKeys.detail(id) });
+    },
+  });
+}
+
+export function useDeleteAttachment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ claimId, attachmentId }: { claimId: string; attachmentId: string }) =>
+      claimsApi.deleteAttachment(claimId, attachmentId),
+    onSuccess: (_, { claimId }) => {
+      queryClient.invalidateQueries({ queryKey: claimKeys.attachments(claimId) });
+      queryClient.invalidateQueries({ queryKey: claimKeys.detail(claimId) });
     },
   });
 }

@@ -10,6 +10,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
 import { ClaimsModule } from './claims/claims.module';
 import { PoliciesModule } from './policies/policies.module';
 import { InsurersModule } from './insurers/insurers.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { InsurersModule } from './insurers/insurers.module';
       envFilePath: ['.env.local', '.env', '../../.env.local', '../../.env'],
     }),
     PrismaModule,
+    StorageModule,
     AuthModule,
     UsersModule,
     CompaniesModule,

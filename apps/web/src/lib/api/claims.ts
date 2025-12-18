@@ -6,6 +6,7 @@ import type {
   DamageCategory,
   ClaimEvent,
   ClaimComment,
+  ClaimAttachment,
   CreateClaimInput,
   UpdateClaimInput
 } from '@poa/shared';
@@ -50,6 +51,15 @@ export interface ClaimFilters {
   limit?: number;
 }
 
+// Paginated Response Type
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 // Claims API functions
 export const claimsApi = {
   async getAll(filters?: ClaimFilters): Promise<ClaimListItem[]> {
@@ -65,10 +75,10 @@ export const claimsApi = {
     if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
     if (filters?.dateTo) params.append('dateTo', filters.dateTo);
     if (filters?.search) params.append('search', filters.search);
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.limit) params.append('pageSize', filters.limit.toString());
 
-    const response = await apiClient.get<ClaimListItem[]>('/claims', { params });
-    return response.data;
+    const response = await apiClient.get<PaginatedResponse<ClaimListItem>>('/claims', { params });
+    return response.data.data;
   },
 
   async getRecent(limit: number = 5): Promise<ClaimListItem[]> {
@@ -101,7 +111,7 @@ export const claimsApi = {
   },
 
   async reject(id: string, reason: string): Promise<Claim> {
-    const response = await apiClient.post<Claim>(`/claims/${id}/reject`, { reason });
+    const response = await apiClient.post<Claim>(`/claims/${id}/reject`, { rejectionReason: reason });
     return response.data;
   },
 
@@ -123,5 +133,26 @@ export const claimsApi = {
   async getEvents(id: string): Promise<ClaimEvent[]> {
     const response = await apiClient.get<ClaimEvent[]>(`/claims/${id}/events`);
     return response.data;
+  },
+
+  // Attachment functions
+  async getAttachments(id: string): Promise<ClaimAttachment[]> {
+    const response = await apiClient.get<ClaimAttachment[]>(`/claims/${id}/attachments`);
+    return response.data;
+  },
+
+  async uploadAttachment(id: string, file: File): Promise<ClaimAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ClaimAttachment>(`/claims/${id}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  async deleteAttachment(claimId: string, attachmentId: string): Promise<void> {
+    await apiClient.delete(`/claims/${claimId}/attachments/${attachmentId}`);
   },
 };
