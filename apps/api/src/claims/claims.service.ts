@@ -3,9 +3,12 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { EmailService } from '../email/email.service';
 import {
   Claim,
   Vehicle,
@@ -18,6 +21,7 @@ import {
   ClaimEventType,
   FileType,
   UserRole,
+  DamageCategory,
   Prisma,
 } from '@poa/database';
 import { CreateClaimDto, UpdateClaimDto, ClaimFilterDto } from './dto/claim.dto';
@@ -81,10 +85,17 @@ export interface PaginatedClaims {
 
 @Injectable()
 export class ClaimsService {
+  private readonly logger = new Logger(ClaimsService.name);
+  private readonly appUrl: string;
+
   constructor(
     private prisma: PrismaService,
     private storageService: StorageService,
-  ) {}
+    private emailService: EmailService,
+    private configService: ConfigService,
+  ) {
+    this.appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
+  }
 
   /**
    * Generate next claim number in format CLM-YYYY-NNNNN
@@ -199,6 +210,53 @@ export class ClaimsService {
       status,
       claimNumber,
     });
+
+    // If submitted immediately, send notification to admins
+    if (status === ClaimStatus.SUBMITTED) {
+      const reporter = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true },
+      });
+
+      const admins = await this.prisma.user.findMany({
+        where: {
+          companyId,
+          role: { in: [UserRole.COMPANY_ADMIN, UserRole.BROKER] },
+          isActive: true,
+        },
+        select: { email: true, firstName: true },
+      });
+
+      const damageCategoryMap: Record<DamageCategory, string> = {
+        [DamageCategory.LIABILITY]: 'Haftpflichtschaden',
+        [DamageCategory.COMPREHENSIVE]: 'Kaskoschaden',
+        [DamageCategory.GLASS]: 'Glasschaden',
+        [DamageCategory.WILDLIFE]: 'Wildschaden',
+        [DamageCategory.PARKING]: 'Parkschaden',
+        [DamageCategory.THEFT]: 'Diebstahl',
+        [DamageCategory.VANDALISM]: 'Vandalismus',
+        [DamageCategory.OTHER]: 'Sonstiges',
+      };
+
+      for (const admin of admins) {
+        try {
+          await this.emailService.sendClaimNotification(admin.email, 'submitted', {
+            adminName: admin.firstName,
+            claimNumber: claim.claimNumber,
+            licensePlate: vehicle.licensePlate,
+            vehicleBrand: vehicle.brand || '',
+            vehicleModel: vehicle.model || '',
+            accidentDate: new Date(dto.accidentDate).toLocaleDateString('de-DE'),
+            damageCategory: damageCategoryMap[dto.damageCategory] || dto.damageCategory,
+            reporterName: reporter ? `${reporter.firstName} ${reporter.lastName}` : 'Unbekannt',
+            description: dto.description || null,
+            claimLink: `${this.appUrl}/claims/${claim.id}`,
+          });
+        } catch (error) {
+          this.logger.warn(`Failed to send submit notification to ${admin.email}: ${error.message}`);
+        }
+      }
+    }
 
     return claim;
   }
@@ -696,6 +754,15 @@ export class ClaimsService {
   ): Promise<Claim> {
     const claim = await this.prisma.claim.findFirst({
       where: { id, companyId },
+      include: {
+        vehicle: true,
+        reporter: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
     });
 
     if (!claim) {
@@ -727,6 +794,46 @@ export class ClaimsService {
       { status: ClaimStatus.SUBMITTED },
     );
 
+    // Send notification email to admins
+    const admins = await this.prisma.user.findMany({
+      where: {
+        companyId,
+        role: { in: [UserRole.COMPANY_ADMIN, UserRole.BROKER] },
+        isActive: true,
+      },
+      select: { email: true, firstName: true },
+    });
+
+    const damageCategoryMap: Record<DamageCategory, string> = {
+      [DamageCategory.LIABILITY]: 'Haftpflichtschaden',
+      [DamageCategory.COMPREHENSIVE]: 'Kaskoschaden',
+      [DamageCategory.GLASS]: 'Glasschaden',
+      [DamageCategory.WILDLIFE]: 'Wildschaden',
+      [DamageCategory.PARKING]: 'Parkschaden',
+      [DamageCategory.THEFT]: 'Diebstahl',
+      [DamageCategory.VANDALISM]: 'Vandalismus',
+      [DamageCategory.OTHER]: 'Sonstiges',
+    };
+
+    for (const admin of admins) {
+      try {
+        await this.emailService.sendClaimNotification(admin.email, 'submitted', {
+          adminName: admin.firstName,
+          claimNumber: claim.claimNumber,
+          licensePlate: claim.vehicle.licensePlate,
+          vehicleBrand: claim.vehicle.brand || '',
+          vehicleModel: claim.vehicle.model || '',
+          accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+          damageCategory: damageCategoryMap[claim.damageCategory] || claim.damageCategory,
+          reporterName: `${claim.reporter.firstName} ${claim.reporter.lastName}`,
+          description: claim.description || null,
+          claimLink: `${this.appUrl}/claims/${id}`,
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to send submit notification to ${admin.email}: ${error.message}`);
+      }
+    }
+
     return updatedClaim;
   }
 
@@ -746,6 +853,16 @@ export class ClaimsService {
 
     const claim = await this.prisma.claim.findFirst({
       where: { id, companyId },
+      include: {
+        vehicle: true,
+        reporter: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
     });
 
     if (!claim) {
@@ -758,6 +875,12 @@ export class ClaimsService {
         'Nur eingereichte Schaeden koennen genehmigt werden',
       );
     }
+
+    // Get approver name
+    const approver = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
 
     // Update status
     const updatedClaim = await this.prisma.claim.update({
@@ -773,6 +896,27 @@ export class ClaimsService {
       { status: ClaimStatus.SUBMITTED },
       { status: ClaimStatus.APPROVED },
     );
+
+    // Send notification email to reporter
+    try {
+      await this.emailService.sendClaimNotification(claim.reporter.email, 'approved', {
+        userName: claim.reporter.firstName,
+        claimNumber: claim.claimNumber,
+        licensePlate: claim.vehicle.licensePlate,
+        accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+        approverName: approver ? `${approver.firstName} ${approver.lastName}` : 'Administrator',
+        approvedAt: new Date().toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        claimLink: `${this.appUrl}/claims/${id}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to send approval notification: ${error.message}`);
+    }
 
     return updatedClaim;
   }
@@ -794,6 +938,16 @@ export class ClaimsService {
 
     const claim = await this.prisma.claim.findFirst({
       where: { id, companyId },
+      include: {
+        vehicle: true,
+        reporter: {
+          select: {
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
     });
 
     if (!claim) {
@@ -806,6 +960,12 @@ export class ClaimsService {
         'Nur eingereichte Schaeden koennen abgelehnt werden',
       );
     }
+
+    // Get rejector name
+    const rejector = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
 
     // Update status
     const updatedClaim = await this.prisma.claim.update({
@@ -824,6 +984,233 @@ export class ClaimsService {
       { status: ClaimStatus.SUBMITTED },
       { status: ClaimStatus.REJECTED, rejectionReason: reason },
     );
+
+    // Send notification email to reporter
+    try {
+      await this.emailService.sendClaimNotification(claim.reporter.email, 'rejected', {
+        userName: claim.reporter.firstName,
+        claimNumber: claim.claimNumber,
+        licensePlate: claim.vehicle.licensePlate,
+        accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+        rejectorName: rejector ? `${rejector.firstName} ${rejector.lastName}` : 'Administrator',
+        rejectedAt: new Date().toLocaleDateString('de-DE', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        rejectionReason: reason,
+        claimLink: `${this.appUrl}/claims/${id}`,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to send rejection notification: ${error.message}`);
+    }
+
+    return updatedClaim;
+  }
+
+  /**
+   * Send claim to insurer (APPROVED → SENT)
+   */
+  async sendToInsurer(
+    id: string,
+    userId: string,
+    companyId: string,
+    userRole: UserRole,
+  ): Promise<Claim> {
+    // Only admins and brokers can send to insurer
+    if (userRole !== UserRole.COMPANY_ADMIN && userRole !== UserRole.BROKER && userRole !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException('Nur Administratoren koennen Schaeden an Versicherungen senden');
+    }
+
+    // Load claim with all relations needed for the email
+    const claim = await this.prisma.claim.findFirst({
+      where: { id, companyId },
+      include: {
+        vehicle: true,
+        policy: {
+          include: {
+            insurer: true,
+          },
+        },
+        reporter: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        driver: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        company: true,
+        attachments: true,
+      },
+    });
+
+    if (!claim) {
+      throw new NotFoundException('Schaden nicht gefunden');
+    }
+
+    // Only APPROVED claims can be sent
+    if (claim.status !== ClaimStatus.APPROVED) {
+      throw new BadRequestException(
+        'Nur genehmigte Schaeden koennen an die Versicherung gesendet werden',
+      );
+    }
+
+    // Check if policy and insurer exist
+    if (!claim.policy || !claim.policy.insurer) {
+      throw new BadRequestException(
+        'Der Schaden hat keine zugeordnete Versicherungspolice. Bitte zuerst eine Police zuweisen.',
+      );
+    }
+
+    const insurerEmail = claim.policy.insurer.claimsEmail;
+    if (!insurerEmail) {
+      throw new BadRequestException(
+        'Die Versicherung hat keine Schadens-E-Mail-Adresse hinterlegt.',
+      );
+    }
+
+    // Prepare email data
+    const damageCategoryMap: Record<DamageCategory, string> = {
+      [DamageCategory.LIABILITY]: 'Haftpflichtschaden',
+      [DamageCategory.COMPREHENSIVE]: 'Kaskoschaden',
+      [DamageCategory.GLASS]: 'Glasschaden',
+      [DamageCategory.WILDLIFE]: 'Wildschaden',
+      [DamageCategory.PARKING]: 'Parkschaden',
+      [DamageCategory.THEFT]: 'Diebstahl',
+      [DamageCategory.VANDALISM]: 'Vandalismus',
+      [DamageCategory.OTHER]: 'Sonstiges',
+    };
+
+    const accidentDate = claim.accidentDate
+      ? new Date(claim.accidentDate).toLocaleDateString('de-DE')
+      : 'Unbekannt';
+
+    const accidentTime = claim.accidentTime
+      ? claim.accidentTime.toString().substring(0, 5)
+      : null;
+
+    const claimData = {
+      // Policy data
+      policyNumber: claim.policy.policyNumber,
+      companyName: claim.company.name,
+      companyAddress: [
+        claim.company.address,
+        claim.company.postalCode,
+        claim.company.city,
+      ].filter(Boolean).join(', ') || null,
+
+      // Vehicle data
+      licensePlate: claim.vehicle.licensePlate,
+      vehicleBrand: claim.vehicle.brand || '',
+      vehicleModel: claim.vehicle.model || '',
+      vehicleYear: claim.vehicle.year,
+      vin: claim.vehicle.vin,
+
+      // Claim data
+      claimNumber: claim.claimNumber,
+      accidentDate,
+      accidentTime,
+      accidentLocation: claim.accidentLocation || 'Nicht angegeben',
+      damageCategory: damageCategoryMap[claim.damageCategory] || claim.damageCategory,
+      damageSubcategory: claim.damageSubcategory,
+      description: claim.description || 'Keine Beschreibung vorhanden',
+
+      // Additional info
+      policeInvolved: claim.policeInvolved,
+      policeFileNumber: claim.policeFileNumber,
+      hasInjuries: claim.hasInjuries,
+      injuryDetails: claim.injuryDetails,
+      estimatedCost: claim.estimatedCost ? Number(claim.estimatedCost).toFixed(2) : null,
+
+      // People
+      reporterName: `${claim.reporter.firstName} ${claim.reporter.lastName}`,
+      driverName: claim.driver ? `${claim.driver.firstName} ${claim.driver.lastName}` : null,
+
+      // Third party & witnesses
+      thirdPartyInfo: claim.thirdPartyInfo as Record<string, unknown> | null,
+      witnessInfo: claim.witnessInfo as Array<Record<string, unknown>> | null,
+
+      // Attachments info
+      hasAttachments: claim.attachments.length > 0,
+      attachmentCount: claim.attachments.length,
+    };
+
+    // Prepare attachments for email
+    const emailAttachments: Array<{ filename: string; content: Buffer; contentType: string }> = [];
+
+    for (const attachment of claim.attachments) {
+      try {
+        const fileBuffer = await this.storageService.downloadFile(attachment.fileUrl);
+        emailAttachments.push({
+          filename: attachment.fileName,
+          content: fileBuffer,
+          contentType: attachment.mimeType || 'application/octet-stream',
+        });
+      } catch (error) {
+        this.logger.warn(`Could not download attachment ${attachment.fileName}: ${error.message}`);
+      }
+    }
+
+    // Generate email subject
+    const subject = `[${claim.policy.policyNumber}] Schadenmeldung vom ${accidentDate} - ${claim.vehicle.licensePlate}`;
+
+    // Send email
+    const emailResult = await this.emailService.sendClaimToInsurer(
+      insurerEmail,
+      subject,
+      claimData,
+      emailAttachments,
+    );
+
+    if (!emailResult.success) {
+      this.logger.error(`Failed to send claim ${claim.claimNumber} to insurer: ${emailResult.error}`);
+      throw new BadRequestException(
+        `E-Mail konnte nicht gesendet werden: ${emailResult.error}`,
+      );
+    }
+
+    // Update claim status
+    const updatedClaim = await this.prisma.claim.update({
+      where: { id },
+      data: {
+        status: ClaimStatus.SENT,
+        sentAt: new Date(),
+      },
+    });
+
+    // Create event
+    await this.createEvent(
+      id,
+      userId,
+      ClaimEventType.EMAIL_SENT,
+      { status: ClaimStatus.APPROVED },
+      {
+        status: ClaimStatus.SENT,
+        recipient: insurerEmail,
+        messageId: emailResult.messageId,
+      },
+    );
+
+    // Log to EmailLog table
+    await this.prisma.emailLog.create({
+      data: {
+        claimId: id,
+        recipient: insurerEmail,
+        subject,
+        messageId: emailResult.messageId,
+        status: 'sent',
+      },
+    });
+
+    this.logger.log(`Claim ${claim.claimNumber} sent to ${insurerEmail} (${emailResult.messageId})`);
 
     return updatedClaim;
   }
@@ -867,10 +1254,20 @@ export class ClaimsService {
     companyId: string,
     content: string,
   ): Promise<CommentWithUser> {
-    // Verify claim belongs to company
+    // Verify claim belongs to company and get full data for notifications
     const claim = await this.prisma.claim.findFirst({
       where: { id: claimId, companyId },
-      select: { id: true },
+      include: {
+        vehicle: true,
+        reporter: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
     });
 
     if (!claim) {
@@ -904,6 +1301,59 @@ export class ClaimsService {
       null,
       { commentId: comment.id, preview: content.substring(0, 100) },
     );
+
+    // Determine recipients for notification (reporter + admins, excluding commenter)
+    const recipients: Array<{ email: string; firstName: string }> = [];
+
+    // Add reporter if not the commenter
+    if (claim.reporter.id !== userId) {
+      recipients.push({
+        email: claim.reporter.email,
+        firstName: claim.reporter.firstName,
+      });
+    }
+
+    // Add admins/brokers who are not the commenter
+    const admins = await this.prisma.user.findMany({
+      where: {
+        companyId,
+        role: { in: [UserRole.COMPANY_ADMIN, UserRole.BROKER] },
+        isActive: true,
+        id: { not: userId },
+      },
+      select: { email: true, firstName: true },
+    });
+
+    for (const admin of admins) {
+      // Avoid duplicates (reporter might also be admin)
+      if (!recipients.find(r => r.email === admin.email)) {
+        recipients.push(admin);
+      }
+    }
+
+    // Send notification emails
+    for (const recipient of recipients) {
+      try {
+        await this.emailService.sendNewCommentNotification(recipient.email, {
+          userName: recipient.firstName,
+          claimNumber: claim.claimNumber,
+          licensePlate: claim.vehicle.licensePlate,
+          status: claim.status,
+          commenterName: `${comment.user.firstName} ${comment.user.lastName}`,
+          commentContent: content,
+          commentedAt: new Date().toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          claimLink: `${this.appUrl}/claims/${claimId}`,
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to send comment notification to ${recipient.email}: ${error.message}`);
+      }
+    }
 
     return comment as CommentWithUser;
   }

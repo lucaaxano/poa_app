@@ -1,0 +1,42 @@
+<h2>Schaden abgelehnt</h2>
+
+<p>Hallo {{userName}},</p>
+
+<div class="error-box">
+  Ihr gemeldeter Schaden <strong>{{claimNumber}}</strong> wurde leider abgelehnt.
+</div>
+
+<h3>Details</h3>
+<table class="data-table">
+  <tr>
+    <th>Schadennummer</th>
+    <td><strong>{{claimNumber}}</strong></td>
+  </tr>
+  <tr>
+    <th>Fahrzeug</th>
+    <td>{{licensePlate}}</td>
+  </tr>
+  <tr>
+    <th>Unfalldatum</th>
+    <td>{{accidentDate}}</td>
+  </tr>
+  <tr>
+    <th>Abgelehnt von</th>
+    <td>{{rejectorName}}</td>
+  </tr>
+  <tr>
+    <th>Abgelehnt am</th>
+    <td>{{rejectedAt}}</td>
+  </tr>
+</table>
+
+<h3>Ablehnungsgrund</h3>
+<div class="warning-box">
+  {{rejectionReason}}
+</div>
+
+<p>Sie koennen den Schaden ueberarbeiten und erneut einreichen.</p>
+
+<p style="text-align: center;">
+  <a href="{{claimLink}}" class="button">Schaden bearbeiten</a>
+</p>

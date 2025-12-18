@@ -1,0 +1,37 @@
+<h2>Schaden genehmigt</h2>
+
+<p>Hallo {{userName}},</p>
+
+<div class="success-box">
+  Ihr gemeldeter Schaden <strong>{{claimNumber}}</strong> wurde genehmigt.
+</div>
+
+<h3>Details</h3>
+<table class="data-table">
+  <tr>
+    <th>Schadennummer</th>
+    <td><strong>{{claimNumber}}</strong></td>
+  </tr>
+  <tr>
+    <th>Fahrzeug</th>
+    <td>{{licensePlate}}</td>
+  </tr>
+  <tr>
+    <th>Unfalldatum</th>
+    <td>{{accidentDate}}</td>
+  </tr>
+  <tr>
+    <th>Genehmigt von</th>
+    <td>{{approverName}}</td>
+  </tr>
+  <tr>
+    <th>Genehmigt am</th>
+    <td>{{approvedAt}}</td>
+  </tr>
+</table>
+
+<p>Der Schaden kann nun an die Versicherung gesendet werden.</p>
+
+<p style="text-align: center;">
+  <a href="{{claimLink}}" class="button">Schaden ansehen</a>
+</p>

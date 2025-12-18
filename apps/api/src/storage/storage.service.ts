@@ -101,6 +101,25 @@ export class StorageService implements OnModuleInit {
   }
 
   /**
+   * Download a file from MinIO storage as Buffer
+   */
+  async downloadFile(fileUrl: string): Promise<Buffer> {
+    const objectName = this.extractObjectName(fileUrl);
+    if (!objectName) {
+      throw new Error('Invalid file URL');
+    }
+
+    const chunks: Buffer[] = [];
+    const stream = await this.minioClient.getObject(this.bucketName, objectName);
+
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
+  }
+
+  /**
    * Build public URL for an object
    */
   private getPublicUrl(objectName: string): string {

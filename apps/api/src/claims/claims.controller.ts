@@ -172,6 +172,18 @@ export class ClaimsController {
   }
 
   /**
+   * POST /claims/:id/send - Send approved claim to insurer (Admin only)
+   */
+  @Post(':id/send')
+  async sendToInsurer(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Claim> {
+    const { id: userId, companyId, role } = req.user;
+    return this.claimsService.sendToInsurer(id, userId, companyId!, role);
+  }
+
+  /**
    * GET /claims/:id/comments - Get comments for a claim
    */
   @Get(':id/comments')

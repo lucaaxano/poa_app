@@ -1,0 +1,33 @@
+<h2>Neuer Kommentar</h2>
+
+<p>Hallo {{userName}},</p>
+
+<p>Es gibt einen neuen Kommentar zu Schaden <strong>{{claimNumber}}</strong>:</p>
+
+<div class="info-box">
+  <p><strong>{{commenterName}}</strong> schrieb:</p>
+  <blockquote style="margin: 10px 0; padding: 10px 15px; border-left: 3px solid #2563eb; background: #f8fafc;">
+    {{commentContent}}
+  </blockquote>
+  <p style="font-size: 12px; color: #6b7280;">{{commentedAt}}</p>
+</div>
+
+<h3>Schadendetails</h3>
+<table class="data-table">
+  <tr>
+    <th>Schadennummer</th>
+    <td>{{claimNumber}}</td>
+  </tr>
+  <tr>
+    <th>Fahrzeug</th>
+    <td>{{licensePlate}}</td>
+  </tr>
+  <tr>
+    <th>Status</th>
+    <td>{{status}}</td>
+  </tr>
+</table>
+
+<p style="text-align: center;">
+  <a href="{{claimLink}}" class="button">Zum Schaden</a>
+</p>

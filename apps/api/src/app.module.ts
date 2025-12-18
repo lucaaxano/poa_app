@@ -11,6 +11,7 @@ import { ClaimsModule } from './claims/claims.module';
 import { PoliciesModule } from './policies/policies.module';
 import { InsurersModule } from './insurers/insurers.module';
 import { StorageModule } from './storage/storage.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { StorageModule } from './storage/storage.module';
     }),
     PrismaModule,
     StorageModule,
+    EmailModule,
     AuthModule,
     UsersModule,
     CompaniesModule,

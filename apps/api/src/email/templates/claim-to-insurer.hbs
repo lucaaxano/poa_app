@@ -1,0 +1,165 @@
+<h2>Schadenmeldung</h2>
+
+<p>Sehr geehrte Damen und Herren,</p>
+
+<p>hiermit melden wir folgenden Schaden:</p>
+
+<h3>Vertragsdaten</h3>
+<table class="data-table">
+  <tr>
+    <th>Vertragsnummer</th>
+    <td>{{policyNumber}}</td>
+  </tr>
+  <tr>
+    <th>Versicherungsnehmer</th>
+    <td>{{companyName}}</td>
+  </tr>
+  {{#if companyAddress}}
+  <tr>
+    <th>Adresse</th>
+    <td>{{companyAddress}}</td>
+  </tr>
+  {{/if}}
+</table>
+
+<h3>Fahrzeugdaten</h3>
+<table class="data-table">
+  <tr>
+    <th>Kennzeichen</th>
+    <td><strong>{{licensePlate}}</strong></td>
+  </tr>
+  <tr>
+    <th>Marke / Modell</th>
+    <td>{{vehicleBrand}} {{vehicleModel}}</td>
+  </tr>
+  {{#if vehicleYear}}
+  <tr>
+    <th>Baujahr</th>
+    <td>{{vehicleYear}}</td>
+  </tr>
+  {{/if}}
+  {{#if vin}}
+  <tr>
+    <th>FIN</th>
+    <td>{{vin}}</td>
+  </tr>
+  {{/if}}
+</table>
+
+<h3>Schadendaten</h3>
+<table class="data-table">
+  <tr>
+    <th>Interne Schadennummer</th>
+    <td><strong>{{claimNumber}}</strong></td>
+  </tr>
+  <tr>
+    <th>Datum / Uhrzeit</th>
+    <td>{{accidentDate}}{{#if accidentTime}} um {{accidentTime}} Uhr{{/if}}</td>
+  </tr>
+  <tr>
+    <th>Unfallort</th>
+    <td>{{accidentLocation}}</td>
+  </tr>
+  <tr>
+    <th>Schadenart</th>
+    <td>{{damageCategory}}</td>
+  </tr>
+  {{#if damageSubcategory}}
+  <tr>
+    <th>Unterkategorie</th>
+    <td>{{damageSubcategory}}</td>
+  </tr>
+  {{/if}}
+</table>
+
+<h3>Hergang</h3>
+<div class="info-box">
+  {{description}}
+</div>
+
+<h3>Weitere Angaben</h3>
+<table class="data-table">
+  <tr>
+    <th>Polizei involviert</th>
+    <td>{{#if policeInvolved}}Ja{{#if policeFileNumber}} (Aktenzeichen: {{policeFileNumber}}){{/if}}{{else}}Nein{{/if}}</td>
+  </tr>
+  <tr>
+    <th>Personenschaden</th>
+    <td>{{#if hasInjuries}}Ja{{#if injuryDetails}} - {{injuryDetails}}{{/if}}{{else}}Nein{{/if}}</td>
+  </tr>
+  {{#if driverName}}
+  <tr>
+    <th>Fahrer</th>
+    <td>{{driverName}}</td>
+  </tr>
+  {{/if}}
+</table>
+
+{{#if thirdPartyInfo}}
+<h3>Unfallgegner</h3>
+<table class="data-table">
+  {{#if thirdPartyInfo.licensePlate}}
+  <tr>
+    <th>Kennzeichen</th>
+    <td>{{thirdPartyInfo.licensePlate}}</td>
+  </tr>
+  {{/if}}
+  {{#if thirdPartyInfo.driverName}}
+  <tr>
+    <th>Fahrer</th>
+    <td>{{thirdPartyInfo.driverName}}</td>
+  </tr>
+  {{/if}}
+  {{#if thirdPartyInfo.ownerName}}
+  <tr>
+    <th>Halter</th>
+    <td>{{thirdPartyInfo.ownerName}}</td>
+  </tr>
+  {{/if}}
+  {{#if thirdPartyInfo.insurerName}}
+  <tr>
+    <th>Versicherung</th>
+    <td>{{thirdPartyInfo.insurerName}}</td>
+  </tr>
+  {{/if}}
+  {{#if thirdPartyInfo.policyNumber}}
+  <tr>
+    <th>Versicherungsnummer</th>
+    <td>{{thirdPartyInfo.policyNumber}}</td>
+  </tr>
+  {{/if}}
+</table>
+{{/if}}
+
+{{#if witnessInfo}}
+<h3>Zeugen</h3>
+<div class="info-box">
+  {{#each witnessInfo}}
+  <p><strong>{{this.name}}</strong>{{#if this.phone}} - Tel: {{this.phone}}{{/if}}{{#if this.email}} - E-Mail: {{this.email}}{{/if}}</p>
+  {{/each}}
+</div>
+{{/if}}
+
+{{#if estimatedCost}}
+<h3>Geschätzte Kosten</h3>
+<p><strong>{{estimatedCost}} EUR</strong></p>
+{{/if}}
+
+{{#if hasAttachments}}
+<div class="info-box">
+  <strong>Hinweis:</strong> Im Anhang finden Sie {{attachmentCount}} Datei(en) zur Dokumentation des Schadens.
+</div>
+{{/if}}
+
+<p>Mit freundlichen Grüßen</p>
+<p>
+  <strong>{{reporterName}}</strong><br>
+  {{companyName}}
+</p>
+
+<hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+<p style="font-size: 12px; color: #6b7280;">
+  Diese Schadenmeldung wurde automatisch über POA (Point-of-Accident) erstellt.<br>
+  Bei Rückfragen erreichen Sie uns unter der angegebenen Kontaktadresse.
+</p>

@@ -4,12 +4,14 @@ import {
   ConflictException,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import { UserRole, User, Company } from '@poa/database';
 import {
   LoginDto,
@@ -69,11 +71,17 @@ export interface InvitationListItem {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  private readonly appUrl: string;
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+    private emailService: EmailService,
+  ) {
+    this.appUrl = this.configService.get<string>('APP_URL', 'http://localhost:3000');
+  }
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
     // Check if email already exists
@@ -263,9 +271,19 @@ export class AuthService {
       },
     });
 
-    // TODO: Send email with reset link
-    // For development, log the token
-    console.log(`Password reset token for ${dto.email}: ${token}`);
+    // Send password reset email
+    const resetLink = `${this.appUrl}/reset-password?token=${token}`;
+    const emailResult = await this.emailService.sendPasswordResetEmail(
+      user.email,
+      resetLink,
+      user.firstName,
+    );
+
+    if (emailResult.success) {
+      this.logger.log(`Password reset email sent to ${user.email}`);
+    } else {
+      this.logger.error(`Failed to send password reset email to ${user.email}: ${emailResult.error}`);
+    }
 
     return { message: 'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.' };
   }
@@ -363,8 +381,30 @@ export class AuthService {
       },
     });
 
-    // TODO: Send invitation email
-    console.log(`Invitation token for ${dto.email}: ${token}`);
+    // Get company and inviter info for email
+    const [company, inviter] = await Promise.all([
+      this.prisma.company.findUnique({ where: { id: companyId } }),
+      this.prisma.user.findUnique({ where: { id: invitedByUserId } }),
+    ]);
+
+    // Send invitation email
+    const invitationLink = `${this.appUrl}/accept-invitation?token=${token}`;
+    const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}` : 'Ein Administrator';
+    const companyName = company?.name || 'Unbekannte Firma';
+
+    const emailResult = await this.emailService.sendInvitationEmail(
+      dto.email,
+      invitationLink,
+      inviterName,
+      companyName,
+      role,
+    );
+
+    if (emailResult.success) {
+      this.logger.log(`Invitation email sent to ${dto.email}`);
+    } else {
+      this.logger.error(`Failed to send invitation email to ${dto.email}: ${emailResult.error}`);
+    }
 
     return {
       id: invitation.id,

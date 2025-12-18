@@ -1,0 +1,43 @@
+<h2>Neuer Schaden eingegangen</h2>
+
+<p>Hallo {{adminName}},</p>
+
+<p>ein neuer Schaden wurde zur Pruefung eingereicht:</p>
+
+<div class="info-box">
+  <table class="data-table">
+    <tr>
+      <th>Schadennummer</th>
+      <td><strong>{{claimNumber}}</strong></td>
+    </tr>
+    <tr>
+      <th>Fahrzeug</th>
+      <td>{{licensePlate}} ({{vehicleBrand}} {{vehicleModel}})</td>
+    </tr>
+    <tr>
+      <th>Unfalldatum</th>
+      <td>{{accidentDate}}</td>
+    </tr>
+    <tr>
+      <th>Schadenart</th>
+      <td>{{damageCategory}}</td>
+    </tr>
+    <tr>
+      <th>Gemeldet von</th>
+      <td>{{reporterName}}</td>
+    </tr>
+  </table>
+</div>
+
+{{#if description}}
+<h3>Beschreibung</h3>
+<p>{{description}}</p>
+{{/if}}
+
+<p style="text-align: center;">
+  <a href="{{claimLink}}" class="button">Schaden ansehen</a>
+</p>
+
+<p style="font-size: 12px; color: #6b7280;">
+  Bitte pruefen Sie den Schaden und genehmigen oder lehnen Sie ihn ab.
+</p>

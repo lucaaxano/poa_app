@@ -48,6 +48,7 @@ import {
   useApproveClaim,
   useRejectClaim,
   useSubmitClaim,
+  useSendClaim,
   useAddClaimComment,
   useUploadAttachment,
   useDeleteAttachment,
@@ -108,6 +109,7 @@ export default function ClaimDetailPage() {
   const approveMutation = useApproveClaim();
   const rejectMutation = useRejectClaim();
   const submitMutation = useSubmitClaim();
+  const sendMutation = useSendClaim();
   const addCommentMutation = useAddClaimComment();
   const uploadMutation = useUploadAttachment();
   const deleteMutation = useDeleteAttachment();
@@ -124,6 +126,7 @@ export default function ClaimDetailPage() {
   const canApprove = isAdmin && claim?.status === ClaimStatus.SUBMITTED;
   const canReject = isAdmin && claim?.status === ClaimStatus.SUBMITTED;
   const canSubmit = (isAdmin || isReporter) && claim?.status === ClaimStatus.DRAFT;
+  const canSend = isAdmin && claim?.status === ClaimStatus.APPROVED;
   const canEdit = (isAdmin || isReporter) &&
     (claim?.status === ClaimStatus.DRAFT || claim?.status === ClaimStatus.REJECTED);
 
@@ -151,6 +154,14 @@ export default function ClaimDetailPage() {
       await submitMutation.mutateAsync(claimId);
     } catch (error) {
       console.error('Error submitting claim:', error);
+    }
+  };
+
+  const handleSend = async () => {
+    try {
+      await sendMutation.mutateAsync(claimId);
+    } catch (error) {
+      console.error('Error sending claim to insurer:', error);
     }
   };
 
@@ -320,6 +331,20 @@ export default function ClaimDetailPage() {
             >
               <XCircle className="mr-2 h-4 w-4" />
               Ablehnen
+            </Button>
+          )}
+          {canSend && (
+            <Button
+              onClick={handleSend}
+              disabled={sendMutation.isPending}
+              className="rounded-xl bg-purple-600 hover:bg-purple-700"
+            >
+              {sendMutation.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-2 h-4 w-4" />
+              )}
+              An Versicherung senden
             </Button>
           )}
         </div>
@@ -669,7 +694,7 @@ export default function ClaimDetailPage() {
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {formatDateTime(event.createdAt)}
-                          {event.user && ` von ${event.user.firstName} ${event.user.lastName}`}
+                          {(event as any).user && ` von ${(event as any).user.firstName} ${(event as any).user.lastName}`}
                         </p>
                       </div>
                     </div>
