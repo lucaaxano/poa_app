@@ -13,6 +13,7 @@ import {
   Eye,
   Loader2,
   Filter,
+  Building2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useClaims } from '@/hooks/use-claims';
+import { useBrokerClaims } from '@/hooks/use-broker';
+import { useAuthStore } from '@/stores/auth-store';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
 
 const statusLabels: Record<ClaimStatus, string> = {
@@ -77,11 +80,24 @@ export default function ClaimsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const { data: claims, isLoading, error } = useClaims();
+  const { user, activeCompany } = useAuthStore();
+  const isBroker = user?.role === 'BROKER';
 
-  // Filter claims
-  const filteredClaims = claims?.filter((claim) => {
-    const matchesSearch =
+  // Use different hooks based on role
+  const { data: regularClaims, isLoading: isLoadingRegular, error: regularError } = useClaims();
+  const { data: brokerClaimsData, isLoading: isLoadingBroker, error: brokerError } = useBrokerClaims(
+    activeCompany ? { companyId: activeCompany.id, search } : { search }
+  );
+
+  // Select the right data based on role
+  const claims = isBroker ? brokerClaimsData?.data : regularClaims;
+  const isLoading = isBroker ? isLoadingBroker : isLoadingRegular;
+  const error = isBroker ? brokerError : regularError;
+
+  // Filter claims (client-side filtering for non-broker, broker uses server-side)
+  const filteredClaims = claims?.filter((claim: any) => {
+    // For broker, search is handled server-side
+    const matchesSearch = isBroker ? true :
       !search ||
       claim.claimNumber.toLowerCase().includes(search.toLowerCase()) ||
       claim.vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
@@ -119,15 +135,21 @@ export default function ClaimsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Schaeden</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihre Schadensmeldungen
+            {isBroker
+              ? activeCompany
+                ? `Schaeden von ${activeCompany.name}`
+                : 'Schaeden aller betreuten Firmen'
+              : 'Verwalten Sie Ihre Schadensmeldungen'}
           </p>
         </div>
-        <Link href={'/claims/new' as Route}>
-          <Button className="rounded-xl">
-            <Plus className="mr-2 h-4 w-4" />
-            Neuen Schaden melden
-          </Button>
-        </Link>
+        {!isBroker && (
+          <Link href={'/claims/new' as Route}>
+            <Button className="rounded-xl">
+              <Plus className="mr-2 h-4 w-4" />
+              Neuen Schaden melden
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -182,6 +204,8 @@ export default function ClaimsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Schadennummer</TableHead>
+                    {/* Company column for broker */}
+                    {isBroker && <TableHead>Firma</TableHead>}
                     <TableHead>Fahrzeug</TableHead>
                     <TableHead>Kategorie</TableHead>
                     <TableHead>Unfalldatum</TableHead>
@@ -192,7 +216,7 @@ export default function ClaimsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClaims.map((claim) => (
+                  {filteredClaims.map((claim: any) => (
                     <TableRow key={claim.id}>
                       <TableCell>
                         <Link
@@ -202,23 +226,32 @@ export default function ClaimsPage() {
                           {claim.claimNumber}
                         </Link>
                       </TableCell>
+                      {/* Company cell for broker */}
+                      {isBroker && (
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span>{claim.company?.name || '-'}</span>
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell>
-                        {claim.vehicle.licensePlate}
-                        {claim.vehicle.brand && (
+                        {claim.vehicle?.licensePlate || claim.vehicle}
+                        {claim.vehicle?.brand && (
                           <span className="text-muted-foreground text-sm ml-2">
                             ({claim.vehicle.brand} {claim.vehicle.model})
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>{damageCategoryLabels[claim.damageCategory]}</TableCell>
+                      <TableCell>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</TableCell>
                       <TableCell>{formatDate(claim.accidentDate)}</TableCell>
                       <TableCell>{formatCurrency(claim.estimatedCost)}</TableCell>
                       <TableCell>
-                        {claim.reporter.firstName} {claim.reporter.lastName}
+                        {claim.reporter?.firstName} {claim.reporter?.lastName}
                       </TableCell>
                       <TableCell>
-                        <Badge className={statusColors[claim.status]} variant="secondary">
-                          {statusLabels[claim.status]}
+                        <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
+                          {statusLabels[claim.status as ClaimStatus]}
                         </Badge>
                       </TableCell>
                       <TableCell>

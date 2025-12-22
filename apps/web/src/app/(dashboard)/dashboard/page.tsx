@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCompanyStats } from '@/hooks/use-company-stats';
 import { useRecentClaims } from '@/hooks/use-claims';
+import { useBrokerStats, useBrokerCompanyStats, useBrokerClaims } from '@/hooks/use-broker';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
 
 interface StatCardProps {
@@ -118,17 +119,45 @@ function getDamageCategoryLabel(category: DamageCategory): string {
 }
 
 export default function DashboardPage() {
-  const { user, company } = useAuthStore();
+  const { user, company, activeCompany } = useAuthStore();
   const isAdmin = user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPERADMIN';
+  const isBroker = user?.role === 'BROKER';
 
-  // Fetch data
-  const { data: stats, isLoading: isLoadingStats } = useCompanyStats();
+  // Fetch data for non-brokers
+  const { data: companyStats, isLoading: isLoadingCompanyStats } = useCompanyStats();
   const { data: recentClaims, isLoading: isLoadingClaims } = useRecentClaims(5);
+
+  // Fetch data for brokers
+  const { data: brokerAggregatedStats, isLoading: isLoadingBrokerStats } = useBrokerStats();
+  const { data: brokerCompanyStats, isLoading: isLoadingBrokerCompanyStats } = useBrokerCompanyStats(
+    activeCompany?.id || null
+  );
+  const { data: brokerClaims, isLoading: isLoadingBrokerClaims } = useBrokerClaims(
+    activeCompany ? { companyId: activeCompany.id, limit: 5 } : { limit: 5 }
+  );
+
+  // Determine which stats to use
+  const isLoadingStats = isBroker
+    ? (activeCompany ? isLoadingBrokerCompanyStats : isLoadingBrokerStats)
+    : isLoadingCompanyStats;
+
+  const stats = isBroker
+    ? (activeCompany ? brokerCompanyStats : brokerAggregatedStats)
+    : companyStats;
 
   // Calculate open claims (SUBMITTED + APPROVED)
   const openClaims = stats?.claimsByStatus
     ? (stats.claimsByStatus['SUBMITTED'] || 0) + (stats.claimsByStatus['APPROVED'] || 0)
     : 0;
+
+  // Get display name
+  const displayName = isBroker
+    ? (activeCompany ? activeCompany.name : 'alle betreuten Firmen')
+    : company?.name;
+
+  // Get claims to display
+  const claimsToShow = isBroker ? brokerClaims?.data : recentClaims;
+  const isClaimsLoading = isBroker ? isLoadingBrokerClaims : isLoadingClaims;
 
   return (
     <div className="space-y-8">
@@ -138,16 +167,31 @@ export default function DashboardPage() {
           Willkommen zurueck, {user?.firstName}!
         </h1>
         <p className="text-muted-foreground">
-          Hier ist eine Uebersicht ueber {company?.name}
+          {isBroker
+            ? `Hier ist eine Uebersicht ueber ${displayName}`
+            : isAdmin
+              ? `Hier ist eine Uebersicht ueber ${company?.name}`
+              : 'Hier ist eine Uebersicht ueber Ihre Schaeden'}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* For Broker: Show Companies count when viewing all */}
+        {isBroker && !activeCompany && (
+          <StatCard
+            title="Betreute Firmen"
+            value={(brokerAggregatedStats as any)?.totalCompanies ?? 0}
+            description="Firmen verknuepft"
+            icon={<Building2 className="h-5 w-5 text-indigo-600" />}
+            iconBg="bg-indigo-50"
+            isLoading={isLoadingBrokerStats}
+          />
+        )}
         <StatCard
           title="Offene Schaeden"
           value={openClaims}
-          description="Warten auf Bearbeitung"
+          description={isBroker ? 'Warten auf Bearbeitung' : isAdmin ? 'Warten auf Bearbeitung' : 'Ihre offenen Schaeden'}
           icon={<AlertCircle className="h-5 w-5 text-orange-600" />}
           iconBg="bg-orange-50"
           isLoading={isLoadingStats}
@@ -160,7 +204,7 @@ export default function DashboardPage() {
           iconBg="bg-primary/5"
           isLoading={isLoadingStats}
         />
-        {isAdmin && (
+        {(isAdmin || isBroker) && (
           <>
             <StatCard
               title="Fahrzeuge"
@@ -170,14 +214,17 @@ export default function DashboardPage() {
               iconBg="bg-blue-50"
               isLoading={isLoadingStats}
             />
-            <StatCard
-              title="Mitarbeiter"
-              value={stats?.totalUsers ?? 0}
-              description="Aktive Benutzer"
-              icon={<Users className="h-5 w-5 text-green-600" />}
-              iconBg="bg-green-50"
-              isLoading={isLoadingStats}
-            />
+            {/* Show users count only when company is selected or for admins */}
+            {(activeCompany || !isBroker) && (
+              <StatCard
+                title="Mitarbeiter"
+                value={stats?.totalUsers ?? 0}
+                description="Aktive Benutzer"
+                icon={<Users className="h-5 w-5 text-green-600" />}
+                iconBg="bg-green-50"
+                isLoading={isLoadingStats}
+              />
+            )}
           </>
         )}
       </div>
@@ -191,33 +238,44 @@ export default function DashboardPage() {
             <CardDescription>Haeufige Aktionen</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <QuickAction
-              icon={<Plus className="h-5 w-5" />}
-              title="Neuen Schaden melden"
-              description="Schaden erfassen und dokumentieren"
-              href={'/claims/new' as Route}
-            />
+            {/* Broker-specific actions */}
+            {isBroker && (
+              <QuickAction
+                icon={<Building2 className="h-5 w-5" />}
+                title="Firmen verwalten"
+                description="Betreute Firmen einsehen"
+                href={'/broker/companies' as Route}
+              />
+            )}
+            {!isBroker && (
+              <QuickAction
+                icon={<Plus className="h-5 w-5" />}
+                title="Neuen Schaden melden"
+                description="Schaden erfassen und dokumentieren"
+                href={'/claims/new' as Route}
+              />
+            )}
             <QuickAction
               icon={<FileWarning className="h-5 w-5" />}
               title="Alle Schaeden"
               description="Schaeden einsehen und verwalten"
               href={'/claims' as Route}
             />
+            {(isAdmin || isBroker) && (
+              <QuickAction
+                icon={<Car className="h-5 w-5" />}
+                title="Fahrzeuge"
+                description={isBroker ? 'Fahrzeuge einsehen' : 'Fuhrpark bearbeiten'}
+                href={'/vehicles' as Route}
+              />
+            )}
             {isAdmin && (
-              <>
-                <QuickAction
-                  icon={<Car className="h-5 w-5" />}
-                  title="Fahrzeuge verwalten"
-                  description="Fuhrpark bearbeiten"
-                  href={'/vehicles' as Route}
-                />
-                <QuickAction
-                  icon={<Users className="h-5 w-5" />}
-                  title="Benutzer verwalten"
-                  description="Team und Berechtigungen"
-                  href={'/settings/users' as Route}
-                />
-              </>
+              <QuickAction
+                icon={<Users className="h-5 w-5" />}
+                title="Benutzer verwalten"
+                description="Team und Berechtigungen"
+                href={'/settings/users' as Route}
+              />
             )}
           </CardContent>
         </Card>
@@ -227,7 +285,13 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Letzte Schaeden</CardTitle>
-              <CardDescription>Die neuesten Schadenmeldungen</CardDescription>
+              <CardDescription>
+                {isBroker && activeCompany
+                  ? `Neueste Schaeden von ${activeCompany.name}`
+                  : isBroker
+                    ? 'Neueste Schaeden aller Firmen'
+                    : 'Die neuesten Schadenmeldungen'}
+              </CardDescription>
             </div>
             <Link href={'/claims' as Route}>
               <Button variant="ghost" size="sm" className="text-primary">
@@ -237,13 +301,13 @@ export default function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            {isLoadingClaims ? (
+            {isClaimsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : recentClaims && recentClaims.length > 0 ? (
+            ) : claimsToShow && claimsToShow.length > 0 ? (
               <div className="space-y-3">
-                {recentClaims.map((claim) => (
+                {claimsToShow.map((claim: any) => (
                   <Link
                     key={claim.id}
                     href={`/claims/${claim.id}` as Route}
@@ -260,7 +324,14 @@ export default function DashboardPage() {
                             <StatusBadge status={claim.status} />
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{claim.vehicle.licensePlate}</span>
+                            {/* Show company name for broker */}
+                            {isBroker && claim.company && (
+                              <>
+                                <span className="font-medium text-foreground">{claim.company.name}</span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span>{claim.vehicle?.licensePlate || claim.vehicle}</span>
                             <span>•</span>
                             <span>{getDamageCategoryLabel(claim.damageCategory)}</span>
                             <span>•</span>
@@ -280,14 +351,18 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="font-medium">Noch keine Schaeden</h3>
                 <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-                  Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.
+                  {isBroker
+                    ? 'Es wurden noch keine Schaeden von den betreuten Firmen gemeldet.'
+                    : 'Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.'}
                 </p>
-                <Link href={'/claims/new' as Route} className="mt-6">
-                  <Button className="rounded-xl">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ersten Schaden melden
-                  </Button>
-                </Link>
+                {!isBroker && (
+                  <Link href={'/claims/new' as Route} className="mt-6">
+                    <Button className="rounded-xl">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ersten Schaden melden
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
           </CardContent>

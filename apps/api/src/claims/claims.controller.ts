@@ -12,6 +12,7 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  ForbiddenException,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -26,11 +27,38 @@ import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.i
 import { CreateClaimDto, UpdateClaimDto, ClaimFilterDto, RejectClaimDto } from './dto/claim.dto';
 import { CreateCommentDto } from './dto/comment.dto';
 import { UserRole, Claim, ClaimAttachment } from '@poa/database';
+import { BrokerService } from '../broker/broker.service';
 
 @Controller('claims')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ClaimsController {
-  constructor(private readonly claimsService: ClaimsService) {}
+  constructor(
+    private readonly claimsService: ClaimsService,
+    private readonly brokerService: BrokerService,
+  ) {}
+
+  /**
+   * Helper method to get companyId for claim access
+   * For Brokers: validates access to the claim's company
+   * For others: returns user's companyId
+   */
+  private async getCompanyIdForClaim(
+    claimId: string,
+    userId: string,
+    userCompanyId: string | null,
+    role: UserRole,
+  ): Promise<string> {
+    if (role === UserRole.BROKER) {
+      // Get claim's companyId and check broker access
+      const claim = await this.claimsService.findByIdWithCompanyId(claimId);
+      const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, claim.companyId);
+      if (!hasAccess) {
+        throw new ForbiddenException('Kein Zugriff auf diesen Schaden');
+      }
+      return claim.companyId;
+    }
+    return userCompanyId!;
+  }
 
   /**
    * GET /claims - List all claims for the company
@@ -70,6 +98,18 @@ export class ClaimsController {
     @Request() req: AuthenticatedRequest,
   ): Promise<ClaimDetail> {
     const { id: userId, companyId, role } = req.user;
+
+    // For Broker: Load claim and check access to the company
+    if (role === UserRole.BROKER) {
+      const claim = await this.claimsService.findByIdWithCompanyId(id);
+      const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, claim.companyId);
+      if (!hasAccess) {
+        throw new NotFoundException('Schaden nicht gefunden');
+      }
+      return claim;
+    }
+
+    // For other roles: use company filter
     const claim = await this.claimsService.findById(id, companyId!);
 
     // Employees can only view their own claims
@@ -131,7 +171,9 @@ export class ClaimsController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ): Promise<EventWithUser[]> {
-    return this.claimsService.getEvents(id, req.user.companyId!);
+    const { id: userId, companyId, role } = req.user;
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.getEvents(id, resolvedCompanyId);
   }
 
   /**
@@ -191,7 +233,9 @@ export class ClaimsController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ): Promise<CommentWithUser[]> {
-    return this.claimsService.getComments(id, req.user.companyId!);
+    const { id: userId, companyId, role } = req.user;
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.getComments(id, resolvedCompanyId);
   }
 
   /**
@@ -215,7 +259,9 @@ export class ClaimsController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ): Promise<ClaimAttachment[]> {
-    return this.claimsService.getAttachments(id, req.user.companyId!);
+    const { id: userId, companyId, role } = req.user;
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.getAttachments(id, resolvedCompanyId);
   }
 
   /**

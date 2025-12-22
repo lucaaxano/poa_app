@@ -26,6 +26,15 @@ export class UsersController {
     return this.usersService.findByCompanyId(req.user.companyId!);
   }
 
+  // Self-update endpoint - allows any authenticated user to update their own profile
+  @Patch('me')
+  async updateSelf(
+    @Body() updateUserDto: UpdateUserDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.usersService.update(req.user.id, req.user.companyId!, updateUserDto);
+  }
+
   // Specific routes MUST come before parameterized routes
   @Patch(':id/role')
   @UseGuards(RolesGuard)

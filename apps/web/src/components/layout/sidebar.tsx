@@ -36,6 +36,12 @@ const navItems: NavItem[] = [
     icon: <FileWarning className="h-5 w-5" />,
   },
   {
+    title: 'Firmen',
+    href: '/broker/companies' as Route,
+    icon: <Building2 className="h-5 w-5" />,
+    roles: ['BROKER'],
+  },
+  {
     title: 'Fahrzeuge',
     href: '/vehicles' as Route,
     icon: <Car className="h-5 w-5" />,

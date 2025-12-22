@@ -3,13 +3,15 @@ import type { Vehicle, CreateVehicleInput, UpdateVehicleInput } from '@poa/share
 
 // Vehicles API functions
 export const vehiclesApi = {
-  async getAll(): Promise<Vehicle[]> {
-    const response = await apiClient.get<Vehicle[]>('/vehicles');
+  async getAll(companyId?: string): Promise<Vehicle[]> {
+    const params = companyId ? { companyId } : {};
+    const response = await apiClient.get<Vehicle[]>('/vehicles', { params });
     return response.data;
   },
 
-  async getById(id: string): Promise<Vehicle> {
-    const response = await apiClient.get<Vehicle>(`/vehicles/${id}`);
+  async getById(id: string, companyId?: string): Promise<Vehicle> {
+    const params = companyId ? { companyId } : {};
+    const response = await apiClient.get<Vehicle>(`/vehicles/${id}`, { params });
     return response.data;
   },
 

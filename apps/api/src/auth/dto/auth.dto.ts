@@ -81,3 +81,13 @@ export class InviteUserDto {
   @IsEnum(['EMPLOYEE', 'COMPANY_ADMIN', 'BROKER'], { message: 'Ungueltige Rolle' })
   role: 'EMPLOYEE' | 'COMPANY_ADMIN' | 'BROKER';
 }
+
+export class ChangePasswordDto {
+  @IsString()
+  @MinLength(1, { message: 'Aktuelles Passwort ist erforderlich' })
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8, { message: 'Neues Passwort muss mindestens 8 Zeichen haben' })
+  newPassword: string;
+}

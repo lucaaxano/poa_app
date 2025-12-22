@@ -12,6 +12,7 @@ import { PoliciesModule } from './policies/policies.module';
 import { InsurersModule } from './insurers/insurers.module';
 import { StorageModule } from './storage/storage.module';
 import { EmailModule } from './email/email.module';
+import { BrokerModule } from './broker/broker.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { EmailModule } from './email/email.module';
     ClaimsModule,
     PoliciesModule,
     InsurersModule,
+    BrokerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

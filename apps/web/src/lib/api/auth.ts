@@ -103,4 +103,25 @@ export const authApi = {
     setTokens(tokens.accessToken, tokens.refreshToken);
     return response.data;
   },
+
+  async updateProfile(data: {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    position?: string;
+  }): Promise<User> {
+    const response = await apiClient.patch<User>('/users/me', data);
+    return response.data;
+  },
+
+  async changePassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const response = await apiClient.patch<{ message: string }>('/auth/change-password', {
+      currentPassword,
+      newPassword,
+    });
+    return response.data;
+  },
 };

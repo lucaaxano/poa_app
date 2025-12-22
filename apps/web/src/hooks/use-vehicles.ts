@@ -2,30 +2,43 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vehiclesApi } from '@/lib/api/vehicles';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Vehicle, CreateVehicleInput, UpdateVehicleInput } from '@poa/shared';
 
 // Query Keys
 export const vehicleKeys = {
   all: ['vehicles'] as const,
   lists: () => [...vehicleKeys.all, 'list'] as const,
-  list: (filters?: Record<string, unknown>) => [...vehicleKeys.lists(), filters] as const,
+  list: (companyId?: string) => [...vehicleKeys.lists(), { companyId }] as const,
   details: () => [...vehicleKeys.all, 'detail'] as const,
-  detail: (id: string) => [...vehicleKeys.details(), id] as const,
+  detail: (id: string, companyId?: string) => [...vehicleKeys.details(), id, { companyId }] as const,
 };
 
 // Hooks
 export function useVehicles() {
+  const { user, activeCompany } = useAuthStore();
+  const isBroker = user?.role === 'BROKER';
+
+  // For brokers: require activeCompany to be selected
+  const companyId = isBroker ? activeCompany?.id : undefined;
+  const enabled = !isBroker || !!activeCompany;
+
   return useQuery({
-    queryKey: vehicleKeys.lists(),
-    queryFn: vehiclesApi.getAll,
+    queryKey: vehicleKeys.list(companyId),
+    queryFn: () => vehiclesApi.getAll(companyId),
+    enabled,
   });
 }
 
 export function useVehicle(id: string) {
+  const { user, activeCompany } = useAuthStore();
+  const isBroker = user?.role === 'BROKER';
+  const companyId = isBroker ? activeCompany?.id : undefined;
+
   return useQuery({
-    queryKey: vehicleKeys.detail(id),
-    queryFn: () => vehiclesApi.getById(id),
-    enabled: !!id,
+    queryKey: vehicleKeys.detail(id, companyId),
+    queryFn: () => vehiclesApi.getById(id, companyId),
+    enabled: !!id && (!isBroker || !!activeCompany),
   });
 }
 

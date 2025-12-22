@@ -20,6 +20,7 @@ import {
   ResetPasswordDto,
   AcceptInvitationDto,
   InviteUserDto,
+  ChangePasswordDto,
 } from './dto/auth.dto';
 
 export interface AuthTokens {
@@ -526,5 +527,29 @@ export class AuthService {
     });
 
     return { message: 'Einladung wurde widerrufen' };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Benutzer nicht gefunden');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Aktuelles Passwort ist falsch');
+    }
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    return { message: 'Passwort wurde erfolgreich geaendert' };
   }
 }

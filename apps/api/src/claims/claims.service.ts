@@ -686,6 +686,75 @@ export class ClaimsService {
   }
 
   /**
+   * Find a single claim by ID without company filter (for Broker access)
+   * Returns the claim with its companyId for authorization check
+   */
+  async findByIdWithCompanyId(id: string): Promise<ClaimDetail & { companyId: string }> {
+    const claim = await this.prisma.claim.findUnique({
+      where: { id },
+      include: {
+        vehicle: true,
+        reporter: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        driver: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        policy: {
+          include: {
+            insurer: true,
+          },
+        },
+        attachments: {
+          orderBy: { createdAt: 'asc' },
+        },
+        events: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        comments: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatarUrl: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!claim) {
+      throw new NotFoundException('Schaden nicht gefunden');
+    }
+
+    return claim as ClaimDetail & { companyId: string };
+  }
+
+  /**
    * Create a claim event for audit logging
    */
   async createEvent(

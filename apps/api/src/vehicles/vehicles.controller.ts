@@ -6,8 +6,11 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   Request,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -15,15 +18,39 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicle.dto';
+import { BrokerService } from '../broker/broker.service';
+import { UserRole } from '@poa/database';
 
 @Controller('vehicles')
 @UseGuards(JwtAuthGuard)
 export class VehiclesController {
-  constructor(private readonly vehiclesService: VehiclesService) {}
+  constructor(
+    private readonly vehiclesService: VehiclesService,
+    private readonly brokerService: BrokerService,
+  ) {}
 
   @Get()
-  async findAll(@Request() req: AuthenticatedRequest) {
-    return this.vehiclesService.findByCompanyId(req.user.companyId!);
+  async findAll(
+    @Request() req: AuthenticatedRequest,
+    @Query('companyId') companyId?: string,
+  ) {
+    const { companyId: userCompanyId, role, id: userId } = req.user;
+
+    // For Broker: companyId is required from query params
+    if (role === UserRole.BROKER) {
+      if (!companyId) {
+        throw new BadRequestException('companyId ist erforderlich fuer Broker');
+      }
+      // Check if broker has access to this company
+      const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, companyId);
+      if (!hasAccess) {
+        throw new ForbiddenException('Kein Zugriff auf diese Firma');
+      }
+      return this.vehiclesService.findByCompanyId(companyId);
+    }
+
+    // For other roles: use their company
+    return this.vehiclesService.findByCompanyId(userCompanyId!);
   }
 
   @Post()
@@ -52,8 +79,27 @@ export class VehiclesController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-    return this.vehiclesService.findById(id, req.user.companyId!);
+  async findOne(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+    @Query('companyId') companyId?: string,
+  ) {
+    const { companyId: userCompanyId, role, id: userId } = req.user;
+
+    // For Broker: companyId is required from query params
+    if (role === UserRole.BROKER) {
+      if (!companyId) {
+        throw new BadRequestException('companyId ist erforderlich fuer Broker');
+      }
+      // Check if broker has access to this company
+      const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, companyId);
+      if (!hasAccess) {
+        throw new ForbiddenException('Kein Zugriff auf diese Firma');
+      }
+      return this.vehiclesService.findById(id, companyId);
+    }
+
+    return this.vehiclesService.findById(id, userCompanyId!);
   }
 
   @Patch(':id')

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Plus, Search, Car, MoreHorizontal, Pencil, Archive, ArchiveRestore, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Search, Car, MoreHorizontal, Pencil, Archive, ArchiveRestore, Trash2, Loader2, Building2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useVehicles, useDeactivateVehicle, useActivateVehicle, useDeleteVehicle } from '@/hooks/use-vehicles';
+import { useAuthStore } from '@/stores/auth-store';
 import { VehicleType } from '@poa/shared';
 import type { Vehicle } from '@poa/shared';
 import { toast } from 'sonner';
@@ -50,10 +51,34 @@ export default function VehiclesPage() {
   const [hideInactive, setHideInactive] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
+  const { user, activeCompany } = useAuthStore();
+  const isBroker = user?.role === 'BROKER';
+  const canManageVehicles = user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPERADMIN';
+
   const { data: vehicles, isLoading, error } = useVehicles();
   const deactivateVehicle = useDeactivateVehicle();
   const activateVehicle = useActivateVehicle();
   const deleteVehicle = useDeleteVehicle();
+
+  // Broker must select a company first
+  if (isBroker && !activeCompany) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+          <Building2 className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="font-medium">Keine Firma ausgewaehlt</h3>
+        <p className="mt-1 text-sm text-muted-foreground max-w-xs">
+          Bitte waehlen Sie zuerst eine Firma aus, um deren Fahrzeuge anzuzeigen.
+        </p>
+        <Link href={'/broker/companies' as Route} className="mt-6">
+          <Button className="rounded-xl">
+            Firma auswaehlen
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
   // Filter vehicles
   const filteredVehicles = vehicles?.filter((vehicle) => {
@@ -118,15 +143,19 @@ export default function VehiclesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fahrzeuge</h1>
           <p className="text-muted-foreground">
-            Verwalten Sie Ihren Fuhrpark
+            {isBroker && activeCompany
+              ? `Fahrzeuge von ${activeCompany.name}`
+              : 'Verwalten Sie Ihren Fuhrpark'}
           </p>
         </div>
-        <Link href={'/vehicles/new' as Route}>
-          <Button className="rounded-xl">
-            <Plus className="mr-2 h-4 w-4" />
-            Neues Fahrzeug
-          </Button>
-        </Link>
+        {canManageVehicles && (
+          <Link href={'/vehicles/new' as Route}>
+            <Button className="rounded-xl">
+              <Plus className="mr-2 h-4 w-4" />
+              Neues Fahrzeug
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filters */}
@@ -177,7 +206,7 @@ export default function VehiclesPage() {
                     <TableHead>Int. Name</TableHead>
                     <TableHead>Baujahr</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    {canManageVehicles && <TableHead className="w-[50px]"></TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -210,52 +239,54 @@ export default function VehiclesPage() {
                           {vehicle.isActive ? 'Aktiv' : 'Inaktiv'}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/vehicles/${vehicle.id}` as Route}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Bearbeiten
-                              </Link>
-                            </DropdownMenuItem>
-                            {vehicle.isActive ? (
-                              <DropdownMenuItem
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  handleDeactivate(vehicle.id);
-                                }}
-                              >
-                                <Archive className="mr-2 h-4 w-4" />
-                                Deaktivieren
+                      {canManageVehicles && (
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/vehicles/${vehicle.id}` as Route}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Bearbeiten
+                                </Link>
                               </DropdownMenuItem>
-                            ) : (
+                              {vehicle.isActive ? (
+                                <DropdownMenuItem
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleDeactivate(vehicle.id);
+                                  }}
+                                >
+                                  <Archive className="mr-2 h-4 w-4" />
+                                  Deaktivieren
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleActivate(vehicle.id);
+                                  }}
+                                >
+                                  <ArchiveRestore className="mr-2 h-4 w-4" />
+                                  Aktivieren
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onSelect={(e) => {
-                                  e.preventDefault();
-                                  handleActivate(vehicle.id);
-                                }}
+                                className="text-red-600 focus:text-red-600"
+                                onSelect={() => setVehicleToDelete(vehicle)}
                               >
-                                <ArchiveRestore className="mr-2 h-4 w-4" />
-                                Aktivieren
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Loeschen
                               </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onSelect={() => setVehicleToDelete(vehicle)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Loeschen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -272,7 +303,7 @@ export default function VehiclesPage() {
                   ? 'Keine Fahrzeuge entsprechen Ihrer Suche.'
                   : 'Erstellen Sie Ihr erstes Fahrzeug.'}
               </p>
-              {!search && (
+              {!search && canManageVehicles && (
                 <Link href={'/vehicles/new' as Route} className="mt-6">
                   <Button className="rounded-xl">
                     <Plus className="mr-2 h-4 w-4" />

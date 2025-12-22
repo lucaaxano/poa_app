@@ -4,6 +4,8 @@ import { Bell, Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from './user-menu';
+import { CompanySwitcher } from '@/components/broker/company-switcher';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -11,6 +13,9 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
+  const { user } = useAuthStore();
+  const isBroker = user?.role === 'BROKER';
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/80 backdrop-blur-lg px-4 sm:px-6">
       <div className="flex items-center gap-4">
@@ -24,6 +29,13 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             <Menu className="h-5 w-5" />
             <span className="sr-only">Menu oeffnen</span>
           </Button>
+        )}
+
+        {/* Company Switcher for Broker - Visible on all screen sizes */}
+        {isBroker && (
+          <div className="w-48 sm:w-56">
+            <CompanySwitcher />
+          </div>
         )}
 
         {/* Search - Hidden on mobile */}
