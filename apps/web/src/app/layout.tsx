@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
+import { PageLoadingIndicator } from '@/components/ui/page-loading-indicator';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className={inter.className}>
+        <PageLoadingIndicator />
         <QueryProvider>
           <AuthProvider>
             {children}

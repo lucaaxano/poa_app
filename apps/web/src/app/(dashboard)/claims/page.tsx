@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import {
   Select,
   SelectContent,
@@ -200,9 +201,7 @@ export default function ClaimsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableSkeleton columns={isBroker ? 9 : 8} rows={6} />
           ) : filteredClaims && filteredClaims.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
@@ -262,7 +261,7 @@ export default function ClaimsPage() {
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Aktionen">
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

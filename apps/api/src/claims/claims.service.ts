@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { EmailService } from '../email/email.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 import {
   Claim,
   Vehicle,
@@ -22,6 +24,7 @@ import {
   FileType,
   UserRole,
   DamageCategory,
+  NotificationType,
   Prisma,
 } from '@poa/database';
 import { CreateClaimDto, UpdateClaimDto, ClaimFilterDto } from './dto/claim.dto';
@@ -92,6 +95,8 @@ export class ClaimsService {
     private prisma: PrismaService,
     private storageService: StorageService,
     private emailService: EmailService,
+    private notificationsService: NotificationsService,
+    private usersService: UsersService,
     private configService: ConfigService,
   ) {
     this.appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
@@ -224,7 +229,7 @@ export class ClaimsService {
           role: { in: [UserRole.COMPANY_ADMIN, UserRole.BROKER] },
           isActive: true,
         },
-        select: { email: true, firstName: true },
+        select: { id: true, email: true, firstName: true },
       });
 
       const damageCategoryMap: Record<DamageCategory, string> = {
@@ -238,20 +243,35 @@ export class ClaimsService {
         [DamageCategory.OTHER]: 'Sonstiges',
       };
 
+      // Create in-app notifications for admins
+      const adminIds = admins.map(a => a.id);
+      const reporterName = reporter ? `${reporter.firstName} ${reporter.lastName}` : 'Unbekannt';
+      await this.notificationsService.createForUsers(
+        adminIds,
+        NotificationType.NEW_CLAIM,
+        'Neuer Schaden eingegangen',
+        `${reporterName} hat einen neuen Schaden gemeldet: ${vehicle.licensePlate} - ${damageCategoryMap[dto.damageCategory] || dto.damageCategory}`,
+        { claimId: claim.id, claimNumber: claim.claimNumber },
+      );
+
       for (const admin of admins) {
         try {
-          await this.emailService.sendClaimNotification(admin.email, 'submitted', {
-            adminName: admin.firstName,
-            claimNumber: claim.claimNumber,
-            licensePlate: vehicle.licensePlate,
-            vehicleBrand: vehicle.brand || '',
-            vehicleModel: vehicle.model || '',
-            accidentDate: new Date(dto.accidentDate).toLocaleDateString('de-DE'),
-            damageCategory: damageCategoryMap[dto.damageCategory] || dto.damageCategory,
-            reporterName: reporter ? `${reporter.firstName} ${reporter.lastName}` : 'Unbekannt',
-            description: dto.description || null,
-            claimLink: `${this.appUrl}/claims/${claim.id}`,
-          });
+          // Check if admin wants to receive this type of email
+          const shouldSend = await this.usersService.shouldSendEmail(admin.id, 'newClaim');
+          if (shouldSend) {
+            await this.emailService.sendClaimNotification(admin.email, 'submitted', {
+              adminName: admin.firstName,
+              claimNumber: claim.claimNumber,
+              licensePlate: vehicle.licensePlate,
+              vehicleBrand: vehicle.brand || '',
+              vehicleModel: vehicle.model || '',
+              accidentDate: new Date(dto.accidentDate).toLocaleDateString('de-DE'),
+              damageCategory: damageCategoryMap[dto.damageCategory] || dto.damageCategory,
+              reporterName,
+              description: dto.description || null,
+              claimLink: `${this.appUrl}/claims/${claim.id}`,
+            });
+          }
         } catch (error) {
           this.logger.warn(`Failed to send submit notification to ${admin.email}: ${error.message}`);
         }
@@ -870,7 +890,7 @@ export class ClaimsService {
         role: { in: [UserRole.COMPANY_ADMIN, UserRole.BROKER] },
         isActive: true,
       },
-      select: { email: true, firstName: true },
+      select: { id: true, email: true, firstName: true },
     });
 
     const damageCategoryMap: Record<DamageCategory, string> = {
@@ -884,20 +904,35 @@ export class ClaimsService {
       [DamageCategory.OTHER]: 'Sonstiges',
     };
 
+    // Create in-app notifications for admins
+    const adminIds = admins.map(a => a.id);
+    const reporterName = `${claim.reporter.firstName} ${claim.reporter.lastName}`;
+    await this.notificationsService.createForUsers(
+      adminIds,
+      NotificationType.NEW_CLAIM,
+      'Neuer Schaden eingegangen',
+      `${reporterName} hat einen neuen Schaden gemeldet: ${claim.vehicle.licensePlate} - ${damageCategoryMap[claim.damageCategory] || claim.damageCategory}`,
+      { claimId: id, claimNumber: claim.claimNumber },
+    );
+
     for (const admin of admins) {
       try {
-        await this.emailService.sendClaimNotification(admin.email, 'submitted', {
-          adminName: admin.firstName,
-          claimNumber: claim.claimNumber,
-          licensePlate: claim.vehicle.licensePlate,
-          vehicleBrand: claim.vehicle.brand || '',
-          vehicleModel: claim.vehicle.model || '',
-          accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
-          damageCategory: damageCategoryMap[claim.damageCategory] || claim.damageCategory,
-          reporterName: `${claim.reporter.firstName} ${claim.reporter.lastName}`,
-          description: claim.description || null,
-          claimLink: `${this.appUrl}/claims/${id}`,
-        });
+        // Check if admin wants to receive this type of email
+        const shouldSend = await this.usersService.shouldSendEmail(admin.id, 'newClaim');
+        if (shouldSend) {
+          await this.emailService.sendClaimNotification(admin.email, 'submitted', {
+            adminName: admin.firstName,
+            claimNumber: claim.claimNumber,
+            licensePlate: claim.vehicle.licensePlate,
+            vehicleBrand: claim.vehicle.brand || '',
+            vehicleModel: claim.vehicle.model || '',
+            accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+            damageCategory: damageCategoryMap[claim.damageCategory] || claim.damageCategory,
+            reporterName,
+            description: claim.description || null,
+            claimLink: `${this.appUrl}/claims/${id}`,
+          });
+        }
       } catch (error) {
         this.logger.warn(`Failed to send submit notification to ${admin.email}: ${error.message}`);
       }
@@ -926,6 +961,7 @@ export class ClaimsService {
         vehicle: true,
         reporter: {
           select: {
+            id: true,
             email: true,
             firstName: true,
             lastName: true,
@@ -966,23 +1002,36 @@ export class ClaimsService {
       { status: ClaimStatus.APPROVED },
     );
 
-    // Send notification email to reporter
+    // Create in-app notification for reporter
+    const approverName = approver ? `${approver.firstName} ${approver.lastName}` : 'Administrator';
+    await this.notificationsService.create({
+      userId: claim.reporter.id,
+      type: NotificationType.CLAIM_APPROVED,
+      title: 'Schaden freigegeben',
+      message: `Ihr Schaden ${claim.claimNumber} wurde von ${approverName} freigegeben.`,
+      data: { claimId: id, claimNumber: claim.claimNumber },
+    });
+
+    // Send notification email to reporter (if they want it)
     try {
-      await this.emailService.sendClaimNotification(claim.reporter.email, 'approved', {
-        userName: claim.reporter.firstName,
-        claimNumber: claim.claimNumber,
-        licensePlate: claim.vehicle.licensePlate,
-        accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
-        approverName: approver ? `${approver.firstName} ${approver.lastName}` : 'Administrator',
-        approvedAt: new Date().toLocaleDateString('de-DE', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        claimLink: `${this.appUrl}/claims/${id}`,
-      });
+      const shouldSend = await this.usersService.shouldSendEmail(claim.reporter.id, 'claimApproved');
+      if (shouldSend) {
+        await this.emailService.sendClaimNotification(claim.reporter.email, 'approved', {
+          userName: claim.reporter.firstName,
+          claimNumber: claim.claimNumber,
+          licensePlate: claim.vehicle.licensePlate,
+          accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+          approverName,
+          approvedAt: new Date().toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          claimLink: `${this.appUrl}/claims/${id}`,
+        });
+      }
     } catch (error) {
       this.logger.warn(`Failed to send approval notification: ${error.message}`);
     }
@@ -1011,6 +1060,7 @@ export class ClaimsService {
         vehicle: true,
         reporter: {
           select: {
+            id: true,
             email: true,
             firstName: true,
             lastName: true,
@@ -1054,24 +1104,37 @@ export class ClaimsService {
       { status: ClaimStatus.REJECTED, rejectionReason: reason },
     );
 
-    // Send notification email to reporter
+    // Create in-app notification for reporter
+    const rejectorName = rejector ? `${rejector.firstName} ${rejector.lastName}` : 'Administrator';
+    await this.notificationsService.create({
+      userId: claim.reporter.id,
+      type: NotificationType.CLAIM_REJECTED,
+      title: 'Schaden abgelehnt',
+      message: `Ihr Schaden ${claim.claimNumber} wurde von ${rejectorName} abgelehnt. Grund: ${reason}`,
+      data: { claimId: id, claimNumber: claim.claimNumber },
+    });
+
+    // Send notification email to reporter (if they want it)
     try {
-      await this.emailService.sendClaimNotification(claim.reporter.email, 'rejected', {
-        userName: claim.reporter.firstName,
-        claimNumber: claim.claimNumber,
-        licensePlate: claim.vehicle.licensePlate,
-        accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
-        rejectorName: rejector ? `${rejector.firstName} ${rejector.lastName}` : 'Administrator',
-        rejectedAt: new Date().toLocaleDateString('de-DE', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        rejectionReason: reason,
-        claimLink: `${this.appUrl}/claims/${id}`,
-      });
+      const shouldSend = await this.usersService.shouldSendEmail(claim.reporter.id, 'claimRejected');
+      if (shouldSend) {
+        await this.emailService.sendClaimNotification(claim.reporter.email, 'rejected', {
+          userName: claim.reporter.firstName,
+          claimNumber: claim.claimNumber,
+          licensePlate: claim.vehicle.licensePlate,
+          accidentDate: new Date(claim.accidentDate).toLocaleDateString('de-DE'),
+          rejectorName,
+          rejectedAt: new Date().toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          rejectionReason: reason,
+          claimLink: `${this.appUrl}/claims/${id}`,
+        });
+      }
     } catch (error) {
       this.logger.warn(`Failed to send rejection notification: ${error.message}`);
     }
@@ -1372,11 +1435,12 @@ export class ClaimsService {
     );
 
     // Determine recipients for notification (reporter + admins, excluding commenter)
-    const recipients: Array<{ email: string; firstName: string }> = [];
+    const recipients: Array<{ id: string; email: string; firstName: string }> = [];
 
     // Add reporter if not the commenter
     if (claim.reporter.id !== userId) {
       recipients.push({
+        id: claim.reporter.id,
         email: claim.reporter.email,
         firstName: claim.reporter.firstName,
       });
@@ -1390,7 +1454,7 @@ export class ClaimsService {
         isActive: true,
         id: { not: userId },
       },
-      select: { email: true, firstName: true },
+      select: { id: true, email: true, firstName: true },
     });
 
     for (const admin of admins) {
@@ -1400,25 +1464,39 @@ export class ClaimsService {
       }
     }
 
-    // Send notification emails
+    // Create in-app notifications
+    const commenterName = `${comment.user.firstName} ${comment.user.lastName}`;
+    const recipientIds = recipients.map(r => r.id);
+    await this.notificationsService.createForUsers(
+      recipientIds,
+      NotificationType.NEW_COMMENT,
+      'Neuer Kommentar',
+      `${commenterName} hat einen Kommentar zu Schaden ${claim.claimNumber} hinzugefuegt.`,
+      { claimId, claimNumber: claim.claimNumber },
+    );
+
+    // Send notification emails (respecting user preferences)
     for (const recipient of recipients) {
       try {
-        await this.emailService.sendNewCommentNotification(recipient.email, {
-          userName: recipient.firstName,
-          claimNumber: claim.claimNumber,
-          licensePlate: claim.vehicle.licensePlate,
-          status: claim.status,
-          commenterName: `${comment.user.firstName} ${comment.user.lastName}`,
-          commentContent: content,
-          commentedAt: new Date().toLocaleDateString('de-DE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          claimLink: `${this.appUrl}/claims/${claimId}`,
-        });
+        const shouldSend = await this.usersService.shouldSendEmail(recipient.id, 'newComment');
+        if (shouldSend) {
+          await this.emailService.sendNewCommentNotification(recipient.email, {
+            userName: recipient.firstName,
+            claimNumber: claim.claimNumber,
+            licensePlate: claim.vehicle.licensePlate,
+            status: claim.status,
+            commenterName,
+            commentContent: content,
+            commentedAt: new Date().toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            claimLink: `${this.appUrl}/claims/${claimId}`,
+          });
+        }
       } catch (error) {
         this.logger.warn(`Failed to send comment notification to ${recipient.email}: ${error.message}`);
       }

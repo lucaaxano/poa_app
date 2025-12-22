@@ -15,6 +15,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { UpdateUserDto, UpdateUserRoleDto } from './dto/user.dto';
+import { NotificationSettingsDto } from './dto/notification-settings.dto';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +34,21 @@ export class UsersController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.usersService.update(req.user.id, req.user.companyId!, updateUserDto);
+  }
+
+  // Get notification settings for current user
+  @Get('me/notification-settings')
+  async getNotificationSettings(@Request() req: AuthenticatedRequest) {
+    return this.usersService.getNotificationSettings(req.user.id);
+  }
+
+  // Update notification settings for current user
+  @Patch('me/notification-settings')
+  async updateNotificationSettings(
+    @Body() dto: NotificationSettingsDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.usersService.updateNotificationSettings(req.user.id, dto);
   }
 
   // Specific routes MUST come before parameterized routes

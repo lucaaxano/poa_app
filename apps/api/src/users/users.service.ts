@@ -1,7 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserRole, Company } from '@poa/database';
+import { UserRole, Company, Prisma } from '@poa/database';
 import { UpdateUserDto } from './dto/user.dto';
+import {
+  NotificationSettingsDto,
+  NotificationSettingsResponseDto,
+  DEFAULT_NOTIFICATION_SETTINGS,
+} from './dto/notification-settings.dto';
 
 export interface UserListItem {
   id: string;
@@ -239,5 +244,85 @@ export class UsersService {
     await this.prisma.user.delete({
       where: { id },
     });
+  }
+
+  /**
+   * Get notification settings for a user
+   */
+  async getNotificationSettings(userId: string): Promise<NotificationSettingsResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationSettings: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Benutzer nicht gefunden');
+    }
+
+    // Merge stored settings with defaults
+    const storedSettings = (user.notificationSettings || {}) as Partial<NotificationSettingsResponseDto>;
+    const storedEmail: Partial<NotificationSettingsResponseDto['email']> = storedSettings.email || {};
+
+    return {
+      email: {
+        newClaim: storedEmail.newClaim ?? DEFAULT_NOTIFICATION_SETTINGS.email.newClaim,
+        claimApproved: storedEmail.claimApproved ?? DEFAULT_NOTIFICATION_SETTINGS.email.claimApproved,
+        claimRejected: storedEmail.claimRejected ?? DEFAULT_NOTIFICATION_SETTINGS.email.claimRejected,
+        newComment: storedEmail.newComment ?? DEFAULT_NOTIFICATION_SETTINGS.email.newComment,
+        invitation: storedEmail.invitation ?? DEFAULT_NOTIFICATION_SETTINGS.email.invitation,
+      },
+      digestMode: storedSettings.digestMode ?? DEFAULT_NOTIFICATION_SETTINGS.digestMode,
+    };
+  }
+
+  /**
+   * Update notification settings for a user
+   */
+  async updateNotificationSettings(
+    userId: string,
+    dto: NotificationSettingsDto,
+  ): Promise<NotificationSettingsResponseDto> {
+    // Get current settings
+    const currentSettings = await this.getNotificationSettings(userId);
+
+    // Merge with new settings
+    const updatedSettings: NotificationSettingsResponseDto = {
+      email: {
+        newClaim: dto.email?.newClaim ?? currentSettings.email.newClaim,
+        claimApproved: dto.email?.claimApproved ?? currentSettings.email.claimApproved,
+        claimRejected: dto.email?.claimRejected ?? currentSettings.email.claimRejected,
+        newComment: dto.email?.newComment ?? currentSettings.email.newComment,
+        invitation: dto.email?.invitation ?? currentSettings.email.invitation,
+      },
+      digestMode: dto.digestMode ?? currentSettings.digestMode,
+    };
+
+    // Update in database
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        notificationSettings: updatedSettings as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    return updatedSettings;
+  }
+
+  /**
+   * Check if a user should receive email for a specific notification type
+   */
+  async shouldSendEmail(
+    userId: string,
+    notificationType: 'newClaim' | 'claimApproved' | 'claimRejected' | 'newComment' | 'invitation',
+  ): Promise<boolean> {
+    const settings = await this.getNotificationSettings(userId);
+
+    // Check if digest mode is "none" - no emails at all
+    if (settings.digestMode === 'none') {
+      return false;
+    }
+
+    // Check specific email setting
+    return settings.email[notificationType] ?? true;
   }
 }

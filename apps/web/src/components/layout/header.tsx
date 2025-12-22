@@ -1,10 +1,11 @@
 'use client';
 
-import { Bell, Menu, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { UserMenu } from './user-menu';
 import { CompanySwitcher } from '@/components/broker/company-switcher';
+import { NotificationDropdown } from '@/components/notifications';
 import { useAuthStore } from '@/stores/auth-store';
 
 interface HeaderProps {
@@ -49,15 +50,8 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Notification Bell */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-xl h-10 w-10"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">Benachrichtigungen</span>
-        </Button>
+        {/* Notification Dropdown */}
+        <NotificationDropdown />
 
         {/* User Menu */}
         <UserMenu />

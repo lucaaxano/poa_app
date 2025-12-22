@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, ArrowRight } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const settingsCards = [
@@ -23,6 +23,12 @@ const settingsCards = [
     href: '/settings/policies',
     icon: FileText,
     description: 'Verwalten Sie Ihre Versicherungspolicen und Versicherer.',
+  },
+  {
+    title: 'Benachrichtigungen',
+    href: '/settings/notifications',
+    icon: Bell,
+    description: 'Verwalten Sie Ihre E-Mail-Benachrichtigungseinstellungen.',
   },
 ];
 

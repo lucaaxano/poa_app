@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { TableSkeleton } from '@/components/ui/table-skeleton';
 import {
   Tabs,
   TabsContent,
@@ -186,9 +187,7 @@ export default function UsersSettingsPage() {
             </CardHeader>
             <CardContent>
               {isLoadingUsers ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
+                <TableSkeleton columns={5} rows={5} />
               ) : filteredUsers && filteredUsers.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
@@ -239,7 +238,7 @@ export default function UsersSettingsPage() {
                             {user.id !== currentUser?.id && user.role !== 'SUPERADMIN' && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Benutzeraktionen">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2, Building2, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCompanyStats } from '@/hooks/use-company-stats';
@@ -36,9 +37,9 @@ function StatCard({ title, value, description, icon, iconBg, isLoading, trend }:
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <span className="text-muted-foreground">Laden...</span>
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-16" />
+            <Skeleton className="h-4 w-24" />
           </div>
         ) : (
           <>

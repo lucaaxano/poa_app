@@ -36,6 +36,27 @@ export interface UpdateUserRoleInput {
   role: UserRole;
 }
 
+// Notification Settings Types
+export type DigestMode = 'instant' | 'daily' | 'none';
+
+export interface EmailNotificationSettings {
+  newClaim: boolean;
+  claimApproved: boolean;
+  claimRejected: boolean;
+  newComment: boolean;
+  invitation: boolean;
+}
+
+export interface NotificationSettings {
+  email: EmailNotificationSettings;
+  digestMode: DigestMode;
+}
+
+export interface UpdateNotificationSettingsInput {
+  email?: Partial<EmailNotificationSettings>;
+  digestMode?: DigestMode;
+}
+
 // Users API functions
 export const usersApi = {
   async getAll(): Promise<UserListItem[]> {
@@ -70,6 +91,17 @@ export const usersApi = {
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/users/${id}`);
+  },
+
+  // Notification Settings
+  async getNotificationSettings(): Promise<NotificationSettings> {
+    const response = await apiClient.get<NotificationSettings>('/users/me/notification-settings');
+    return response.data;
+  },
+
+  async updateNotificationSettings(data: UpdateNotificationSettingsInput): Promise<NotificationSettings> {
+    const response = await apiClient.patch<NotificationSettings>('/users/me/notification-settings', data);
+    return response.data;
   },
 };
 
