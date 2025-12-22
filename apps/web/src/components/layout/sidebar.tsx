@@ -14,6 +14,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -34,6 +35,12 @@ const navItems: NavItem[] = [
     title: 'Schaeden',
     href: '/claims' as Route,
     icon: <FileWarning className="h-5 w-5" />,
+  },
+  {
+    title: 'Auswertungen',
+    href: '/reports' as Route,
+    icon: <BarChart3 className="h-5 w-5" />,
+    roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
     title: 'Firmen',

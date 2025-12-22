@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2, Building2 } from 'lucide-react';
+import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2, Building2, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
@@ -10,6 +10,7 @@ import { useCompanyStats } from '@/hooks/use-company-stats';
 import { useRecentClaims } from '@/hooks/use-claims';
 import { useBrokerStats, useBrokerCompanyStats, useBrokerClaims } from '@/hooks/use-broker';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
+import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge } from '@/components/charts';
 
 interface StatCardProps {
   title: string;
@@ -228,6 +229,77 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {/* Charts Section - Only for Admins and Brokers */}
+      {(isAdmin || isBroker) && !activeCompany && (
+        <div className="space-y-6">
+          {/* Timeline Chart - Full Width */}
+          <TimelineChart
+            period="month"
+            range={12}
+            title="Schadenentwicklung (12 Monate)"
+            className="rounded-2xl border shadow-soft"
+          />
+
+          {/* Charts Row */}
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Category Pie Chart */}
+            <CategoryPieChart
+              title="Schäden nach Kategorie"
+              className="rounded-2xl border shadow-soft"
+            />
+
+            {/* Vehicle Bar Chart */}
+            <VehicleBarChart
+              limit={5}
+              title="Top 5 Fahrzeuge"
+              className="rounded-2xl border shadow-soft lg:col-span-2"
+            />
+          </div>
+
+          {/* Quota Section */}
+          <div className="grid gap-6 lg:grid-cols-4">
+            <QuotaGauge
+              title="Schadenquote"
+              className="rounded-2xl border shadow-soft"
+            />
+            <div className="lg:col-span-3">
+              <Card className="rounded-2xl border shadow-soft h-full">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Detaillierte Auswertungen</CardTitle>
+                      <CardDescription>Tiefgehende Analysen und Reports</CardDescription>
+                    </div>
+                    <Link href={'/reports' as Route}>
+                      <Button variant="outline" className="rounded-xl">
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        Auswertungen öffnen
+                      </Button>
+                    </Link>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-xl border p-4">
+                      <div className="text-sm text-muted-foreground">Schäden pro Fahrer</div>
+                      <div className="mt-1 text-lg font-semibold">Verfügbar</div>
+                    </div>
+                    <div className="rounded-xl border p-4">
+                      <div className="text-sm text-muted-foreground">Kosten-Analyse</div>
+                      <div className="mt-1 text-lg font-semibold">Verfügbar</div>
+                    </div>
+                    <div className="rounded-xl border p-4">
+                      <div className="text-sm text-muted-foreground">Export</div>
+                      <div className="mt-1 text-lg font-semibold">CSV & Excel</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-5">

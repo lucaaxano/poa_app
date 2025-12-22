@@ -155,4 +155,37 @@ export const claimsApi = {
   async deleteAttachment(claimId: string, attachmentId: string): Promise<void> {
     await apiClient.delete(`/claims/${claimId}/attachments/${attachmentId}`);
   },
+
+  async exportClaims(
+    format: 'csv' | 'xlsx' = 'xlsx',
+    filters?: {
+      status?: ClaimStatus[];
+      dateFrom?: string;
+      dateTo?: string;
+      vehicleId?: string;
+      damageCategory?: DamageCategory;
+    }
+  ): Promise<Blob> {
+    const params = new URLSearchParams();
+    params.append('format', format);
+    if (filters?.status?.length) {
+      params.append('status', filters.status.join(','));
+    }
+    if (filters?.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters?.vehicleId) params.append('vehicleId', filters.vehicleId);
+    if (filters?.damageCategory) params.append('damageCategory', filters.damageCategory);
+
+    const response = await apiClient.get('/claims/export', {
+      params,
+      responseType: 'blob',
+    });
+
+    // Ensure correct MIME type for the blob
+    const mimeType = format === 'csv'
+      ? 'text/csv;charset=utf-8'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    return new Blob([response.data], { type: mimeType });
+  },
 };

@@ -44,6 +44,7 @@ import { useClaims } from '@/hooks/use-claims';
 import { useBrokerClaims } from '@/hooks/use-broker';
 import { useAuthStore } from '@/stores/auth-store';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
+import { ExportButton } from '@/components/claims/export-button';
 
 const statusLabels: Record<ClaimStatus, string> = {
   [ClaimStatus.DRAFT]: 'Entwurf',
@@ -82,6 +83,7 @@ export default function ClaimsPage() {
 
   const { user, activeCompany } = useAuthStore();
   const isBroker = user?.role === 'BROKER';
+  const isAdmin = user?.role === 'COMPANY_ADMIN' || user?.role === 'SUPERADMIN';
 
   // Use different hooks based on role
   const { data: regularClaims, isLoading: isLoadingRegular, error: regularError } = useClaims();
@@ -142,14 +144,17 @@ export default function ClaimsPage() {
               : 'Verwalten Sie Ihre Schadensmeldungen'}
           </p>
         </div>
-        {!isBroker && (
-          <Link href={'/claims/new' as Route}>
-            <Button className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" />
-              Neuen Schaden melden
-            </Button>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {(isAdmin || isBroker) && <ExportButton />}
+          {!isBroker && (
+            <Link href={'/claims/new' as Route}>
+              <Button className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                Neuen Schaden melden
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Filters */}

@@ -18,15 +18,20 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ClaimsService, PaginatedClaims, ClaimDetail, EventWithUser, CommentWithUser } from './claims.service';
+import { ClaimsExportService, ExportFilters } from './claims-export.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { CreateClaimDto, UpdateClaimDto, ClaimFilterDto, RejectClaimDto } from './dto/claim.dto';
 import { CreateCommentDto } from './dto/comment.dto';
-import { UserRole, Claim, ClaimAttachment } from '@poa/database';
+import { UserRole, Claim, ClaimAttachment, ClaimStatus, DamageCategory } from '@poa/database';
 import { BrokerService } from '../broker/broker.service';
 
 @Controller('claims')
@@ -34,6 +39,7 @@ import { BrokerService } from '../broker/broker.service';
 export class ClaimsController {
   constructor(
     private readonly claimsService: ClaimsService,
+    private readonly claimsExportService: ClaimsExportService,
     private readonly brokerService: BrokerService,
   ) {}
 
@@ -87,6 +93,50 @@ export class ClaimsController {
   async getNextNumber(): Promise<{ claimNumber: string }> {
     const claimNumber = await this.claimsService.generateClaimNumber();
     return { claimNumber };
+  }
+
+  /**
+   * GET /claims/export - Export claims as CSV or Excel
+   * Admin and Broker only
+   * NOTE: This route MUST be defined before :id route!
+   */
+  @Get('export')
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN', 'BROKER')
+  async exportClaims(
+    @Request() req: AuthenticatedRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Query('format') format: 'csv' | 'xlsx' = 'xlsx',
+    @Query('status') status?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('vehicleId') vehicleId?: string,
+    @Query('damageCategory') damageCategory?: string,
+  ): Promise<StreamableFile> {
+    const { companyId } = req.user;
+
+    // Parse status (can be comma-separated for multiple values)
+    const filters: ExportFilters = {};
+    if (status) {
+      const statuses = status.split(',') as ClaimStatus[];
+      filters.status = statuses.length === 1 ? statuses[0] : statuses;
+    }
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    if (vehicleId) filters.vehicleId = vehicleId;
+    if (damageCategory) filters.damageCategory = damageCategory as DamageCategory;
+
+    const result = await this.claimsExportService.exportClaims(
+      companyId!,
+      format,
+      filters,
+    );
+
+    res.set({
+      'Content-Type': result.mimeType,
+      'Content-Disposition': `attachment; filename="${result.filename}"`,
+    });
+
+    return new StreamableFile(result.buffer);
   }
 
   /**
@@ -300,4 +350,5 @@ export class ClaimsController {
     const { id: userId, companyId, role } = req.user;
     await this.claimsService.deleteAttachment(attachmentId, userId, companyId!, role);
   }
+
 }
