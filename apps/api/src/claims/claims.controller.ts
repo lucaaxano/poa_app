@@ -13,6 +13,7 @@ import {
   HttpStatus,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -33,6 +34,9 @@ import { CreateClaimDto, UpdateClaimDto, ClaimFilterDto, RejectClaimDto } from '
 import { CreateCommentDto } from './dto/comment.dto';
 import { UserRole, Claim, ClaimAttachment, ClaimStatus, DamageCategory } from '@poa/database';
 import { BrokerService } from '../broker/broker.service';
+import { VehiclesService } from '../vehicles/vehicles.service';
+import { AiService } from '../ai/ai.service';
+import { ChatRequestDto, ChatResponseDto, ChatCompleteRequestDto } from '../ai/dto';
 
 @Controller('claims')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,6 +45,8 @@ export class ClaimsController {
     private readonly claimsService: ClaimsService,
     private readonly claimsExportService: ClaimsExportService,
     private readonly brokerService: BrokerService,
+    private readonly vehiclesService: VehiclesService,
+    private readonly aiService: AiService,
   ) {}
 
   /**
@@ -93,6 +99,103 @@ export class ClaimsController {
   async getNextNumber(): Promise<{ claimNumber: string }> {
     const claimNumber = await this.claimsService.generateClaimNumber();
     return { claimNumber };
+  }
+
+  /**
+   * POST /claims/chat - Send a message to the AI chatbot for claim capture
+   * Returns AI response and completion status
+   */
+  @Post('chat')
+  async chat(
+    @Body() dto: ChatRequestDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<ChatResponseDto> {
+    const { id: userId, companyId } = req.user;
+
+    if (!companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet');
+    }
+
+    // Get user's vehicles for context
+    const vehicles = await this.vehiclesService.findByCompanyId(companyId);
+    const activeVehicles = vehicles
+      .filter((v) => v.isActive)
+      .map((v) => ({
+        id: v.id,
+        licensePlate: v.licensePlate,
+        brand: v.brand || '',
+        model: v.model || '',
+      }));
+
+    if (activeVehicles.length === 0) {
+      throw new BadRequestException(
+        'Keine aktiven Fahrzeuge gefunden. Bitte legen Sie zuerst ein Fahrzeug an.',
+      );
+    }
+
+    return this.aiService.chat(dto.messages, activeVehicles, userId);
+  }
+
+  /**
+   * POST /claims/chat/complete - Create a claim from chat conversation
+   * Extracts structured data and creates the claim
+   */
+  @Post('chat/complete')
+  async chatComplete(
+    @Body() dto: ChatCompleteRequestDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Claim> {
+    const { id: userId, companyId } = req.user;
+
+    if (!companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet');
+    }
+
+    // Get vehicles for ID matching
+    const vehicles = await this.vehiclesService.findByCompanyId(companyId);
+    const activeVehicles = vehicles
+      .filter((v) => v.isActive)
+      .map((v) => ({
+        id: v.id,
+        licensePlate: v.licensePlate,
+        brand: v.brand || '',
+        model: v.model || '',
+      }));
+
+    // Extract structured data from conversation
+    const extractedData = await this.aiService.extractClaimData(
+      dto.messages,
+      activeVehicles,
+    );
+
+    // Validate completeness
+    const validation = this.aiService.validateClaimData(extractedData);
+    if (!validation.isValid) {
+      throw new BadRequestException(
+        `Fehlende Informationen: ${validation.missingFields.join(', ')}`,
+      );
+    }
+
+    // Map extracted data to CreateClaimDto
+    const claimDto: CreateClaimDto = {
+      vehicleId: extractedData.vehicleId!,
+      accidentDate: extractedData.accidentDate!,
+      accidentTime: extractedData.accidentTime,
+      accidentLocation: extractedData.accidentLocation,
+      damageCategory: extractedData.damageCategory!,
+      damageSubcategory: extractedData.damageSubcategory,
+      description: extractedData.description,
+      policeInvolved: extractedData.policeInvolved ?? false,
+      policeFileNumber: extractedData.policeFileNumber,
+      hasInjuries: extractedData.hasInjuries ?? false,
+      injuryDetails: extractedData.injuryDetails,
+      thirdPartyInfo: extractedData.thirdPartyInfo,
+      estimatedCost: extractedData.estimatedCost,
+      submitImmediately: dto.submitImmediately ?? true,
+    };
+
+    // Create claim using existing service
+    return this.claimsService.create(claimDto, userId, companyId);
   }
 
   /**

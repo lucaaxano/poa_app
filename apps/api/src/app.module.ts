@@ -14,6 +14,7 @@ import { StorageModule } from './storage/storage.module';
 import { EmailModule } from './email/email.module';
 import { BrokerModule } from './broker/broker.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PrismaModule,
     StorageModule,
     EmailModule,
+    AiModule,
     AuthModule,
     UsersModule,
     CompaniesModule,

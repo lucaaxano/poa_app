@@ -13,6 +13,8 @@ import {
   Loader2,
   Save,
   Send,
+  MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { Route } from 'next';
@@ -164,6 +166,32 @@ export default function NewClaimPage() {
           </p>
         </div>
       </div>
+
+      {/* Chat Option */}
+      <Card className="rounded-2xl border shadow-soft bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="flex items-center justify-between py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                Lieber per Chat?
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Unser KI-Assistent fuehrt Sie durch die Schadenmeldung
+              </p>
+            </div>
+          </div>
+          <Link href={'/claims/new/chat' as Route}>
+            <Button variant="outline" className="rounded-xl border-primary/30 hover:bg-primary/10">
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Chat starten
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Fahrzeug & Datum */}

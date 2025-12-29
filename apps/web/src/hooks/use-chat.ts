@@ -1,0 +1,126 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { chatApi, ChatMessage, ExtractedClaimData } from '@/lib/api/chat';
+import type { Claim } from '@poa/shared';
+
+/**
+ * Initial greeting message from the AI
+ */
+const INITIAL_MESSAGE: ChatMessage = {
+  role: 'assistant',
+  content:
+    'Hallo! Ich bin Ihr KI-Schadensassistent. Ich helfe Ihnen dabei, einen Schaden schnell und unkompliziert zu melden.\n\nWas ist passiert? Beschreiben Sie einfach, was vorgefallen ist.',
+};
+
+/**
+ * Hook for managing chat state and interactions
+ */
+export function useChat() {
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [isComplete, setIsComplete] = useState(false);
+  const [extractedData, setExtractedData] =
+    useState<Partial<ExtractedClaimData> | null>(null);
+
+  /**
+   * Mutation for sending chat messages
+   */
+  const chatMutation = useMutation({
+    mutationFn: (allMessages: ChatMessage[]) =>
+      chatApi.sendMessage(allMessages),
+    onSuccess: (response) => {
+      // Add assistant's response to messages
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: response.message },
+      ]);
+
+      // Update completion status
+      setIsComplete(response.isComplete);
+
+      // Update extracted data if available
+      if (response.extractedData) {
+        setExtractedData((prev) => ({
+          ...prev,
+          ...response.extractedData,
+        }));
+      }
+    },
+    onError: (error) => {
+      // Add error message as assistant response
+      console.error('Chat error:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content:
+            'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+        },
+      ]);
+    },
+  });
+
+  /**
+   * Mutation for completing the chat and creating a claim
+   */
+  const completeMutation = useMutation({
+    mutationFn: ({
+      allMessages,
+      submitImmediately,
+    }: {
+      allMessages: ChatMessage[];
+      submitImmediately: boolean;
+    }) => chatApi.completeClaim(allMessages, submitImmediately),
+  });
+
+  /**
+   * Send a new message in the chat
+   */
+  const sendMessage = useCallback(
+    (content: string) => {
+      // Add user message to state
+      const userMessage: ChatMessage = { role: 'user', content };
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+
+      // Send to API
+      chatMutation.mutate(newMessages);
+    },
+    [messages, chatMutation]
+  );
+
+  /**
+   * Submit the claim from the chat conversation
+   */
+  const submitClaim = useCallback(
+    async (submitImmediately: boolean): Promise<Claim> => {
+      return completeMutation.mutateAsync({
+        allMessages: messages,
+        submitImmediately,
+      });
+    },
+    [messages, completeMutation]
+  );
+
+  /**
+   * Reset the chat to initial state
+   */
+  const resetChat = useCallback(() => {
+    setMessages([INITIAL_MESSAGE]);
+    setIsComplete(false);
+    setExtractedData(null);
+  }, []);
+
+  return {
+    messages,
+    isLoading: chatMutation.isPending,
+    isSubmitting: completeMutation.isPending,
+    isComplete,
+    extractedData,
+    error: chatMutation.error,
+    sendMessage,
+    submitClaim,
+    resetChat,
+  };
+}
