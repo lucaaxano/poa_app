@@ -1,9 +1,9 @@
 /**
  * New Claim Screen
- * Formular zur Schadensmeldung - Vollständig funktionsfähig
+ * Formular zur Schadensmeldung - Mit Store für Daten-Persistenz
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,10 +22,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, spacing, fontSize, borderRadius, fontWeight } from '@/constants/theme';
+import { useClaimDraftStore, ClaimDraftVehicle } from '@/stores';
 import type { ClaimsScreenProps } from '@/navigation/types';
 
 // Demo-Fahrzeuge
-const DEMO_VEHICLES = [
+const DEMO_VEHICLES: ClaimDraftVehicle[] = [
   { id: '1', licensePlate: 'B-AB 1234', brand: 'Mercedes-Benz', model: 'Actros' },
   { id: '2', licensePlate: 'B-CD 5678', brand: 'MAN', model: 'TGX' },
   { id: '3', licensePlate: 'B-EF 9012', brand: 'Volvo', model: 'FH16' },
@@ -44,14 +45,28 @@ const DAMAGE_CATEGORIES = [
 ];
 
 export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
-  // Form State
-  const [selectedVehicle, setSelectedVehicle] = useState<typeof DEMO_VEHICLES[0] | null>(null);
-  const [accidentDate, setAccidentDate] = useState<Date | null>(null);
-  const [accidentTime, setAccidentTime] = useState<Date | null>(null);
-  const [location, setLocation] = useState('');
-  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
+  // Store State
+  const {
+    vehicle: selectedVehicle,
+    accidentDate: storedAccidentDate,
+    accidentTime: storedAccidentTime,
+    location,
+    gpsCoords,
+    category,
+    description,
+    setVehicle,
+    setAccidentDate,
+    setAccidentTime,
+    setLocation,
+    setGpsCoords,
+    setCategory,
+    setDescription,
+    isStep1Valid,
+  } = useClaimDraftStore();
+
+  // Parse dates from store
+  const accidentDate = storedAccidentDate ? new Date(storedAccidentDate) : null;
+  const accidentTime = storedAccidentTime ? new Date(storedAccidentTime) : null;
 
   // Modal State
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -148,23 +163,34 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
     }
   };
 
-  // Handle Continue
+  // Handle Continue to Photos
   const handleContinue = () => {
-    // Validation
-    if (!selectedVehicle) {
-      Alert.alert('Fehler', 'Bitte wählen Sie ein Fahrzeug aus.');
-      return;
-    }
-    if (!accidentDate) {
-      Alert.alert('Fehler', 'Bitte wählen Sie ein Datum aus.');
-      return;
-    }
-    if (!category) {
-      Alert.alert('Fehler', 'Bitte wählen Sie eine Schadenskategorie aus.');
-      return;
+    if (!isStep1Valid()) {
+      if (!selectedVehicle) {
+        Alert.alert('Fehler', 'Bitte wählen Sie ein Fahrzeug aus.');
+        return;
+      }
+      if (!accidentDate) {
+        Alert.alert('Fehler', 'Bitte wählen Sie ein Datum aus.');
+        return;
+      }
+      if (!category) {
+        Alert.alert('Fehler', 'Bitte wählen Sie eine Schadenskategorie aus.');
+        return;
+      }
     }
 
+    // Navigate to photos screen - data is already in store
     navigation.navigate('ClaimPhotos', {});
+  };
+
+  // Handle Save Draft
+  const handleSaveDraft = () => {
+    Alert.alert(
+      'Entwurf gespeichert',
+      'Ihre Schadensmeldung wurde als Entwurf gespeichert. Sie können sie später fortsetzen.',
+      [{ text: 'OK', onPress: () => navigation.goBack() }]
+    );
   };
 
   // Generate arrays for pickers
@@ -188,6 +214,24 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Progress Indicator */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressStep}>
+              <View style={[styles.progressDot, styles.progressDotActive]} />
+              <Text style={[styles.progressText, styles.progressTextActive]}>Daten</Text>
+            </View>
+            <View style={styles.progressLine} />
+            <View style={styles.progressStep}>
+              <View style={styles.progressDot} />
+              <Text style={styles.progressText}>Fotos</Text>
+            </View>
+            <View style={styles.progressLine} />
+            <View style={styles.progressStep}>
+              <View style={styles.progressDot} />
+              <Text style={styles.progressText}>Prüfen</Text>
+            </View>
+          </View>
+
           {/* Fahrzeug Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Fahrzeug *</Text>
@@ -269,7 +313,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
               <TextInput
                 style={styles.input}
                 value={location}
-                onChangeText={(text) => setLocation(text)}
+                onChangeText={setLocation}
                 placeholder="Adresse oder Beschreibung des Ortes"
                 placeholderTextColor={colors.text.tertiary}
                 autoCorrect={false}
@@ -335,7 +379,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
               <TextInput
                 style={styles.textArea}
                 value={description}
-                onChangeText={(text) => setDescription(text)}
+                onChangeText={setDescription}
                 placeholder="Beschreiben Sie den Schaden und den Hergang..."
                 placeholderTextColor={colors.text.tertiary}
                 multiline={true}
@@ -351,7 +395,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
 
         {/* Footer Buttons */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.draftButton}>
+          <TouchableOpacity style={styles.draftButton} onPress={handleSaveDraft}>
             <Text style={styles.draftButtonText}>Als Entwurf speichern</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
@@ -386,7 +430,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                     selectedVehicle?.id === item.id && styles.vehicleItemSelected,
                   ]}
                   onPress={() => {
-                    setSelectedVehicle(item);
+                    setVehicle(item);
                     setShowVehicleModal(false);
                   }}
                 >
@@ -544,6 +588,42 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.md,
+  },
+  // Progress Indicator
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  progressDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.gray[300],
+    marginBottom: spacing.xs,
+  },
+  progressDotActive: {
+    backgroundColor: colors.primary[600],
+  },
+  progressLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: colors.gray[300],
+    marginHorizontal: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  progressText: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+  },
+  progressTextActive: {
+    color: colors.primary[600],
+    fontWeight: fontWeight.medium,
   },
   section: {
     marginBottom: spacing.lg,
