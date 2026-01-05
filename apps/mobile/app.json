@@ -1,0 +1,82 @@
+{
+  "expo": {
+    "name": "POA",
+    "slug": "poa-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "poa",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1e40af"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.poa.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "POA benoetigt Zugriff auf die Kamera um Schadenfotos aufzunehmen.",
+        "NSPhotoLibraryUsageDescription": "POA benoetigt Zugriff auf die Fotobibliothek um bestehende Fotos auszuwaehlen.",
+        "NSLocationWhenInUseUsageDescription": "POA benoetigt Standortzugriff um den Unfallort zu erfassen."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1e40af"
+      },
+      "package": "com.poa.mobile",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "POA benoetigt Zugriff auf die Kamera fuer Schadenfotos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "POA benoetigt Standortzugriff um den Unfallort zu erfassen."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1e40af"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "POA benoetigt Zugriff auf die Fotobibliothek.",
+          "cameraPermission": "POA benoetigt Zugriff auf die Kamera."
+        }
+      ],
+      "expo-asset",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "poa-mobile-project"
+      }
+    }
+  }
+}
