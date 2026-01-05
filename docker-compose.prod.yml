@@ -18,8 +18,8 @@ services:
       context: .
       dockerfile: docker/web.prod.Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://api.poa-platform.com/api
-        NEXT_PUBLIC_APP_URL: https://poa-platform.com
+        NEXT_PUBLIC_API_URL: https://api.poa-platform.de/api
+        NEXT_PUBLIC_APP_URL: https://poa-platform.de
     container_name: poa-web
     restart: unless-stopped
     expose:
@@ -32,13 +32,13 @@ services:
       - poa-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.poa-web.rule=Host(`poa-platform.com`) || Host(`www.poa-platform.com`)"
+      - "traefik.http.routers.poa-web.rule=Host(`poa-platform.de`) || Host(`www.poa-platform.de`)"
       - "traefik.http.routers.poa-web.entrypoints=websecure"
       - "traefik.http.routers.poa-web.tls=true"
       - "traefik.http.routers.poa-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.poa-web.loadbalancer.server.port=3000"
       # HTTP to HTTPS redirect
-      - "traefik.http.routers.poa-web-http.rule=Host(`poa-platform.com`) || Host(`www.poa-platform.com`)"
+      - "traefik.http.routers.poa-web-http.rule=Host(`poa-platform.de`) || Host(`www.poa-platform.de`)"
       - "traefik.http.routers.poa-web-http.entrypoints=web"
       - "traefik.http.routers.poa-web-http.middlewares=redirect-to-https"
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
@@ -65,14 +65,14 @@ services:
       - STORAGE_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - STORAGE_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
       - STORAGE_BUCKET=poa-uploads
-      - STORAGE_PUBLIC_URL=https://storage.poa-platform.com
+      - STORAGE_PUBLIC_URL=https://storage.poa-platform.de
       - EMAIL_PROVIDER=${EMAIL_PROVIDER:-smtp}
       - SMTP_HOST=${SMTP_HOST:-localhost}
       - SMTP_PORT=${SMTP_PORT:-1025}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - EMAIL_FROM=${EMAIL_FROM:-noreply@poa-platform.com}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@poa-platform.de}
       - EMAIL_FROM_NAME=POA System
-      - FRONTEND_URL=https://poa-platform.com
+      - FRONTEND_URL=https://poa-platform.de
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
@@ -85,13 +85,13 @@ services:
       - poa-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.poa-api.rule=Host(`api.poa-platform.com`)"
+      - "traefik.http.routers.poa-api.rule=Host(`api.poa-platform.de`)"
       - "traefik.http.routers.poa-api.entrypoints=websecure"
       - "traefik.http.routers.poa-api.tls=true"
       - "traefik.http.routers.poa-api.tls.certresolver=letsencrypt"
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
       # HTTP to HTTPS redirect
-      - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.com`)"
+      - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.de`)"
       - "traefik.http.routers.poa-api-http.entrypoints=web"
       - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
 
@@ -138,7 +138,7 @@ services:
     labels:
       - "traefik.enable=true"
       # MinIO API (for file access)
-      - "traefik.http.routers.poa-storage.rule=Host(`storage.poa-platform.com`)"
+      - "traefik.http.routers.poa-storage.rule=Host(`storage.poa-platform.de`)"
       - "traefik.http.routers.poa-storage.entrypoints=websecure"
       - "traefik.http.routers.poa-storage.tls=true"
       - "traefik.http.routers.poa-storage.tls.certresolver=letsencrypt"
