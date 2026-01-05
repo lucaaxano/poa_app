@@ -29,6 +29,12 @@ COPY . .
 # Generate Prisma Client
 RUN cd /app/packages/database && pnpm exec prisma generate
 
+# Build shared package
+RUN cd /app/packages/shared && pnpm run build
+
+# Build the database package
+RUN cd /app/packages/database && pnpm run build
+
 # Build the API
 RUN cd /app/apps/api && pnpm run build
 
