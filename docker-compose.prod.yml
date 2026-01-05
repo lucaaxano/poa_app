@@ -1,0 +1,212 @@
+# POA - Point of Accident
+# Docker Compose for Production Deployment
+# Version 1.0
+#
+# Usage:
+# 1. Copy .env.production.example to .env and fill in values
+# 2. Run: docker compose -f docker-compose.prod.yml up -d
+# 3. Run migrations: docker compose -f docker-compose.prod.yml --profile migrate up migrate
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Frontend - Next.js
+  # ===========================================
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.prod.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://api.poa-platform.com/api
+        NEXT_PUBLIC_APP_URL: https://poa-platform.com
+    container_name: poa-web
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api
+    networks:
+      - poa-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.poa-web.rule=Host(`poa-platform.com`) || Host(`www.poa-platform.com`)"
+      - "traefik.http.routers.poa-web.entrypoints=websecure"
+      - "traefik.http.routers.poa-web.tls=true"
+      - "traefik.http.routers.poa-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.poa-web.loadbalancer.server.port=3000"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.poa-web-http.rule=Host(`poa-platform.com`) || Host(`www.poa-platform.com`)"
+      - "traefik.http.routers.poa-web-http.entrypoints=web"
+      - "traefik.http.routers.poa-web-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+  # ===========================================
+  # Backend - NestJS API
+  # ===========================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.prod.Dockerfile
+    container_name: poa-api
+    restart: unless-stopped
+    expose:
+      - "4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - STORAGE_ENDPOINT=http://storage:9000
+      - STORAGE_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+      - STORAGE_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+      - STORAGE_BUCKET=poa-uploads
+      - STORAGE_PUBLIC_URL=https://storage.poa-platform.com
+      - EMAIL_PROVIDER=${EMAIL_PROVIDER:-smtp}
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@poa-platform.com}
+      - EMAIL_FROM_NAME=POA System
+      - FRONTEND_URL=https://poa-platform.com
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      storage:
+        condition: service_started
+    networks:
+      - poa-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.poa-api.rule=Host(`api.poa-platform.com`)"
+      - "traefik.http.routers.poa-api.entrypoints=websecure"
+      - "traefik.http.routers.poa-api.tls=true"
+      - "traefik.http.routers.poa-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.com`)"
+      - "traefik.http.routers.poa-api-http.entrypoints=web"
+      - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
+
+  # ===========================================
+  # Database - PostgreSQL
+  # ===========================================
+  db:
+    image: postgres:15-alpine
+    container_name: poa-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-poa_admin}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME:-poa_production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-poa_admin} -d ${DB_NAME:-poa_production}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - poa-network
+    # Database is NOT exposed externally for security
+    # Access via SSH tunnel or adminer if needed
+
+  # ===========================================
+  # Object Storage - MinIO (S3-compatible)
+  # ===========================================
+  storage:
+    image: minio/minio
+    container_name: poa-storage
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    networks:
+      - poa-network
+    labels:
+      - "traefik.enable=true"
+      # MinIO API (for file access)
+      - "traefik.http.routers.poa-storage.rule=Host(`storage.poa-platform.com`)"
+      - "traefik.http.routers.poa-storage.entrypoints=websecure"
+      - "traefik.http.routers.poa-storage.tls=true"
+      - "traefik.http.routers.poa-storage.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.poa-storage.service=poa-storage"
+      - "traefik.http.services.poa-storage.loadbalancer.server.port=9000"
+
+  # ===========================================
+  # MinIO Setup - Creates bucket on startup
+  # ===========================================
+  storage-setup:
+    image: minio/mc
+    container_name: poa-storage-setup
+    depends_on:
+      - storage
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to start...';
+      sleep 15;
+      echo 'Configuring MinIO...';
+      mc alias set myminio http://storage:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
+      mc mb myminio/poa-uploads --ignore-existing;
+      mc anonymous set download myminio/poa-uploads;
+      echo 'MinIO bucket configured successfully!';
+      exit 0;
+      "
+    networks:
+      - poa-network
+
+  # ===========================================
+  # Database Migrations (run manually)
+  # ===========================================
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/api.prod.Dockerfile
+    container_name: poa-migrate
+    command: >
+      sh -c "
+        echo 'Running database migrations...';
+        cd /app/packages/database &&
+        npx prisma migrate deploy;
+        echo 'Seeding database...';
+        npx prisma db seed;
+        echo 'Migration complete!';
+      "
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - poa-network
+    profiles:
+      - migrate
+
+# ===========================================
+# Volumes (Persistent Data)
+# ===========================================
+volumes:
+  postgres_data:
+    name: poa-postgres-data-prod
+  minio_data:
+    name: poa-minio-data-prod
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  poa-network:
+    name: poa-network-prod
+    driver: bridge

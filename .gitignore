@@ -48,3 +48,20 @@ docker/data
 *.tsbuildinfo
 *.swp
 *.swo
+
+# Sensitive files (tokens, credentials)
+login.json
+token.json
+token.txt
+credentials.json
+*.pem
+*.key
+
+# npm lock file (we use pnpm)
+package-lock.json
+
+# Windows artifacts
+nul
+
+# Production env (never commit real secrets!)
+.env.production
