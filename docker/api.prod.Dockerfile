@@ -60,8 +60,8 @@ COPY --from=builder /app/packages/database ./packages/database
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
-# Copy email templates (if they exist)
-COPY --from=builder /app/apps/api/src/email/templates ./apps/api/dist/email/templates
+# Copy email templates to the correct location in dist
+COPY --from=builder /app/apps/api/src/email/templates ./apps/api/dist/apps/api/src/email/templates
 
 WORKDIR /app/apps/api
 
