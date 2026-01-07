@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Building2, Globe, Phone, MapPin, ExternalLink } from 'lucide-react';
+import { Loader2, Building2, Globe, Phone, MapPin, Upload, Trash2, ImageIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCompany, useUpdateCompany } from '@/hooks/use-company-stats';
+import { useCompany, useUpdateCompany, useUploadLogo, useDeleteLogo } from '@/hooks/use-company-stats';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/api/client';
 
 const companySchema = z.object({
   name: z.string().min(1, 'Firmenname ist erforderlich').max(200),
@@ -27,6 +28,10 @@ type CompanyFormData = z.infer<typeof companySchema>;
 export default function CompanySettingsPage() {
   const { data: company, isLoading: isLoadingCompany } = useCompany();
   const updateCompany = useUpdateCompany();
+  const uploadLogo = useUploadLogo();
+  const deleteLogo = useDeleteLogo();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   const {
     register,
@@ -36,6 +41,13 @@ export default function CompanySettingsPage() {
   } = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema),
   });
+
+  // Set logo preview from company data
+  useEffect(() => {
+    if (company?.logoUrl) {
+      setLogoPreview(company.logoUrl);
+    }
+  }, [company?.logoUrl]);
 
   // Set form values when company data is loaded
   useEffect(() => {
@@ -62,6 +74,55 @@ export default function CompanySettingsPage() {
     }
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Nur JPEG, PNG, WebP und SVG Dateien sind erlaubt');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Die Datei darf maximal 2MB gross sein');
+      return;
+    }
+
+    // Show preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setLogoPreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    try {
+      await uploadLogo.mutateAsync(file);
+      toast.success('Logo erfolgreich hochgeladen');
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+      // Revert preview on error
+      setLogoPreview(company?.logoUrl || null);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    try {
+      await deleteLogo.mutateAsync();
+      setLogoPreview(null);
+      toast.success('Logo erfolgreich entfernt');
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
+  };
+
   if (isLoadingCompany) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -72,6 +133,74 @@ export default function CompanySettingsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Logo Upload - Outside form */}
+      <Card className="rounded-2xl border shadow-soft">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Firmenlogo
+          </CardTitle>
+          <CardDescription>
+            Laden Sie Ihr Firmenlogo hoch (max. 2MB, JPEG/PNG/WebP/SVG)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6">
+            {/* Logo Preview */}
+            <div className="relative h-24 w-24 rounded-xl border-2 border-dashed border-muted-foreground/25 flex items-center justify-center overflow-hidden bg-muted/50">
+              {logoPreview ? (
+                <img
+                  src={logoPreview}
+                  alt="Firmenlogo"
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
+              )}
+              {(uploadLogo.isPending || deleteLogo.isPending) && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              )}
+            </div>
+
+            {/* Upload Controls */}
+            <div className="flex flex-col gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                onChange={handleLogoUpload}
+                className="hidden"
+                id="logo-upload"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadLogo.isPending || deleteLogo.isPending}
+                className="rounded-xl"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Logo hochladen
+              </Button>
+              {logoPreview && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleLogoDelete}
+                  disabled={uploadLogo.isPending || deleteLogo.isPending}
+                  className="rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Entfernen
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Firmendaten */}
         <Card className="rounded-2xl border shadow-soft">

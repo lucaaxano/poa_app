@@ -94,6 +94,14 @@ export class CompaniesService {
     });
   }
 
+  async updateLogo(id: string, logoUrl: string | null): Promise<Company> {
+    await this.findById(id);
+    return this.prisma.company.update({
+      where: { id },
+      data: { logoUrl },
+    });
+  }
+
   async getStats(companyId: string): Promise<CompanyStats> {
     const [claimsCount, vehiclesCount, usersCount, claimsByStatus] =
       await Promise.all([

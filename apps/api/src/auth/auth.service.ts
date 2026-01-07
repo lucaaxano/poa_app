@@ -12,6 +12,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { TwoFactorService } from './two-factor.service';
 import { UserRole, User, Company } from '@poa/database';
 import {
   LoginDto,
@@ -50,6 +51,12 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
+export interface TwoFactorRequiredResponse {
+  requires2FA: true;
+  tempToken: string;
+  userId: string;
+}
+
 export interface ProfileResponse {
   user: SanitizedUser;
   company: Company | null;
@@ -80,6 +87,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private twoFactorService: TwoFactorService,
   ) {
     this.appUrl = this.configService.get<string>('APP_URL', 'http://localhost:3000');
   }
@@ -135,7 +143,7 @@ export class AuthService {
     };
   }
 
-  async login(dto: LoginDto): Promise<AuthResponse> {
+  async login(dto: LoginDto): Promise<AuthResponse | TwoFactorRequiredResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       include: { company: true },
@@ -154,6 +162,21 @@ export class AuthService {
       throw new UnauthorizedException('Ungueltige Anmeldedaten');
     }
 
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // Generate a temporary token for 2FA validation
+      const tempToken = this.jwtService.sign(
+        { sub: user.id, purpose: '2fa-validation' },
+        { expiresIn: '5m' }, // 5 minutes to complete 2FA
+      );
+
+      return {
+        requires2FA: true,
+        tempToken,
+        userId: user.id,
+      };
+    }
+
     // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
@@ -162,6 +185,104 @@ export class AuthService {
 
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.role);
+
+    return {
+      user: this.sanitizeUser(user),
+      company: user.company,
+      tokens,
+    };
+  }
+
+  /**
+   * Validate 2FA token and complete login
+   */
+  async validate2FA(tempToken: string, totpToken: string): Promise<AuthResponse> {
+    // Verify temp token
+    let payload: { sub: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(tempToken);
+    } catch {
+      throw new UnauthorizedException('Sitzung abgelaufen. Bitte erneut anmelden.');
+    }
+
+    if (payload.purpose !== '2fa-validation') {
+      throw new UnauthorizedException('Ungültiger Token');
+    }
+
+    const userId = payload.sub;
+
+    // Validate TOTP token
+    await this.twoFactorService.validateToken(userId, totpToken);
+
+    // Get user with company
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Benutzer nicht gefunden');
+    }
+
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Generate full tokens
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    this.logger.log(`User ${userId} completed 2FA login`);
+
+    return {
+      user: this.sanitizeUser(user),
+      company: user.company,
+      tokens,
+    };
+  }
+
+  /**
+   * Validate 2FA with backup code and complete login
+   */
+  async validate2FAWithBackupCode(tempToken: string, backupCode: string): Promise<AuthResponse> {
+    // Verify temp token
+    let payload: { sub: string; purpose: string };
+    try {
+      payload = this.jwtService.verify(tempToken);
+    } catch {
+      throw new UnauthorizedException('Sitzung abgelaufen. Bitte erneut anmelden.');
+    }
+
+    if (payload.purpose !== '2fa-validation') {
+      throw new UnauthorizedException('Ungültiger Token');
+    }
+
+    const userId = payload.sub;
+
+    // Use backup code
+    await this.twoFactorService.useBackupCode(userId, backupCode);
+
+    // Get user with company
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Benutzer nicht gefunden');
+    }
+
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Generate full tokens
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    this.logger.log(`User ${userId} completed 2FA login with backup code`);
 
     return {
       user: this.sanitizeUser(user),

@@ -107,6 +107,7 @@ model Company {
   country       String?   @default("DE")
   phone         String?
   website       String?
+  logoUrl       String?   @map("logo_url")
   numEmployees  Int?      @map("num_employees")
   numVehicles   Int?      @map("num_vehicles")
   settings      Json?     @default("{}")
@@ -146,6 +147,11 @@ model User {
   emailVerifiedAt       DateTime? @map("email_verified_at")
   lastLoginAt           DateTime? @map("last_login_at")
   notificationSettings  Json?     @default("{}") @map("notification_settings")
+
+  // Two-Factor Authentication
+  twoFactorSecret       String?   @map("two_factor_secret")
+  twoFactorEnabled      Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorBackupCodes  String[]  @map("two_factor_backup_codes")
 
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")

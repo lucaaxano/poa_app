@@ -99,3 +99,25 @@ export function useUpdateCompany() {
     },
   });
 }
+
+export function useUploadLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => companiesApi.uploadLogo(file),
+    onSuccess: (updatedCompany) => {
+      queryClient.setQueryData(companyKeys.current(), updatedCompany);
+    },
+  });
+}
+
+export function useDeleteLogo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => companiesApi.deleteLogo(),
+    onSuccess: (updatedCompany) => {
+      queryClient.setQueryData(companyKeys.current(), updatedCompany);
+    },
+  });
+}

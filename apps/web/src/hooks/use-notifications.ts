@@ -23,14 +23,14 @@ export function useNotifications(filters?: NotificationFilters) {
 
 /**
  * Hook to fetch unread notification count
- * Polls every 30 seconds for updates
+ * Polls every 60 seconds for updates (optimized for performance)
  */
 export function useUnreadCount() {
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => notificationsApi.getUnreadCount(),
-    refetchInterval: 30 * 1000, // Poll every 30 seconds
-    staleTime: 15 * 1000, // Consider data stale after 15 seconds
+    refetchInterval: 60 * 1000, // Poll every 60 seconds (was 30s - reduced for better performance)
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds (was 15s)
   });
 }
 

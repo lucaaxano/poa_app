@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Bell, ArrowRight } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const settingsCards = [
@@ -29,6 +29,12 @@ const settingsCards = [
     href: '/settings/notifications',
     icon: Bell,
     description: 'Verwalten Sie Ihre E-Mail-Benachrichtigungseinstellungen.',
+  },
+  {
+    title: 'Sicherheit',
+    href: '/settings/security',
+    icon: Shield,
+    description: 'Zwei-Faktor-Authentifizierung und Kontoabsicherung.',
   },
 ];
 

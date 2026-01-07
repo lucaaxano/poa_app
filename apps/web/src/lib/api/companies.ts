@@ -133,4 +133,20 @@ export const companiesApi = {
     const response = await apiClient.patch<Company>('/companies/current', data);
     return response.data;
   },
+
+  async uploadLogo(file: File): Promise<Company> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await apiClient.post<Company>('/companies/current/logo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  async deleteLogo(): Promise<Company> {
+    const response = await apiClient.delete<Company>('/companies/current/logo');
+    return response.data;
+  },
 };

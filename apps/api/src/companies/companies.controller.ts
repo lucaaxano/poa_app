@@ -1,12 +1,18 @@
 import {
   Controller,
   Get,
+  Post,
+  Delete,
   Patch,
   Body,
   UseGuards,
   Request,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   CompaniesService,
   CompanyStats,
@@ -22,11 +28,15 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { UpdateCompanyDto } from './dto/company.dto';
 import { Company } from '@poa/database';
+import { StorageService } from '../storage/storage.service';
 
 @Controller('companies')
 @UseGuards(JwtAuthGuard)
 export class CompaniesController {
-  constructor(private readonly companiesService: CompaniesService) {}
+  constructor(
+    private readonly companiesService: CompaniesService,
+    private readonly storageService: StorageService,
+  ) {}
 
   @Get('current')
   async getCurrent(@Request() req: AuthenticatedRequest): Promise<Company> {
@@ -99,5 +109,59 @@ export class CompaniesController {
     @Request() req: AuthenticatedRequest,
   ): Promise<Company> {
     return this.companiesService.update(req.user.companyId!, updateCompanyDto);
+  }
+
+  @Post('current/logo')
+  @UseGuards(RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  @UseInterceptors(FileInterceptor('logo'))
+  async uploadLogo(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<Company> {
+    if (!file) {
+      throw new BadRequestException('Keine Datei hochgeladen');
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Nur JPEG, PNG, WebP und SVG Dateien sind erlaubt');
+    }
+
+    // Validate file size (max 2MB)
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      throw new BadRequestException('Die Datei darf maximal 2MB gross sein');
+    }
+
+    // Get current company to delete old logo if exists
+    const company = await this.companiesService.findById(req.user.companyId!);
+    if (company.logoUrl) {
+      try {
+        await this.storageService.deleteFile(company.logoUrl);
+      } catch {
+        // Ignore errors when deleting old logo
+      }
+    }
+
+    // Upload new logo
+    const uploaded = await this.storageService.uploadFile(file, 'logos');
+    return this.companiesService.updateLogo(req.user.companyId!, uploaded.url);
+  }
+
+  @Delete('current/logo')
+  @UseGuards(RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  async deleteLogo(@Request() req: AuthenticatedRequest): Promise<Company> {
+    const company = await this.companiesService.findById(req.user.companyId!);
+    if (company.logoUrl) {
+      try {
+        await this.storageService.deleteFile(company.logoUrl);
+      } catch {
+        // Ignore errors when deleting logo
+      }
+    }
+    return this.companiesService.updateLogo(req.user.companyId!, null);
   }
 }

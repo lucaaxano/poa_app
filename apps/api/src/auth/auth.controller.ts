@@ -10,6 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { TwoFactorService } from './two-factor.service';
 import {
   LoginDto,
   RegisterDto,
@@ -20,6 +21,12 @@ import {
   InviteUserDto,
   ChangePasswordDto,
 } from './dto/auth.dto';
+import {
+  Enable2FADto,
+  Validate2FADto,
+  Disable2FADto,
+  UseBackupCodeDto,
+} from './dto/two-factor.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
@@ -27,7 +34,10 @@ import { AuthenticatedRequest } from './interfaces/authenticated-request.interfa
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly twoFactorService: TwoFactorService,
+  ) {}
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
@@ -93,5 +103,75 @@ export class AuthController {
   @Delete('invitations/:id')
   async cancelInvitation(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.authService.cancelInvitation(id, req.user.companyId!);
+  }
+
+  // ==========================================
+  // Two-Factor Authentication (2FA) Endpoints
+  // ==========================================
+
+  /**
+   * Get 2FA setup (QR code and secret)
+   * Requires: Authenticated user without 2FA enabled
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/setup')
+  async get2FASetup(@Request() req: AuthenticatedRequest) {
+    return this.twoFactorService.generateSetup(req.user.id);
+  }
+
+  /**
+   * Enable 2FA after verifying token from authenticator app
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/enable')
+  async enable2FA(@Request() req: AuthenticatedRequest, @Body() dto: Enable2FADto) {
+    await this.twoFactorService.enable(req.user.id, dto.token);
+    return { success: true, message: '2FA wurde erfolgreich aktiviert' };
+  }
+
+  /**
+   * Disable 2FA (requires password confirmation)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/disable')
+  async disable2FA(@Request() req: AuthenticatedRequest, @Body() dto: Disable2FADto) {
+    await this.twoFactorService.disable(req.user.id, dto.password);
+    return { success: true, message: '2FA wurde deaktiviert' };
+  }
+
+  /**
+   * Validate 2FA token during login
+   */
+  @Post('2fa/validate')
+  async validate2FA(@Body() dto: Validate2FADto) {
+    return this.authService.validate2FA(dto.tempToken, dto.token);
+  }
+
+  /**
+   * Use backup code during login (when authenticator is not available)
+   */
+  @Post('2fa/backup')
+  async useBackupCode(@Body() dto: UseBackupCodeDto) {
+    return this.authService.validate2FAWithBackupCode(dto.tempToken, dto.backupCode);
+  }
+
+  /**
+   * Get 2FA status for current user
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('2fa/status')
+  async get2FAStatus(@Request() req: AuthenticatedRequest) {
+    const enabled = await this.twoFactorService.isTwoFactorEnabled(req.user.id);
+    return { twoFactorEnabled: enabled };
+  }
+
+  /**
+   * Regenerate backup codes (replaces existing ones)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('2fa/backup-codes')
+  async regenerateBackupCodes(@Request() req: AuthenticatedRequest) {
+    const codes = await this.twoFactorService.regenerateBackupCodes(req.user.id);
+    return { backupCodes: codes };
   }
 }

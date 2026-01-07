@@ -24,6 +24,25 @@ export interface AuthResponse {
   tokens: AuthTokens;
 }
 
+export interface TwoFactorRequiredResponse {
+  requires2FA: true;
+  tempToken: string;
+  userId: string;
+}
+
+export interface TwoFactorSetupResponse {
+  secret: string;
+  qrCodeDataUrl: string;
+  backupCodes: string[];
+}
+
+export type LoginResponse = AuthResponse | TwoFactorRequiredResponse;
+
+// Type guard to check if 2FA is required
+export function requires2FA(response: LoginResponse): response is TwoFactorRequiredResponse {
+  return 'requires2FA' in response && response.requires2FA === true;
+}
+
 export interface ProfileResponse {
   user: User;
   company: Company | null;
@@ -57,10 +76,88 @@ export interface AcceptInvitationData {
 
 // Auth API functions
 export const authApi = {
-  async login(data: LoginData): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', data);
+  /**
+   * Login - may return either full auth response or 2FA required response
+   */
+  async login(data: LoginData): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>('/auth/login', data);
+    // Only set tokens if login is complete (no 2FA required)
+    if (!requires2FA(response.data)) {
+      const { tokens } = response.data;
+      setTokens(tokens.accessToken, tokens.refreshToken);
+    }
+    return response.data;
+  },
+
+  /**
+   * Validate 2FA token to complete login
+   */
+  async validate2FA(tempToken: string, token: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/2fa/validate', {
+      tempToken,
+      token,
+    });
     const { tokens } = response.data;
     setTokens(tokens.accessToken, tokens.refreshToken);
+    return response.data;
+  },
+
+  /**
+   * Use backup code to complete login
+   */
+  async useBackupCode(tempToken: string, backupCode: string): Promise<AuthResponse> {
+    const response = await apiClient.post<AuthResponse>('/auth/2fa/backup', {
+      tempToken,
+      backupCode,
+    });
+    const { tokens } = response.data;
+    setTokens(tokens.accessToken, tokens.refreshToken);
+    return response.data;
+  },
+
+  /**
+   * Get 2FA setup (QR code and secret)
+   */
+  async get2FASetup(): Promise<TwoFactorSetupResponse> {
+    const response = await apiClient.get<TwoFactorSetupResponse>('/auth/2fa/setup');
+    return response.data;
+  },
+
+  /**
+   * Enable 2FA after verifying token
+   */
+  async enable2FA(token: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      '/auth/2fa/enable',
+      { token }
+    );
+    return response.data;
+  },
+
+  /**
+   * Disable 2FA
+   */
+  async disable2FA(password: string): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      '/auth/2fa/disable',
+      { password }
+    );
+    return response.data;
+  },
+
+  /**
+   * Get 2FA status
+   */
+  async get2FAStatus(): Promise<{ twoFactorEnabled: boolean }> {
+    const response = await apiClient.get<{ twoFactorEnabled: boolean }>('/auth/2fa/status');
+    return response.data;
+  },
+
+  /**
+   * Regenerate backup codes
+   */
+  async regenerateBackupCodes(): Promise<{ backupCodes: string[] }> {
+    const response = await apiClient.post<{ backupCodes: string[] }>('/auth/2fa/backup-codes');
     return response.data;
   },
 

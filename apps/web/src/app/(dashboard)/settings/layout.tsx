@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Settings } from 'lucide-react';
+import { Building2, Users, FileText, Settings, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const settingsNavItems = [
@@ -24,6 +24,12 @@ const settingsNavItems = [
     href: '/settings/policies',
     icon: FileText,
     description: 'Policen und Versicherer',
+  },
+  {
+    title: 'Sicherheit',
+    href: '/settings/security',
+    icon: Shield,
+    description: 'Zwei-Faktor-Authentifizierung',
   },
 ];
 

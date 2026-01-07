@@ -11,6 +11,17 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'POA - Point of Accident',
   description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
+  openGraph: {
+    title: 'POA - Point of Accident',
+    description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
+    siteName: 'POA',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

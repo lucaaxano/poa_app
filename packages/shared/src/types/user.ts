@@ -37,6 +37,7 @@ export interface Company {
   country: string | null;
   phone: string | null;
   website: string | null;
+  logoUrl: string | null;
   numEmployees: number | null;
   numVehicles: number | null;
   createdAt: Date;
