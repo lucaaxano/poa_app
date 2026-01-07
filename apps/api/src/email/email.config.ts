@@ -16,10 +16,13 @@ export const getEmailConfig = (configService: ConfigService): EmailConfig => {
   const provider = configService.get<string>('EMAIL_PROVIDER', 'smtp');
 
   if (provider === 'smtp') {
+    const secureValue = configService.get<string>('SMTP_SECURE', 'false');
+    const isSecure = secureValue === 'true' || secureValue === '1';
+
     return {
       host: configService.get<string>('SMTP_HOST', 'localhost'),
       port: configService.get<number>('SMTP_PORT', 1025),
-      secure: configService.get<boolean>('SMTP_SECURE', false),
+      secure: isSecure,
       auth: configService.get<string>('SMTP_USER')
         ? {
             user: configService.get<string>('SMTP_USER', ''),
