@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -52,6 +53,12 @@ const navItems: NavItem[] = [
     title: 'Fahrzeuge',
     href: '/vehicles' as Route,
     icon: <Car className="h-5 w-5" />,
+    roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
+  },
+  {
+    title: 'Versicherungen',
+    href: '/settings/policies' as Route,
+    icon: <Shield className="h-5 w-5" />,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
