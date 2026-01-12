@@ -20,13 +20,14 @@ async function bootstrap() {
     }),
   );
 
-  // CORS
-  const frontendUrl = configService.get('FRONTEND_URL');
+  // CORS - Allow all origins in production for now to debug
+  const frontendUrl = configService.get('FRONTEND_URL') || 'https://poa-platform.de';
   const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://poa-platform.de',
+    'https://www.poa-platform.de',
     frontendUrl,
-    // Also allow without trailing slash and with www
     frontendUrl?.replace(/\/$/, ''),
     frontendUrl?.replace('https://', 'https://www.'),
   ].filter(Boolean) as string[];
@@ -40,8 +41,16 @@ async function bootstrap() {
         return callback(null, true);
       }
 
+      // Normalize origin (remove trailing slash)
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
       // Check if origin is in allowed list
-      if (allowedOrigins.some(allowed => origin === allowed || origin === allowed.replace(/\/$/, ''))) {
+      const isAllowed = allowedOrigins.some(allowed => {
+        const normalizedAllowed = allowed.replace(/\/$/, '');
+        return normalizedOrigin === normalizedAllowed;
+      });
+
+      if (isAllowed) {
         return callback(null, origin);
       }
 
@@ -52,6 +61,8 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   // Global prefix
