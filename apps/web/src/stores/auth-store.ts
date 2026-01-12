@@ -98,6 +98,7 @@ export const useAuthStore = create<AuthState>()(
             company: response.company,
             isAuthenticated: true,
             isLoading: false,
+            isInitialized: true, // Mark as initialized to skip checkAuth API call
             twoFactor: { requires2FA: false, tempToken: null, userId: null },
             // Clear broker state on new login
             linkedCompanies: null,
@@ -124,6 +125,7 @@ export const useAuthStore = create<AuthState>()(
             company: response.company,
             isAuthenticated: true,
             isLoading: false,
+            isInitialized: true, // Mark as initialized to skip checkAuth API call
             twoFactor: { requires2FA: false, tempToken: null, userId: null },
             linkedCompanies: null,
             activeCompany: null,
@@ -148,6 +150,7 @@ export const useAuthStore = create<AuthState>()(
             company: response.company,
             isAuthenticated: true,
             isLoading: false,
+            isInitialized: true, // Mark as initialized to skip checkAuth API call
             twoFactor: { requires2FA: false, tempToken: null, userId: null },
             linkedCompanies: null,
             activeCompany: null,
@@ -190,15 +193,20 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuth: async () => {
         const token = getAccessToken();
-        const { user: cachedUser, company: cachedCompany, isAuthenticated: wasAuthenticated } = get();
+        const { user: cachedUser, isAuthenticated: wasAuthenticated, isInitialized: alreadyInitialized } = get();
 
         if (!token) {
           set({ isInitialized: true, isAuthenticated: false, user: null, company: null });
           return;
         }
 
-        // If we have cached auth data, use it immediately (no loading state)
-        // This makes the app feel faster on subsequent visits
+        // If already initialized with valid auth (e.g., just logged in), skip API call entirely
+        if (alreadyInitialized && cachedUser && wasAuthenticated) {
+          return;
+        }
+
+        // If we have cached auth data but not initialized, use cache immediately
+        // and verify in background (for page refresh scenarios)
         if (cachedUser && wasAuthenticated) {
           set({ isInitialized: true });
           // Update in background without blocking
@@ -280,6 +288,8 @@ export const useAuthStore = create<AuthState>()(
         // Only persist activeCompany for broker
         activeCompany: state.activeCompany,
       }),
+      // Don't persist isInitialized - it should be false on fresh page load
+      // so that checkAuth can verify the token on refresh
     }
   )
 );
