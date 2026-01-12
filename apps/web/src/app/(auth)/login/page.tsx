@@ -47,13 +47,19 @@ export default function LoginPage() {
     }
   }, [twoFactor.requires2FA, useBackupCode]);
 
+  // Helper to get redirect path based on user role
+  const getRedirectPath = () => {
+    const user = useAuthStore.getState().user;
+    return user?.role === 'SUPERADMIN' ? '/admin' : '/dashboard';
+  };
+
   const onSubmit = async (data: LoginSchema) => {
     try {
       setEmailNotVerified(false);
       const result = await login(data);
       if (!result.requires2FA) {
         toast.success('Erfolgreich angemeldet');
-        router.push('/dashboard');
+        router.push(getRedirectPath());
       }
       // If 2FA is required, the UI will switch to show the 2FA input
     } catch (error) {
@@ -121,7 +127,7 @@ export default function LoginPage() {
     try {
       await complete2FA(code);
       toast.success('Erfolgreich angemeldet');
-      router.push('/dashboard');
+      router.push(getRedirectPath());
     } catch (error) {
       toast.error(getErrorMessage(error));
       setTwoFactorCode(['', '', '', '', '', '']);
@@ -137,7 +143,7 @@ export default function LoginPage() {
     try {
       await complete2FAWithBackup(backupCode);
       toast.success('Erfolgreich angemeldet');
-      router.push('/dashboard');
+      router.push(getRedirectPath());
     } catch (error) {
       toast.error(getErrorMessage(error));
       setBackupCode('');

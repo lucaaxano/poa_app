@@ -14,16 +14,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isInitialized, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isInitialized, isLoading } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated, or to admin if SUPERADMIN
   useEffect(() => {
-    if (isInitialized && !isLoading && !isAuthenticated) {
-      router.replace('/login');
+    if (isInitialized && !isLoading) {
+      if (!isAuthenticated) {
+        router.replace('/login');
+      } else if (user?.role === 'SUPERADMIN') {
+        router.replace('/admin');
+      }
     }
-  }, [isAuthenticated, isInitialized, isLoading, router]);
+  }, [isAuthenticated, isInitialized, isLoading, user?.role, router]);
 
   // Show loading while checking auth
   if (!isInitialized || isLoading) {
@@ -34,8 +38,8 @@ export default function DashboardLayout({
     );
   }
 
-  // Don't render layout if not authenticated
-  if (!isAuthenticated) {
+  // Don't render layout if not authenticated or if SUPERADMIN (redirecting to /admin)
+  if (!isAuthenticated || user?.role === 'SUPERADMIN') {
     return null;
   }
 
