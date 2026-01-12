@@ -21,13 +21,37 @@ async function bootstrap() {
   );
 
   // CORS
+  const frontendUrl = configService.get('FRONTEND_URL');
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    frontendUrl,
+    // Also allow without trailing slash and with www
+    frontendUrl?.replace(/\/$/, ''),
+    frontendUrl?.replace('https://', 'https://www.'),
+  ].filter(Boolean) as string[];
+
+  console.log('CORS allowed origins:', allowedOrigins);
+
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      configService.get('FRONTEND_URL'),
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Check if origin is in allowed list
+      if (allowedOrigins.some(allowed => origin === allowed || origin === allowed.replace(/\/$/, ''))) {
+        return callback(null, origin);
+      }
+
+      console.warn(`CORS blocked origin: ${origin}`);
+      return callback(null, false);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
   });
 
   // Global prefix
