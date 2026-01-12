@@ -183,42 +183,47 @@ export class AuthService {
    * Verify email with token
    */
   async verifyEmail(token: string): Promise<{ message: string }> {
-    // Find all non-expired verification tokens
+    // Find all verification tokens (including used ones to check if already verified)
     const verifications = await this.prisma.emailVerification.findMany({
       where: {
         expiresAt: { gt: new Date() },
-        usedAt: null,
       },
       include: { user: true },
     });
 
     // Find matching token
-    let validVerification = null;
+    let matchedVerification = null;
     for (const verification of verifications) {
       const isMatch = await bcrypt.compare(token, verification.tokenHash);
       if (isMatch) {
-        validVerification = verification;
+        matchedVerification = verification;
         break;
       }
     }
 
-    if (!validVerification) {
+    if (!matchedVerification) {
       throw new BadRequestException('Ungültiger oder abgelaufener Verifizierungslink');
+    }
+
+    // Check if the token was already used or user is already verified
+    if (matchedVerification.usedAt || matchedVerification.user.emailVerifiedAt) {
+      this.logger.log(`Email already verified for user ${matchedVerification.userId}`);
+      return { message: 'E-Mail-Adresse wurde bereits bestätigt. Sie können sich anmelden.' };
     }
 
     // Update user and mark verification as used
     await this.prisma.$transaction([
       this.prisma.user.update({
-        where: { id: validVerification.userId },
+        where: { id: matchedVerification.userId },
         data: { emailVerifiedAt: new Date() },
       }),
       this.prisma.emailVerification.update({
-        where: { id: validVerification.id },
+        where: { id: matchedVerification.id },
         data: { usedAt: new Date() },
       }),
     ]);
 
-    this.logger.log(`Email verified for user ${validVerification.userId}`);
+    this.logger.log(`Email verified for user ${matchedVerification.userId}`);
 
     return { message: 'E-Mail-Adresse erfolgreich bestätigt. Sie können sich jetzt anmelden.' };
   }
@@ -298,14 +303,16 @@ export class AuthService {
       };
     }
 
-    // Update last login
-    await this.prisma.user.update({
+    // Generate tokens (do this first for faster response)
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    // Update last login asynchronously (non-blocking)
+    this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
+    }).catch((error) => {
+      this.logger.warn(`Failed to update lastLoginAt for user ${user.id}: ${error.message}`);
     });
-
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.role);
 
     return {
       user: this.sanitizeUser(user),
@@ -345,14 +352,16 @@ export class AuthService {
       throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
-    // Update last login
-    await this.prisma.user.update({
+    // Generate full tokens (do this first for faster response)
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    // Update last login asynchronously (non-blocking)
+    this.prisma.user.update({
       where: { id: userId },
       data: { lastLoginAt: new Date() },
+    }).catch((error) => {
+      this.logger.warn(`Failed to update lastLoginAt for user ${userId}: ${error.message}`);
     });
-
-    // Generate full tokens
-    const tokens = await this.generateTokens(user.id, user.role);
 
     this.logger.log(`User ${userId} completed 2FA login`);
 
@@ -394,14 +403,16 @@ export class AuthService {
       throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
-    // Update last login
-    await this.prisma.user.update({
+    // Generate full tokens (do this first for faster response)
+    const tokens = await this.generateTokens(user.id, user.role);
+
+    // Update last login asynchronously (non-blocking)
+    this.prisma.user.update({
       where: { id: userId },
       data: { lastLoginAt: new Date() },
+    }).catch((error) => {
+      this.logger.warn(`Failed to update lastLoginAt for user ${userId}: ${error.message}`);
     });
-
-    // Generate full tokens
-    const tokens = await this.generateTokens(user.id, user.role);
 
     this.logger.log(`User ${userId} completed 2FA login with backup code`);
 

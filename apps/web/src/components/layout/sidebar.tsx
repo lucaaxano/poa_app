@@ -98,7 +98,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-[width] duration-300 will-change-[width]',
         collapsed ? 'w-[72px]' : 'w-64'
       )}
     >

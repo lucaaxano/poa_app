@@ -190,12 +190,38 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuth: async () => {
         const token = getAccessToken();
+        const { user: cachedUser, company: cachedCompany, isAuthenticated: wasAuthenticated } = get();
 
         if (!token) {
-          set({ isInitialized: true, isAuthenticated: false });
+          set({ isInitialized: true, isAuthenticated: false, user: null, company: null });
           return;
         }
 
+        // If we have cached auth data, use it immediately (no loading state)
+        // This makes the app feel faster on subsequent visits
+        if (cachedUser && wasAuthenticated) {
+          set({ isInitialized: true });
+          // Update in background without blocking
+          authApi.getProfile().then((response) => {
+            set({
+              user: response.user,
+              company: response.company,
+              isAuthenticated: true,
+            });
+          }).catch(() => {
+            clearTokens();
+            set({
+              user: null,
+              company: null,
+              isAuthenticated: false,
+              linkedCompanies: null,
+              activeCompany: null,
+            });
+          });
+          return;
+        }
+
+        // No cached data - show loading and fetch
         set({ isLoading: true });
         try {
           const response = await authApi.getProfile();
@@ -247,6 +273,10 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'poa-auth-storage',
       partialize: (state) => ({
+        // Persist user and company for faster initial load
+        user: state.user,
+        company: state.company,
+        isAuthenticated: state.isAuthenticated,
         // Only persist activeCompany for broker
         activeCompany: state.activeCompany,
       }),

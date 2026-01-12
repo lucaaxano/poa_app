@@ -27,9 +27,14 @@ function VerifyEmailContent() {
 
     const verifyEmail = async () => {
       try {
-        await authApi.verifyEmail(token);
+        const result = await authApi.verifyEmail(token);
         setIsVerified(true);
-        toast.success('E-Mail-Adresse erfolgreich bestätigt');
+        // Show appropriate message based on whether it was already verified
+        if (result.message.includes('bereits')) {
+          toast.info('E-Mail-Adresse wurde bereits bestätigt');
+        } else {
+          toast.success('E-Mail-Adresse erfolgreich bestätigt');
+        }
       } catch (err) {
         setError(getErrorMessage(err));
       } finally {

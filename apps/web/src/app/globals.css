@@ -83,4 +83,27 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+
+  /* Scroll performance optimizations */
+  html {
+    scroll-behavior: auto; /* Disable smooth scrolling for better performance */
+  }
+
+  /* Enable hardware acceleration for scrolling containers */
+  .overflow-auto,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-scroll,
+  .overflow-y-scroll,
+  .overflow-x-scroll {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Prevent layout thrashing from fixed elements during scroll */
+  .fixed {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 }

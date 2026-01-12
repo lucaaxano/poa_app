@@ -60,7 +60,7 @@ export default function DashboardLayout({
       {/* Mobile Sidebar */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 transform bg-background transition-transform duration-300 lg:hidden',
+          'fixed inset-y-0 left-0 z-40 w-64 transform bg-background transition-transform duration-300 will-change-transform lg:hidden',
           mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -73,7 +73,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div
         className={cn(
-          'transition-all duration-300',
+          'transition-[margin-left] duration-300 will-change-[margin-left]',
           sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
         )}
       >
