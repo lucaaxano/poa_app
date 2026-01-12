@@ -11,7 +11,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { checkAuth, isInitialized } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
+    // Small delay to allow Zustand store rehydration to complete
+    // This prevents race conditions where checkAuth runs before
+    // persisted state is available
+    const timer = setTimeout(() => {
+      checkAuth();
+    }, 50);
+    return () => clearTimeout(timer);
   }, [checkAuth]);
 
   // Show nothing while checking auth to avoid flash

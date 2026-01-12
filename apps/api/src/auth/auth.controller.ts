@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TwoFactorService } from './two-factor.service';
@@ -102,21 +103,30 @@ export class AuthController {
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Post('invite')
   async inviteUser(@Request() req: AuthenticatedRequest, @Body() dto: InviteUserDto) {
-    return this.authService.createInvitation(req.user.companyId!, dto, req.user.id);
+    if (!req.user.companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet. Einladungen können nur von Firmen-Mitgliedern gesendet werden.');
+    }
+    return this.authService.createInvitation(req.user.companyId, dto, req.user.id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Get('invitations')
   async getInvitations(@Request() req: AuthenticatedRequest) {
-    return this.authService.getInvitations(req.user.companyId!);
+    if (!req.user.companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet.');
+    }
+    return this.authService.getInvitations(req.user.companyId);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Delete('invitations/:id')
   async cancelInvitation(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.authService.cancelInvitation(id, req.user.companyId!);
+    if (!req.user.companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet.');
+    }
+    return this.authService.cancelInvitation(id, req.user.companyId);
   }
 
   // ==========================================
@@ -166,7 +176,10 @@ export class AuthController {
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   @Get('company-brokers')
   async getCompanyBrokers(@Request() req: AuthenticatedRequest) {
-    return this.authService.getCompanyBrokers(req.user.companyId!);
+    if (!req.user.companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet.');
+    }
+    return this.authService.getCompanyBrokers(req.user.companyId);
   }
 
   /**
@@ -179,7 +192,10 @@ export class AuthController {
     @Request() req: AuthenticatedRequest,
     @Param('id') brokerId: string,
   ) {
-    return this.authService.removeBrokerFromCompany(brokerId, req.user.companyId!);
+    if (!req.user.companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet.');
+    }
+    return this.authService.removeBrokerFromCompany(brokerId, req.user.companyId);
   }
 
   // ==========================================

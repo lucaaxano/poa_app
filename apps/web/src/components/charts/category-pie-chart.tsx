@@ -98,7 +98,7 @@ export function CategoryPieChart({
       </CardHeader>
       <CardContent>
         <div className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <PieChart>
               <Pie
                 data={chartData}

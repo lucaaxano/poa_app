@@ -27,6 +27,7 @@ import {
 import { useInviteUser } from '@/hooks/use-users';
 import { UserRole } from '@poa/shared';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/api/client';
 
 const inviteSchema = z.object({
   email: z.string().email('Ungueltige E-Mail-Adresse'),
@@ -71,8 +72,8 @@ export function InviteModal() {
       reset();
       setOpen(false);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Fehler beim Senden der Einladung';
-      toast.error(message);
+      // Use getErrorMessage to extract the actual error message from the API response
+      toast.error(getErrorMessage(error));
     }
   };
 

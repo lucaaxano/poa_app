@@ -84,7 +84,7 @@ export function VehicleBarChart({
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <BarChart
               data={chartData}
               layout="vertical"

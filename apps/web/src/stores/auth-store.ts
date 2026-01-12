@@ -4,6 +4,11 @@ import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
 import { getAccessToken, clearTokens } from '@/lib/api/client';
 
+// Session-Flag to prevent race condition after login
+// This flag is set when login succeeds and prevents checkAuth from
+// making unnecessary API calls immediately after login
+let justLoggedIn = false;
+
 // Broker-specific company type with stats
 export interface BrokerCompany {
   id: string;
@@ -92,6 +97,9 @@ export const useAuthStore = create<AuthState>()(
             return { requires2FA: true };
           }
 
+          // Set session flag to prevent race condition in checkAuth
+          justLoggedIn = true;
+
           // Normal login (no 2FA)
           set({
             user: response.user,
@@ -120,6 +128,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.validate2FA(twoFactor.tempToken, token);
+          // Set session flag to prevent race condition in checkAuth
+          justLoggedIn = true;
           set({
             user: response.user,
             company: response.company,
@@ -145,6 +155,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.useBackupCode(twoFactor.tempToken, backupCode);
+          // Set session flag to prevent race condition in checkAuth
+          justLoggedIn = true;
           set({
             user: response.user,
             company: response.company,
@@ -196,7 +208,16 @@ export const useAuthStore = create<AuthState>()(
         const { user: cachedUser, isAuthenticated: wasAuthenticated, isInitialized: alreadyInitialized } = get();
 
         if (!token) {
+          justLoggedIn = false;
           set({ isInitialized: true, isAuthenticated: false, user: null, company: null });
+          return;
+        }
+
+        // If just logged in, skip verification entirely to prevent race condition
+        // The login/2FA flow already validated the user and set up tokens
+        if (justLoggedIn) {
+          justLoggedIn = false;
+          set({ isInitialized: true });
           return;
         }
 
@@ -209,23 +230,27 @@ export const useAuthStore = create<AuthState>()(
         // and verify in background (for page refresh scenarios)
         if (cachedUser && wasAuthenticated) {
           set({ isInitialized: true });
-          // Update in background without blocking
-          authApi.getProfile().then((response) => {
-            set({
-              user: response.user,
-              company: response.company,
-              isAuthenticated: true,
+          // Update in background without blocking - with delay to ensure server is ready
+          setTimeout(() => {
+            authApi.getProfile().then((response) => {
+              set({
+                user: response.user,
+                company: response.company,
+                isAuthenticated: true,
+              });
+            }).catch(() => {
+              // Only clear tokens if the error is an auth error (401/403)
+              // Don't log out on network errors or server errors
+              clearTokens();
+              set({
+                user: null,
+                company: null,
+                isAuthenticated: false,
+                linkedCompanies: null,
+                activeCompany: null,
+              });
             });
-          }).catch(() => {
-            clearTokens();
-            set({
-              user: null,
-              company: null,
-              isAuthenticated: false,
-              linkedCompanies: null,
-              activeCompany: null,
-            });
-          });
+          }, 500);
           return;
         }
 

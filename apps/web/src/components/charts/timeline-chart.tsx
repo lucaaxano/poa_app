@@ -106,7 +106,7 @@ export function TimelineChart({
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <LineChart
               data={chartData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
