@@ -17,7 +17,19 @@ export interface PortalResponse {
   url: string;
 }
 
+export interface StripeConfigResponse {
+  priceId: string;
+}
+
 export const stripeApi = {
+  /**
+   * Get Stripe configuration (price ID)
+   */
+  getConfig: async (): Promise<StripeConfigResponse> => {
+    const response = await apiClient.get<StripeConfigResponse>('/stripe/config');
+    return response.data;
+  },
+
   /**
    * Get current subscription details
    */

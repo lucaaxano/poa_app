@@ -32,6 +32,13 @@ export class StripeService {
   }
 
   /**
+   * Get the configured Stripe Price ID
+   */
+  getPriceId(): string {
+    return this.configService.get<string>('STRIPE_PRICE_ID', '');
+  }
+
+  /**
    * Create a Stripe customer for a company
    */
   async createCustomer(companyId: string, email: string, companyName: string): Promise<string> {

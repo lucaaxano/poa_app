@@ -6,16 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { SubscriptionCard } from '@/components/billing/subscription-card';
 import { PricingCalculator } from '@/components/billing/pricing-calculator';
-import { useSubscription, useRefreshSubscription } from '@/hooks/use-subscription';
+import { useSubscription, useRefreshSubscription, useStripeConfig } from '@/hooks/use-subscription';
 import { toast } from 'sonner';
 import { CreditCard, Car, Receipt, CheckCircle2 } from 'lucide-react';
-
-// Get price ID from environment variable
-const STRIPE_PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || '';
 
 export default function BillingSettingsPage() {
   const searchParams = useSearchParams();
   const { data: subscription, isLoading } = useSubscription();
+  const { data: stripeConfig } = useStripeConfig();
   const refreshSubscription = useRefreshSubscription();
 
   // Handle URL parameters from Stripe redirect
@@ -58,7 +56,7 @@ export default function BillingSettingsPage() {
       {hasSubscription ? (
         <SubscriptionCard />
       ) : (
-        <PricingCalculator priceId={STRIPE_PRICE_ID} />
+        <PricingCalculator priceId={stripeConfig?.priceId || ''} />
       )}
 
       {/* Pricing Info Card */}

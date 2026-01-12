@@ -31,6 +31,16 @@ export class StripeController {
 
   constructor(private readonly stripeService: StripeService) {}
 
+  /**
+   * Get Stripe configuration (public endpoint)
+   */
+  @Get('config')
+  getConfig() {
+    return {
+      priceId: this.stripeService.getPriceId(),
+    };
+  }
+
   private validateCompanyId(companyId: string | null): string {
     if (!companyId) {
       throw new BadRequestException('Kein Unternehmen zugeordnet. Billing ist nur fuer Firmenkonten verfuegbar.');

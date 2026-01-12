@@ -10,6 +10,21 @@ export const subscriptionKeys = {
   current: () => [...subscriptionKeys.all, 'current'] as const,
 };
 
+export const stripeConfigKeys = {
+  config: ['stripe', 'config'] as const,
+};
+
+/**
+ * Hook to get Stripe configuration (price ID)
+ */
+export function useStripeConfig() {
+  return useQuery({
+    queryKey: stripeConfigKeys.config,
+    queryFn: stripeApi.getConfig,
+    staleTime: Infinity, // Config doesn't change during session
+  });
+}
+
 /**
  * Hook to get current subscription details
  */
