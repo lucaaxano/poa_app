@@ -4,19 +4,15 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/stores/auth-store';
 import {
   LayoutDashboard,
-  FileWarning,
-  Car,
-  Settings,
-  Users,
   Building2,
+  Users,
+  FileWarning,
+  Shield,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
-  Shield,
-  ShieldCheck,
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -24,83 +20,43 @@ interface NavItem {
   title: string;
   href: Route;
   icon: React.ReactNode;
-  roles?: string[];
 }
 
-const navItems: NavItem[] = [
+const adminNavItems: NavItem[] = [
   {
     title: 'Dashboard',
-    href: '/dashboard' as Route,
+    href: '/admin' as Route,
     icon: <LayoutDashboard className="h-5 w-5" />,
   },
   {
-    title: 'Schaeden',
-    href: '/claims' as Route,
-    icon: <FileWarning className="h-5 w-5" />,
-  },
-  {
-    title: 'Auswertungen',
-    href: '/reports' as Route,
-    icon: <BarChart3 className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
-  },
-  {
     title: 'Firmen',
-    href: '/broker/companies' as Route,
+    href: '/admin/companies' as Route,
     icon: <Building2 className="h-5 w-5" />,
-    roles: ['BROKER'],
-  },
-  {
-    title: 'Fahrzeuge',
-    href: '/vehicles' as Route,
-    icon: <Car className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
-  },
-  {
-    title: 'Versicherungen',
-    href: '/settings/policies' as Route,
-    icon: <Shield className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
     title: 'Benutzer',
-    href: '/settings/users' as Route,
+    href: '/admin/users' as Route,
     icon: <Users className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
-    title: 'Firma',
-    href: '/settings/company' as Route,
-    icon: <Building2 className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
+    title: 'Schaeden',
+    href: '/admin/claims' as Route,
+    icon: <FileWarning className="h-5 w-5" />,
   },
   {
-    title: 'Einstellungen',
-    href: '/settings' as Route,
-    icon: <Settings className="h-5 w-5" />,
-    roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
-  },
-  {
-    title: 'Admin-Panel',
-    href: '/admin' as Route,
-    icon: <ShieldCheck className="h-5 w-5" />,
-    roles: ['SUPERADMIN'],
+    title: 'Versicherer',
+    href: '/admin/insurers' as Route,
+    icon: <Shield className="h-5 w-5" />,
   },
 ];
 
-interface SidebarProps {
+interface AdminSidebarProps {
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) {
+export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuthStore();
-  const userRole = user?.role || '';
-
-  const filteredNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(userRole)
-  );
 
   return (
     <aside
@@ -112,24 +68,38 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
       <div className="flex h-full flex-col">
         {/* Logo */}
         <div className="flex h-16 items-center border-b px-4">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
+          <Link href={'/admin' as Route} className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-lg">
+              A
             </div>
             {!collapsed && (
-              <span className="text-lg font-semibold tracking-tight">POA</span>
+              <span className="text-lg font-semibold tracking-tight">Admin</span>
             )}
           </Link>
         </div>
 
+        {/* Back to Dashboard */}
+        <div className="px-3 pt-4 pb-2">
+          <Link
+            href="/dashboard"
+            className={cn(
+              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all',
+              collapsed && 'justify-center px-2'
+            )}
+            title={collapsed ? 'Zurueck zum Dashboard' : undefined}
+          >
+            <ArrowLeft className="h-5 w-5" />
+            {!collapsed && <span>Zurueck zum Dashboard</span>}
+          </Link>
+        </div>
+
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {filteredNavItems.map((item) => {
-            // Special handling for settings: only exact match for /settings
-            // For other items: match exact or starts with + /
-            const isActive = item.href === '/settings'
-              ? pathname === '/settings'
-              : pathname === item.href || pathname.startsWith(item.href + '/');
+        <nav className="flex-1 space-y-1 px-3 py-2">
+          {adminNavItems.map((item) => {
+            const isActive =
+              item.href === ('/admin' as Route)
+                ? pathname === '/admin'
+                : pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.href}
@@ -137,7 +107,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-primary text-primary-foreground shadow-soft'
+                    ? 'bg-red-600 text-white shadow-soft'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   collapsed && 'justify-center px-2'
                 )}

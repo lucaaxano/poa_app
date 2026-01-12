@@ -230,7 +230,7 @@ async function main() {
   const superadminUser = await prisma.user.create({
     data: {
       companyId: null,
-      email: 'superadmin@poa-app.de',
+      email: 'admin@poa-app.de',
       passwordHash: await hashPassword('SuperAdmin123!'),
       role: UserRole.SUPERADMIN,
       firstName: 'System',
@@ -757,7 +757,7 @@ async function main() {
   console.log('  broker@versicherungsmakler.de / Broker123!');
   console.log('');
   console.log('Superadmin:');
-  console.log('  superadmin@poa-app.de / SuperAdmin123!');
+  console.log('  admin@poa-app.de / SuperAdmin123!');
   console.log('----------------------------------------\n');
 }
 

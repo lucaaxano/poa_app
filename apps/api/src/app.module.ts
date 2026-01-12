@@ -15,6 +15,7 @@ import { EmailModule } from './email/email.module';
 import { BrokerModule } from './broker/broker.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AiModule } from './ai/ai.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AiModule } from './ai/ai.module';
     InsurersModule,
     BrokerModule,
     NotificationsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
