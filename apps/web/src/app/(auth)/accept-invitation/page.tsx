@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage, setTokens } from '@/lib/api/client';
 import { useAuthStore } from '@/stores/auth-store';
-import { Eye, EyeOff, ArrowRight, UserPlus, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 
 const acceptInvitationSchema = z
   .object({
@@ -120,20 +120,16 @@ function AcceptInvitationForm() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <Link href="/" className="mb-12 flex justify-center">
-          <Image
-            src="/logo-full.png"
-            alt="POA - Point of Accident"
-            width={270}
-            height={68}
-          />
-        </Link>
-
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
-            <UserPlus className="h-8 w-8 text-primary" />
-          </div>
+          {/* Logo */}
+          <Link href="/" className="mb-6 flex justify-center">
+            <Image
+              src="/logo-full.png"
+              alt="POA - Point of Accident"
+              width={405}
+              height={102}
+            />
+          </Link>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Einladung annehmen
           </h1>
