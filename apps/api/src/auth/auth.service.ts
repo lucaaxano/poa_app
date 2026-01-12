@@ -265,10 +265,15 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResponse | TwoFactorRequiredResponse> {
+    const startTime = Date.now();
+    this.logger.log(`[LOGIN] Starting login for ${dto.email}`);
+
+    const dbStartTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       include: { company: true },
     });
+    this.logger.log(`[LOGIN] DB query took ${Date.now() - dbStartTime}ms`);
 
     if (!user) {
       throw new UnauthorizedException('Ungueltige Anmeldedaten');
@@ -278,7 +283,10 @@ export class AuthService {
       throw new UnauthorizedException('Konto ist deaktiviert');
     }
 
+    const bcryptStartTime = Date.now();
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    this.logger.log(`[LOGIN] bcrypt.compare took ${Date.now() - bcryptStartTime}ms`);
+
     if (!isPasswordValid) {
       throw new UnauthorizedException('Ungueltige Anmeldedaten');
     }
@@ -296,6 +304,7 @@ export class AuthService {
         { expiresIn: '5m' }, // 5 minutes to complete 2FA
       );
 
+      this.logger.log(`[LOGIN] 2FA required, total time: ${Date.now() - startTime}ms`);
       return {
         requires2FA: true,
         tempToken,
@@ -304,6 +313,7 @@ export class AuthService {
     }
 
     // Generate tokens and update last login in parallel for faster response
+    const tokenStartTime = Date.now();
     const [tokens] = await Promise.all([
       this.generateTokens(user.id, user.role),
       this.prisma.user.update({
@@ -311,6 +321,8 @@ export class AuthService {
         data: { lastLoginAt: new Date() },
       }),
     ]);
+    this.logger.log(`[LOGIN] Token generation + lastLogin update took ${Date.now() - tokenStartTime}ms`);
+    this.logger.log(`[LOGIN] Total login time: ${Date.now() - startTime}ms`);
 
     return {
       user: this.sanitizeUser(user),
@@ -418,10 +430,12 @@ export class AuthService {
   }
 
   async validateUser(userId: string): Promise<(User & { company: Company | null }) | null> {
+    const startTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { company: true },
     });
+    this.logger.log(`[VALIDATE_USER] DB query took ${Date.now() - startTime}ms`);
 
     if (!user || !user.isActive) {
       return null;
@@ -431,10 +445,12 @@ export class AuthService {
   }
 
   async getProfile(userId: string): Promise<ProfileResponse> {
+    const startTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { company: true },
     });
+    this.logger.log(`[GET_PROFILE] DB query took ${Date.now() - startTime}ms`);
 
     if (!user) {
       throw new UnauthorizedException('Benutzer nicht gefunden');
