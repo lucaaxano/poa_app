@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +22,17 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/80 backdrop-blur-lg px-4 sm:px-6">
       <div className="flex items-center gap-4">
+        {/* Logo */}
+        <Link href="/dashboard" className="flex items-center">
+          <Image
+            src="/logo-icon.png"
+            alt="POA Logo"
+            width={40}
+            height={40}
+            className="shrink-0"
+          />
+        </Link>
+
         {showMenuButton && (
           <Button
             variant="ghost"

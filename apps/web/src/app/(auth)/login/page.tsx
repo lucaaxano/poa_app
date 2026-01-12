@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -157,10 +158,12 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
-            </div>
-            <span className="text-xl font-semibold">POA</span>
+            <Image
+              src="/logo-full.png"
+              alt="POA - Point of Accident"
+              width={270}
+              height={68}
+            />
           </Link>
 
           {/* Header */}

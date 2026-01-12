@@ -598,29 +598,6 @@ export class AuthService {
       where: { email: dto.email },
     });
 
-    if (existingUser) {
-      throw new ConflictException('Ein Benutzer mit dieser E-Mail existiert bereits');
-    }
-
-    // Check for existing pending invitation
-    const existingInvitation = await this.prisma.invitation.findFirst({
-      where: {
-        email: dto.email,
-        companyId,
-        acceptedAt: null,
-        expiresAt: { gt: new Date() },
-      },
-    });
-
-    if (existingInvitation) {
-      throw new ConflictException('Eine Einladung für diese E-Mail ist bereits ausstehend');
-    }
-
-    // Generate invitation token
-    const token = crypto.randomBytes(32).toString('hex');
-    const tokenHash = await bcrypt.hash(token, 10);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
     // Map role string to UserRole enum
     let role: UserRole;
     switch (dto.role) {
@@ -633,6 +610,39 @@ export class AuthService {
       default:
         role = UserRole.EMPLOYEE;
     }
+
+    // Handle existing user case
+    if (existingUser) {
+      // If inviting as BROKER and user is already a BROKER, create broker request
+      if (role === UserRole.BROKER && existingUser.role === UserRole.BROKER) {
+        return this.createBrokerRequest(companyId, existingUser, invitedByUserId);
+      }
+      // User exists but with different role or not inviting as broker
+      const roleDisplay = existingUser.role === UserRole.EMPLOYEE ? 'Mitarbeiter' :
+                          existingUser.role === UserRole.COMPANY_ADMIN ? 'Firmen-Admin' :
+                          existingUser.role === UserRole.BROKER ? 'Broker' : 'Superadmin';
+      throw new ConflictException(`Diese Person ist bereits als ${roleDisplay} registriert`);
+    }
+
+    // Check for existing pending invitation
+    const existingInvitation = await this.prisma.invitation.findFirst({
+      where: {
+        email: dto.email,
+        companyId,
+        acceptedAt: null,
+        rejectedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (existingInvitation) {
+      throw new ConflictException('Eine Einladung für diese E-Mail ist bereits ausstehend');
+    }
+
+    // Generate invitation token
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     const invitation = await this.prisma.invitation.create({
       data: {
@@ -668,6 +678,89 @@ export class AuthService {
       this.logger.log(`Invitation email sent to ${dto.email}`);
     } else {
       this.logger.error(`Failed to send invitation email to ${dto.email}: ${emailResult.error}`);
+    }
+
+    return {
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt,
+    };
+  }
+
+  /**
+   * Create a broker request for an existing broker user
+   */
+  private async createBrokerRequest(companyId: string, existingBroker: any, invitedByUserId: string): Promise<InvitationResponse> {
+    // Check if broker is already linked to this company
+    const existingLink = await this.prisma.brokerCompanyLink.findUnique({
+      where: {
+        brokerUserId_companyId: {
+          brokerUserId: existingBroker.id,
+          companyId,
+        },
+      },
+    });
+
+    if (existingLink) {
+      throw new ConflictException('Dieser Broker ist bereits mit Ihrer Firma verbunden');
+    }
+
+    // Check for existing pending broker request
+    const existingRequest = await this.prisma.invitation.findFirst({
+      where: {
+        email: existingBroker.email,
+        companyId,
+        targetUserId: existingBroker.id,
+        acceptedAt: null,
+        rejectedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (existingRequest) {
+      throw new ConflictException('Eine Anfrage an diesen Broker ist bereits ausstehend');
+    }
+
+    // Generate token (needed for schema but not used for existing users)
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days for broker requests
+
+    const invitation = await this.prisma.invitation.create({
+      data: {
+        companyId,
+        email: existingBroker.email,
+        role: UserRole.BROKER,
+        tokenHash,
+        invitedByUserId,
+        targetUserId: existingBroker.id,
+        expiresAt,
+      },
+    });
+
+    // Get company and inviter info for email
+    const [company, inviter] = await Promise.all([
+      this.prisma.company.findUnique({ where: { id: companyId } }),
+      this.prisma.user.findUnique({ where: { id: invitedByUserId } }),
+    ]);
+
+    const inviterName = inviter ? `${inviter.firstName} ${inviter.lastName}` : 'Ein Administrator';
+    const companyName = company?.name || 'Unbekannte Firma';
+
+    // Send broker request email
+    const emailResult = await this.emailService.sendBrokerRequestEmail(
+      existingBroker.email,
+      existingBroker.firstName,
+      inviterName,
+      companyName,
+      `${this.appUrl}/broker/requests`,
+    );
+
+    if (emailResult.success) {
+      this.logger.log(`Broker request email sent to ${existingBroker.email}`);
+    } else {
+      this.logger.error(`Failed to send broker request email to ${existingBroker.email}: ${emailResult.error}`);
     }
 
     return {
@@ -814,5 +907,182 @@ export class AuthService {
     });
 
     return { message: 'Passwort wurde erfolgreich geaendert' };
+  }
+
+  // ============================================
+  // BROKER REQUEST METHODS
+  // ============================================
+
+  /**
+   * Get pending broker requests for a broker user
+   */
+  async getBrokerRequests(brokerId: string) {
+    return this.prisma.invitation.findMany({
+      where: {
+        targetUserId: brokerId,
+        role: UserRole.BROKER,
+        acceptedAt: null,
+        rejectedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+        expiresAt: true,
+        company: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+          },
+        },
+        invitedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Accept a broker request (create BrokerCompanyLink)
+   */
+  async acceptBrokerRequest(requestId: string, brokerId: string): Promise<{ message: string }> {
+    const request = await this.prisma.invitation.findFirst({
+      where: {
+        id: requestId,
+        targetUserId: brokerId,
+        role: UserRole.BROKER,
+        acceptedAt: null,
+        rejectedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Anfrage nicht gefunden oder bereits bearbeitet');
+    }
+
+    // Create broker-company link and mark invitation as accepted
+    await this.prisma.$transaction([
+      this.prisma.brokerCompanyLink.create({
+        data: {
+          brokerUserId: brokerId,
+          companyId: request.companyId,
+        },
+      }),
+      this.prisma.invitation.update({
+        where: { id: requestId },
+        data: { acceptedAt: new Date() },
+      }),
+    ]);
+
+    this.logger.log(`Broker ${brokerId} accepted request from company ${request.company.name}`);
+
+    return { message: `Sie sind jetzt als Broker für ${request.company.name} registriert` };
+  }
+
+  /**
+   * Reject a broker request
+   */
+  async rejectBrokerRequest(requestId: string, brokerId: string): Promise<{ message: string }> {
+    const request = await this.prisma.invitation.findFirst({
+      where: {
+        id: requestId,
+        targetUserId: brokerId,
+        role: UserRole.BROKER,
+        acceptedAt: null,
+        rejectedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Anfrage nicht gefunden oder bereits bearbeitet');
+    }
+
+    await this.prisma.invitation.update({
+      where: { id: requestId },
+      data: { rejectedAt: new Date() },
+    });
+
+    this.logger.log(`Broker ${brokerId} rejected request from company ${request.company.name}`);
+
+    return { message: 'Anfrage wurde abgelehnt' };
+  }
+
+  /**
+   * Get brokers linked to a company
+   */
+  async getCompanyBrokers(companyId: string) {
+    const links = await this.prisma.brokerCompanyLink.findMany({
+      where: { companyId },
+      include: {
+        broker: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            isActive: true,
+            createdAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return links.map((link) => ({
+      id: link.broker.id,
+      email: link.broker.email,
+      firstName: link.broker.firstName,
+      lastName: link.broker.lastName,
+      avatarUrl: link.broker.avatarUrl,
+      isActive: link.broker.isActive,
+      linkedAt: link.createdAt,
+    }));
+  }
+
+  /**
+   * Remove a broker from a company
+   */
+  async removeBrokerFromCompany(brokerId: string, companyId: string): Promise<{ message: string }> {
+    const link = await this.prisma.brokerCompanyLink.findUnique({
+      where: {
+        brokerUserId_companyId: {
+          brokerUserId: brokerId,
+          companyId,
+        },
+      },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Broker-Verbindung nicht gefunden');
+    }
+
+    await this.prisma.brokerCompanyLink.delete({
+      where: {
+        brokerUserId_companyId: {
+          brokerUserId: brokerId,
+          companyId,
+        },
+      },
+    });
+
+    this.logger.log(`Broker ${brokerId} removed from company ${companyId}`);
+
+    return { message: 'Broker wurde entfernt' };
   }
 }

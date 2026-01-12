@@ -120,6 +120,69 @@ export class AuthController {
   }
 
   // ==========================================
+  // Broker Request Endpoints
+  // ==========================================
+
+  /**
+   * Get pending broker requests for the current broker
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('BROKER')
+  @Get('broker-requests')
+  async getBrokerRequests(@Request() req: AuthenticatedRequest) {
+    return this.authService.getBrokerRequests(req.user.id);
+  }
+
+  /**
+   * Accept a broker request
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('BROKER')
+  @Post('broker-requests/:id/accept')
+  async acceptBrokerRequest(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.authService.acceptBrokerRequest(id, req.user.id);
+  }
+
+  /**
+   * Reject a broker request
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('BROKER')
+  @Post('broker-requests/:id/reject')
+  async rejectBrokerRequest(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
+    return this.authService.rejectBrokerRequest(id, req.user.id);
+  }
+
+  /**
+   * Get brokers linked to the current company (for Company Admins)
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  @Get('company-brokers')
+  async getCompanyBrokers(@Request() req: AuthenticatedRequest) {
+    return this.authService.getCompanyBrokers(req.user.companyId!);
+  }
+
+  /**
+   * Remove a broker from the company
+   */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  @Delete('company-brokers/:id')
+  async removeBrokerFromCompany(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') brokerId: string,
+  ) {
+    return this.authService.removeBrokerFromCompany(brokerId, req.user.companyId!);
+  }
+
+  // ==========================================
   // Two-Factor Authentication (2FA) Endpoints
   // ==========================================
 

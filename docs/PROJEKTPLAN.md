@@ -1229,7 +1229,7 @@ npx create-expo-app apps/mobile --template
 
 #### 11.3.1 Infrastructure
 **Tasks:**
-- [ ] Production Supabase Projekt
+- [ ] Production Projekt
 - [ ] Production Backend Hosting (Render/Railway)
 - [ ] Production Frontend (Vercel)
 - [ ] Custom Domain

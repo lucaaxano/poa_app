@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -67,11 +68,13 @@ export default function RegisterPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 inline-flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
-            </div>
-            <span className="text-xl font-semibold">POA</span>
+          <Link href="/" className="mb-12 inline-flex items-center justify-center">
+            <Image
+              src="/logo-full.png"
+              alt="POA - Point of Accident"
+              width={270}
+              height={68}
+            />
           </Link>
 
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
@@ -107,10 +110,12 @@ export default function RegisterPage() {
         <div className="mx-auto w-full max-w-sm">
           {/* Logo */}
           <Link href="/" className="mb-12 inline-flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
-            </div>
-            <span className="text-xl font-semibold">POA</span>
+            <Image
+              src="/logo-full.png"
+              alt="POA - Point of Accident"
+              width={270}
+              height={68}
+            />
           </Link>
 
           {/* Header */}

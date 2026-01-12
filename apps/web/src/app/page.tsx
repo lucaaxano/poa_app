@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Route } from 'next';
 import { Button } from '@/components/ui/button';
 import { Car, Shield, BarChart3, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -9,14 +10,13 @@ export default function HomePage() {
       {/* Navigation */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-lg">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-semibold tracking-tight">POA</span>
-              <span className="text-xs text-muted-foreground -mt-1">Point of Accident</span>
-            </div>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo-full.png"
+              alt="POA - Point of Accident"
+              width={160}
+              height={40}
+            />
           </Link>
           <nav className="flex items-center gap-2">
             <Link href="/login">
@@ -160,9 +160,12 @@ export default function HomePage() {
         <div className="container">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-                P
-              </div>
+              <Image
+                src="/logo-icon.png"
+                alt="POA Logo"
+                width={32}
+                height={32}
+              />
               <span className="text-sm text-muted-foreground">
                 &copy; {new Date().getFullYear()} POA - Point of Accident. Alle Rechte vorbehalten.
               </span>

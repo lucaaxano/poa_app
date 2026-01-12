@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Bell, ArrowRight, Shield } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const settingsCards = [
@@ -17,6 +17,12 @@ const settingsCards = [
     href: '/settings/users',
     icon: Users,
     description: 'Verwalten Sie Mitarbeiter, Rollen und laden Sie neue Benutzer ein.',
+  },
+  {
+    title: 'Broker',
+    href: '/settings/broker',
+    icon: Briefcase,
+    description: 'Verwalten Sie Ihre Broker-Verbindungen und laden Sie neue Broker ein.',
   },
   {
     title: 'Versicherungen',

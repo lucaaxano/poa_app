@@ -261,4 +261,24 @@ export class EmailService implements OnModuleInit {
       context: claimData,
     });
   }
+
+  async sendBrokerRequestEmail(
+    to: string,
+    brokerName: string,
+    inviterName: string,
+    companyName: string,
+    requestsLink: string,
+  ): Promise<SendEmailResult> {
+    return this.sendEmail({
+      to,
+      subject: `Neue Broker-Anfrage von ${companyName} - POA`,
+      template: 'broker-request',
+      context: {
+        brokerName,
+        inviterName,
+        companyName,
+        requestsLink,
+      },
+    });
+  }
 }

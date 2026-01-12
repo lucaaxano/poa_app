@@ -79,6 +79,46 @@ export interface AcceptInvitationData {
   password: string;
 }
 
+// Broker Request Types
+export interface BrokerRequest {
+  id: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  company: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+  };
+  invitedBy: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface CompanyBroker {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  isActive: boolean;
+  linkedAt: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  expiresAt: string;
+  createdAt: string;
+  invitedBy: {
+    firstName: string;
+    lastName: string;
+  };
+}
+
 // Auth API functions
 export const authApi = {
   /**
@@ -232,6 +272,82 @@ export const authApi = {
       currentPassword,
       newPassword,
     });
+    return response.data;
+  },
+
+  // ==========================================
+  // Broker Request Methods
+  // ==========================================
+
+  /**
+   * Get pending broker requests (for Brokers)
+   */
+  async getBrokerRequests(): Promise<BrokerRequest[]> {
+    const response = await apiClient.get<BrokerRequest[]>('/auth/broker-requests');
+    return response.data;
+  },
+
+  /**
+   * Accept a broker request (for Brokers)
+   */
+  async acceptBrokerRequest(requestId: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      `/auth/broker-requests/${requestId}/accept`
+    );
+    return response.data;
+  },
+
+  /**
+   * Reject a broker request (for Brokers)
+   */
+  async rejectBrokerRequest(requestId: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>(
+      `/auth/broker-requests/${requestId}/reject`
+    );
+    return response.data;
+  },
+
+  /**
+   * Get brokers linked to the company (for Company Admins)
+   */
+  async getCompanyBrokers(): Promise<CompanyBroker[]> {
+    const response = await apiClient.get<CompanyBroker[]>('/auth/company-brokers');
+    return response.data;
+  },
+
+  /**
+   * Remove a broker from the company (for Company Admins)
+   */
+  async removeBroker(brokerId: string): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(
+      `/auth/company-brokers/${brokerId}`
+    );
+    return response.data;
+  },
+
+  /**
+   * Invite a user (also used to invite brokers)
+   */
+  async inviteUser(email: string, role: 'EMPLOYEE' | 'BROKER' | 'COMPANY_ADMIN'): Promise<Invitation> {
+    const response = await apiClient.post<Invitation>('/auth/invite', { email, role });
+    return response.data;
+  },
+
+  /**
+   * Get pending invitations for the company
+   */
+  async getInvitations(): Promise<Invitation[]> {
+    const response = await apiClient.get<Invitation[]>('/auth/invitations');
+    return response.data;
+  },
+
+  /**
+   * Cancel an invitation
+   */
+  async cancelInvitation(invitationId: string): Promise<{ message: string }> {
+    const response = await apiClient.delete<{ message: string }>(
+      `/auth/invitations/${invitationId}`
+    );
     return response.data;
   },
 };

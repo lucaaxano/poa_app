@@ -162,7 +162,8 @@ model User {
   driverClaims          Claim[]   @relation("ClaimDriver")
   claimEvents           ClaimEvent[]
   claimComments         ClaimComment[]
-  sentInvitations       Invitation[]
+  sentInvitations       Invitation[]   @relation("InvitationSender")
+  targetedInvitations   Invitation[]   @relation("InvitationTarget")
   notifications         Notification[]
   brokerLinks           BrokerCompanyLink[]
   passwordResets        PasswordReset[]
@@ -399,17 +400,21 @@ model Invitation {
   role            UserRole  @default(EMPLOYEE)
   tokenHash       String    @unique @map("token_hash")
   invitedByUserId String    @map("invited_by_user_id")
+  targetUserId    String?   @map("target_user_id")  // For existing users (e.g., existing brokers)
   expiresAt       DateTime  @map("expires_at")
   acceptedAt      DateTime? @map("accepted_at")
+  rejectedAt      DateTime? @map("rejected_at")  // For broker request rejections
 
   createdAt       DateTime  @default(now()) @map("created_at")
 
   // Relations
   company         Company   @relation(fields: [companyId], references: [id])
-  invitedBy       User      @relation(fields: [invitedByUserId], references: [id])
+  invitedBy       User      @relation("InvitationSender", fields: [invitedByUserId], references: [id])
+  targetUser      User?     @relation("InvitationTarget", fields: [targetUserId], references: [id])
 
   @@index([email])
   @@index([tokenHash])
+  @@index([targetUserId])
   @@map("invitations")
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,8 @@ import {
   BarChart3,
   Shield,
   ShieldCheck,
+  UserCheck,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -51,6 +54,12 @@ const navItems: NavItem[] = [
     roles: ['BROKER'],
   },
   {
+    title: 'Anfragen',
+    href: '/broker/requests' as Route,
+    icon: <UserCheck className="h-5 w-5" />,
+    roles: ['BROKER'],
+  },
+  {
     title: 'Fahrzeuge',
     href: '/vehicles' as Route,
     icon: <Car className="h-5 w-5" />,
@@ -66,6 +75,12 @@ const navItems: NavItem[] = [
     title: 'Benutzer',
     href: '/settings/users' as Route,
     icon: <Users className="h-5 w-5" />,
+    roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
+  },
+  {
+    title: 'Broker',
+    href: '/settings/broker' as Route,
+    icon: <Briefcase className="h-5 w-5" />,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
@@ -113,11 +128,22 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         {/* Logo */}
         <div className="flex h-16 items-center border-b px-4">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-              P
-            </div>
-            {!collapsed && (
-              <span className="text-lg font-semibold tracking-tight">POA</span>
+            {collapsed ? (
+              <Image
+                src="/logo-icon.png"
+                alt="POA Logo"
+                width={40}
+                height={40}
+                className="shrink-0"
+              />
+            ) : (
+              <Image
+                src="/logo-full.png"
+                alt="POA - Point of Accident"
+                width={160}
+                height={40}
+                className="shrink-0"
+              />
             )}
           </Link>
         </div>

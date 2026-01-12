@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: 'POA - Point of Accident',
   description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'POA - Point of Accident',
