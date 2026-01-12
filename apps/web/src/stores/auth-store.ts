@@ -167,13 +167,10 @@ export const useAuthStore = create<AuthState>()(
       register: async (data: RegisterData) => {
         set({ isLoading: true });
         try {
-          const response = await authApi.register(data);
-          set({
-            user: response.user,
-            company: response.company,
-            isAuthenticated: true,
-            isLoading: false,
-          });
+          // Registration now requires email verification
+          // User is not authenticated until they verify their email
+          await authApi.register(data);
+          set({ isLoading: false });
         } catch (error) {
           set({ isLoading: false });
           throw error;
