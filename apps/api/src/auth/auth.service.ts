@@ -303,16 +303,14 @@ export class AuthService {
       };
     }
 
-    // Generate tokens (do this first for faster response)
-    const tokens = await this.generateTokens(user.id, user.role);
-
-    // Update last login asynchronously (non-blocking)
-    this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    }).catch((error) => {
-      this.logger.warn(`Failed to update lastLoginAt for user ${user.id}: ${error.message}`);
-    });
+    // Generate tokens and update last login in parallel for faster response
+    const [tokens] = await Promise.all([
+      this.generateTokens(user.id, user.role),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      }),
+    ]);
 
     return {
       user: this.sanitizeUser(user),
@@ -352,16 +350,14 @@ export class AuthService {
       throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
-    // Generate full tokens (do this first for faster response)
-    const tokens = await this.generateTokens(user.id, user.role);
-
-    // Update last login asynchronously (non-blocking)
-    this.prisma.user.update({
-      where: { id: userId },
-      data: { lastLoginAt: new Date() },
-    }).catch((error) => {
-      this.logger.warn(`Failed to update lastLoginAt for user ${userId}: ${error.message}`);
-    });
+    // Generate tokens and update last login in parallel for faster response
+    const [tokens] = await Promise.all([
+      this.generateTokens(user.id, user.role),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { lastLoginAt: new Date() },
+      }),
+    ]);
 
     this.logger.log(`User ${userId} completed 2FA login`);
 
@@ -403,16 +399,14 @@ export class AuthService {
       throw new UnauthorizedException('Benutzer nicht gefunden');
     }
 
-    // Generate full tokens (do this first for faster response)
-    const tokens = await this.generateTokens(user.id, user.role);
-
-    // Update last login asynchronously (non-blocking)
-    this.prisma.user.update({
-      where: { id: userId },
-      data: { lastLoginAt: new Date() },
-    }).catch((error) => {
-      this.logger.warn(`Failed to update lastLoginAt for user ${userId}: ${error.message}`);
-    });
+    // Generate tokens and update last login in parallel for faster response
+    const [tokens] = await Promise.all([
+      this.generateTokens(user.id, user.role),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { lastLoginAt: new Date() },
+      }),
+    ]);
 
     this.logger.log(`User ${userId} completed 2FA login with backup code`);
 
