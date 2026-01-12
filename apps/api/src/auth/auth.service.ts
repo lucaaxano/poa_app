@@ -89,10 +89,10 @@ export class AuthService {
     private emailService: EmailService,
     private twoFactorService: TwoFactorService,
   ) {
-    this.appUrl = this.configService.get<string>('APP_URL', 'http://localhost:3000');
+    this.appUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
   }
 
-  async register(dto: RegisterDto): Promise<AuthResponse> {
+  async register(dto: RegisterDto): Promise<{ message: string; requiresVerification: boolean }> {
     // Check if email already exists
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -115,7 +115,7 @@ export class AuthService {
         },
       });
 
-      // Create admin user
+      // Create admin user with unverified email
       const user = await tx.user.create({
         data: {
           companyId: company.id,
@@ -125,22 +125,138 @@ export class AuthService {
           lastName: dto.lastName,
           role: UserRole.COMPANY_ADMIN,
           isActive: true,
-          // In production, set emailVerifiedAt to null and send verification email
-          emailVerifiedAt: new Date(),
+          emailVerifiedAt: null, // Email must be verified before login
         },
       });
 
       return { company, user };
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(result.user.id, result.user.role);
+    // Send verification email
+    await this.sendVerificationEmail(result.user);
 
     return {
-      user: this.sanitizeUser(result.user),
-      company: result.company,
-      tokens,
+      message: 'Registrierung erfolgreich. Bitte bestätigen Sie Ihre E-Mail-Adresse.',
+      requiresVerification: true,
     };
+  }
+
+  /**
+   * Send email verification link to user
+   */
+  private async sendVerificationEmail(user: { id: string; email: string; firstName: string }): Promise<void> {
+    // Generate verification token
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = await bcrypt.hash(token, 10);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Delete existing verification tokens for this user
+    await this.prisma.emailVerification.deleteMany({
+      where: { userId: user.id },
+    });
+
+    // Create new verification token
+    await this.prisma.emailVerification.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    // Send verification email
+    const verificationLink = `${this.appUrl}/verify-email?token=${token}`;
+    const emailResult = await this.emailService.sendEmailVerification(
+      user.email,
+      verificationLink,
+      user.firstName,
+    );
+
+    if (emailResult.success) {
+      this.logger.log(`Verification email sent to ${user.email}`);
+    } else {
+      this.logger.error(`Failed to send verification email to ${user.email}: ${emailResult.error}`);
+    }
+  }
+
+  /**
+   * Verify email with token
+   */
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    // Find all non-expired verification tokens
+    const verifications = await this.prisma.emailVerification.findMany({
+      where: {
+        expiresAt: { gt: new Date() },
+        usedAt: null,
+      },
+      include: { user: true },
+    });
+
+    // Find matching token
+    let validVerification = null;
+    for (const verification of verifications) {
+      const isMatch = await bcrypt.compare(token, verification.tokenHash);
+      if (isMatch) {
+        validVerification = verification;
+        break;
+      }
+    }
+
+    if (!validVerification) {
+      throw new BadRequestException('Ungültiger oder abgelaufener Verifizierungslink');
+    }
+
+    // Update user and mark verification as used
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: validVerification.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
+      this.prisma.emailVerification.update({
+        where: { id: validVerification.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    this.logger.log(`Email verified for user ${validVerification.userId}`);
+
+    return { message: 'E-Mail-Adresse erfolgreich bestätigt. Sie können sich jetzt anmelden.' };
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return { message: 'Falls ein Konto mit dieser E-Mail existiert, wurde ein Verifizierungslink gesendet.' };
+    }
+
+    // Check if already verified
+    if (user.emailVerifiedAt) {
+      return { message: 'Diese E-Mail-Adresse ist bereits verifiziert.' };
+    }
+
+    // Check rate limiting (max 3 per hour)
+    const recentVerifications = await this.prisma.emailVerification.count({
+      where: {
+        userId: user.id,
+        createdAt: { gt: new Date(Date.now() - 60 * 60 * 1000) }, // Last hour
+      },
+    });
+
+    if (recentVerifications >= 3) {
+      throw new BadRequestException('Zu viele Anfragen. Bitte versuchen Sie es später erneut.');
+    }
+
+    // Send new verification email
+    await this.sendVerificationEmail(user);
+
+    return { message: 'Falls ein Konto mit dieser E-Mail existiert, wurde ein Verifizierungslink gesendet.' };
   }
 
   async login(dto: LoginDto): Promise<AuthResponse | TwoFactorRequiredResponse> {
@@ -160,6 +276,11 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Ungueltige Anmeldedaten');
+    }
+
+    // Check if email is verified
+    if (!user.emailVerifiedAt) {
+      throw new UnauthorizedException('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Überprüfen Sie Ihren Posteingang oder fordern Sie einen neuen Verifizierungslink an.');
     }
 
     // Check if 2FA is enabled

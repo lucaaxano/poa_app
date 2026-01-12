@@ -64,6 +64,20 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  // ==========================================
+  // Email Verification Endpoints
+  // ==========================================
+
+  @Post('verify-email')
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.authService.verifyEmail(body.token);
+  }
+
+  @Post('resend-verification')
+  async resendVerificationEmail(@Body() body: { email: string }) {
+    return this.authService.resendVerificationEmail(body.email);
+  }
+
   @Post('accept-invitation')
   async acceptInvitation(@Body() dto: AcceptInvitationDto) {
     return this.authService.acceptInvitation(dto);

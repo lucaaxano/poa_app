@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
+import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
-import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState(['', '', '', '', '', '']);
   const [useBackupCode, setUseBackupCode] = useState(false);
   const [backupCode, setBackupCode] = useState('');
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
@@ -44,6 +48,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginSchema) => {
     try {
+      setEmailNotVerified(false);
       const result = await login(data);
       if (!result.requires2FA) {
         toast.success('Erfolgreich angemeldet');
@@ -51,7 +56,28 @@ export default function LoginPage() {
       }
       // If 2FA is required, the UI will switch to show the 2FA input
     } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      // Check if it's an email verification error
+      if (errorMessage.includes('E-Mail-Adresse') && errorMessage.includes('bestätigen')) {
+        setEmailNotVerified(true);
+        setUnverifiedEmail(data.email);
+      } else {
+        toast.error(errorMessage);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResendingVerification(true);
+    try {
+      await authApi.resendVerificationEmail(unverifiedEmail);
+      toast.success('Verifizierungs-E-Mail wurde erneut gesendet');
+      setEmailNotVerified(false);
+    } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -169,6 +195,33 @@ export default function LoginPage() {
               </>
             )}
           </div>
+
+          {/* Email Not Verified Message */}
+          {emailNotVerified && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-amber-800 dark:text-amber-200">
+                    E-Mail nicht verifiziert
+                  </h3>
+                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                    Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse. Überprüfen Sie Ihren Posteingang.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification}
+                  >
+                    {resendingVerification ? 'Wird gesendet...' : 'Verifizierungs-E-Mail erneut senden'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 2FA Input */}
           {twoFactor.requires2FA ? (

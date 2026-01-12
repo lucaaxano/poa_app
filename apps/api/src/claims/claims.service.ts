@@ -99,7 +99,7 @@ export class ClaimsService {
     private usersService: UsersService,
     private configService: ConfigService,
   ) {
-    this.appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
+    this.appUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
   }
 
   /**

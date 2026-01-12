@@ -11,9 +11,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuthStore } from '@/stores/auth-store';
+import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
-import { Eye, EyeOff, ArrowRight, CheckCircle2, Building2, Users, Zap } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, CheckCircle2, Building2, Users, Zap, Mail } from 'lucide-react';
 
 const registerFormSchema = registerSchema.extend({
   confirmPassword: z.string(),
@@ -26,8 +26,10 @@ type RegisterFormData = z.infer<typeof registerFormSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { register: registerUser, isLoading } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const {
     register,
@@ -46,15 +48,57 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
     try {
       const { confirmPassword, ...registerData } = data;
-      await registerUser(registerData);
-      toast.success('Konto erfolgreich erstellt');
-      router.push('/dashboard');
+      await authApi.register(registerData);
+      setRegisteredEmail(data.email);
+      setRegistrationComplete(true);
+      toast.success('Registrierung erfolgreich! Bitte prüfen Sie Ihre E-Mails.');
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Show success message after registration
+  if (registrationComplete) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm text-center">
+          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+              P
+            </div>
+            <span className="text-xl font-semibold">POA</span>
+          </Link>
+
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5">
+            <Mail className="h-8 w-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            E-Mail bestätigen
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Wir haben eine E-Mail an <strong>{registeredEmail}</strong> gesendet.
+            Bitte klicken Sie auf den Link in der E-Mail, um Ihr Konto zu aktivieren.
+          </p>
+
+          <div className="mt-8 space-y-3">
+            <Link href="/login" className="block">
+              <Button className="h-12 w-full rounded-xl">
+                Zum Login
+              </Button>
+            </Link>
+            <p className="text-sm text-muted-foreground">
+              Keine E-Mail erhalten? Überprüfen Sie Ihren Spam-Ordner oder fordern Sie auf der Login-Seite einen neuen Link an.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">

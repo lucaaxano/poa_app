@@ -67,6 +67,11 @@ export interface ResetPasswordData {
   password: string;
 }
 
+export interface RegisterResponse {
+  message: string;
+  requiresVerification: boolean;
+}
+
 export interface AcceptInvitationData {
   token: string;
   firstName: string;
@@ -161,10 +166,18 @@ export const authApi = {
     return response.data;
   },
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', data);
-    const { tokens } = response.data;
-    setTokens(tokens.accessToken, tokens.refreshToken);
+  async register(data: RegisterData): Promise<RegisterResponse> {
+    const response = await apiClient.post<RegisterResponse>('/auth/register', data);
+    return response.data;
+  },
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/verify-email', { token });
+    return response.data;
+  },
+
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    const response = await apiClient.post<{ message: string }>('/auth/resend-verification', { email });
     return response.data;
   },
 
