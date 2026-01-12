@@ -16,6 +16,7 @@ import { BrokerModule } from './broker/broker.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AiModule } from './ai/ai.module';
 import { AdminModule } from './admin/admin.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AdminModule } from './admin/admin.module';
     BrokerModule,
     NotificationsModule,
     AdminModule,
+    StripeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

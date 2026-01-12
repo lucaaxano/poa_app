@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const settingsCards = [
@@ -41,6 +41,12 @@ const settingsCards = [
     href: '/settings/security',
     icon: Shield,
     description: 'Zwei-Faktor-Authentifizierung und Kontoabsicherung.',
+  },
+  {
+    title: 'Abrechnung',
+    href: '/settings/billing',
+    icon: CreditCard,
+    description: 'Verwalten Sie Ihr Abonnement und sehen Sie Ihre Rechnungen ein.',
   },
 ];
 

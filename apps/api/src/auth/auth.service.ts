@@ -5,6 +5,8 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +15,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { TwoFactorService } from './two-factor.service';
+import { StripeService } from '../stripe/stripe.service';
 import { UserRole, User, Company } from '@poa/database';
 import {
   LoginDto,
@@ -88,6 +91,8 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailService,
     private twoFactorService: TwoFactorService,
+    @Inject(forwardRef(() => StripeService))
+    private stripeService: StripeService,
   ) {
     this.appUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
   }
@@ -130,6 +135,15 @@ export class AuthService {
       });
 
       return { company, user };
+    });
+
+    // Create Stripe customer (async, don't block registration)
+    this.stripeService.createCustomer(
+      result.company.id,
+      result.user.email,
+      result.company.name,
+    ).catch((error) => {
+      this.logger.error(`Failed to create Stripe customer for company ${result.company.id}: ${error.message}`);
     });
 
     // Send verification email
