@@ -69,12 +69,12 @@ function AcceptInvitationForm() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 inline-block">
+          <Link href="/" className="mb-12 flex justify-center">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
-              width={200}
-              height={50}
+              width={270}
+              height={68}
             />
           </Link>
 
@@ -121,12 +121,12 @@ function AcceptInvitationForm() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <Link href="/" className="mb-12 inline-block">
+        <Link href="/" className="mb-12 flex justify-center">
           <Image
             src="/logo-full.png"
             alt="POA - Point of Accident"
-            width={200}
-            height={50}
+            width={270}
+            height={68}
           />
         </Link>
 
