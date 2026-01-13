@@ -4,10 +4,31 @@ import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
 import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut } from '@/lib/api/client';
 
-// Session-Flag to prevent race condition after login
-// This flag is set when login succeeds and prevents checkAuth from
-// making unnecessary API calls immediately after login
-let justLoggedIn = false;
+// Track login timestamp to prevent race conditions after login
+// Instead of a boolean flag, we use a timestamp which is more robust
+let lastLoginTimestamp: number = 0;
+const LOGIN_GRACE_PERIOD_MS = 3000; // 3 seconds grace period after login
+
+/**
+ * Check if a login just happened within the grace period
+ */
+const isWithinLoginGracePeriod = (): boolean => {
+  return Date.now() - lastLoginTimestamp < LOGIN_GRACE_PERIOD_MS;
+};
+
+/**
+ * Mark that a login just happened
+ */
+const markLoginComplete = (): void => {
+  lastLoginTimestamp = Date.now();
+};
+
+/**
+ * Reset login timestamp (e.g., on logout)
+ */
+const resetLoginTimestamp = (): void => {
+  lastLoginTimestamp = 0;
+};
 
 // Broker-specific company type with stats
 export interface BrokerCompany {
@@ -97,8 +118,8 @@ export const useAuthStore = create<AuthState>()(
             return { requires2FA: true };
           }
 
-          // Set session flag to prevent race condition in checkAuth
-          justLoggedIn = true;
+          // Mark login timestamp to prevent race condition in checkAuth
+          markLoginComplete();
 
           // Normal login (no 2FA)
           set({
@@ -128,8 +149,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.validate2FA(twoFactor.tempToken, token);
-          // Set session flag to prevent race condition in checkAuth
-          justLoggedIn = true;
+          // Mark login timestamp to prevent race condition in checkAuth
+          markLoginComplete();
           set({
             user: response.user,
             company: response.company,
@@ -155,8 +176,8 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true });
         try {
           const response = await authApi.useBackupCode(twoFactor.tempToken, backupCode);
-          // Set session flag to prevent race condition in checkAuth
-          justLoggedIn = true;
+          // Mark login timestamp to prevent race condition in checkAuth
+          markLoginComplete();
           set({
             user: response.user,
             company: response.company,
@@ -196,27 +217,30 @@ export const useAuthStore = create<AuthState>()(
         // CRITICAL: Set logging out flag FIRST to prevent API calls from timing out
         setLoggingOut(true);
 
-        // Stop API warmup to prevent background requests
-        stopApiWarmup();
+        try {
+          // Stop API warmup to prevent background requests
+          stopApiWarmup();
 
-        // Reset the justLoggedIn flag to prevent race conditions
-        justLoggedIn = false;
+          // Reset login timestamp to prevent race conditions
+          resetLoginTimestamp();
 
-        // Clear tokens FIRST (synchronous)
-        await authApi.logout();
+          // Clear tokens FIRST (synchronous)
+          await authApi.logout();
 
-        // Clear state - keep isInitialized TRUE so navigation works
-        set({
-          user: null,
-          company: null,
-          isAuthenticated: false,
-          isLoading: false,
-          linkedCompanies: null,
-          activeCompany: null,
-        });
-
-        // Re-enable API calls for next login
-        setLoggingOut(false);
+          // Clear state - keep isInitialized TRUE so navigation works
+          set({
+            user: null,
+            company: null,
+            isAuthenticated: false,
+            isLoading: false,
+            linkedCompanies: null,
+            activeCompany: null,
+          });
+        } finally {
+          // ALWAYS re-enable API calls, even if an error occurred
+          // This prevents the app from being stuck in a "logging out" state
+          setLoggingOut(false);
+        }
       },
 
       checkAuth: async () => {
@@ -229,15 +253,14 @@ export const useAuthStore = create<AuthState>()(
         const { user: cachedUser, isAuthenticated: wasAuthenticated, isInitialized: alreadyInitialized } = get();
 
         if (!token) {
-          justLoggedIn = false;
+          resetLoginTimestamp();
           set({ isInitialized: true, isAuthenticated: false, user: null, company: null });
           return;
         }
 
-        // If just logged in, skip verification entirely to prevent race condition
+        // If within login grace period, skip verification entirely to prevent race condition
         // The login/2FA flow already validated the user and set up tokens
-        if (justLoggedIn) {
-          justLoggedIn = false;
+        if (isWithinLoginGracePeriod()) {
           set({ isInitialized: true });
           return;
         }
@@ -251,27 +274,26 @@ export const useAuthStore = create<AuthState>()(
         // and verify in background (for page refresh scenarios)
         if (cachedUser && wasAuthenticated) {
           set({ isInitialized: true });
-          // Update in background without blocking - with delay to ensure server is ready
-          setTimeout(() => {
-            authApi.getProfile().then((response) => {
-              set({
-                user: response.user,
-                company: response.company,
-                isAuthenticated: true,
-              });
-            }).catch(() => {
-              // Only clear tokens if the error is an auth error (401/403)
-              // Don't log out on network errors or server errors
-              clearTokens();
-              set({
-                user: null,
-                company: null,
-                isAuthenticated: false,
-                linkedCompanies: null,
-                activeCompany: null,
-              });
+          // Update in background without blocking - no artificial delay needed
+          // The API client handles retries and warmup automatically
+          authApi.getProfile().then((response) => {
+            set({
+              user: response.user,
+              company: response.company,
+              isAuthenticated: true,
             });
-          }, 500);
+          }).catch(() => {
+            // Only clear tokens if the error is an auth error (401/403)
+            // Don't log out on network errors or server errors
+            clearTokens();
+            set({
+              user: null,
+              company: null,
+              isAuthenticated: false,
+              linkedCompanies: null,
+              activeCompany: null,
+            });
+          });
           return;
         }
 

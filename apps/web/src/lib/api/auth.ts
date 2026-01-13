@@ -222,6 +222,13 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
+    // Try to notify server about logout (for cache invalidation)
+    // Don't fail if this fails - we still want to clear local tokens
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // Ignore errors - logout should still succeed locally
+    }
     clearTokens();
   },
 

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { TwoFactorService } from './two-factor.service';
@@ -32,9 +33,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { Roles } from './decorators/roles.decorator';
 import { AuthenticatedRequest } from './interfaces/authenticated-request.interface';
+import { invalidateUserCache } from './strategies/jwt.strategy';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly twoFactorService: TwoFactorService,
@@ -53,6 +57,20 @@ export class AuthController {
   @Post('refresh')
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.refreshToken);
+  }
+
+  /**
+   * Logout - invalidates user cache on server
+   * Note: JWT tokens cannot be truly invalidated without a token blacklist
+   * This endpoint clears the server-side user cache to ensure fresh data on next login
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Request() req: AuthenticatedRequest) {
+    // Invalidate the user's cache entry
+    invalidateUserCache(req.user.id);
+    this.logger.log(`User ${req.user.id} logged out`);
+    return { success: true, message: 'Erfolgreich abgemeldet' };
   }
 
   @Post('forgot-password')

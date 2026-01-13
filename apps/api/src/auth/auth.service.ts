@@ -161,6 +161,7 @@ export class AuthService {
   private async sendVerificationEmail(user: { id: string; email: string; firstName: string }): Promise<void> {
     // Generate verification token
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenPrefix = token.substring(0, 16); // First 16 chars for fast lookup
     const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -169,11 +170,12 @@ export class AuthService {
       where: { userId: user.id },
     });
 
-    // Create new verification token
+    // Create new verification token with prefix for fast lookup
     await this.prisma.emailVerification.create({
       data: {
         userId: user.id,
         tokenHash,
+        tokenPrefix,
         expiresAt,
       },
     });
@@ -197,21 +199,44 @@ export class AuthService {
    * Verify email with token
    */
   async verifyEmail(token: string): Promise<{ message: string }> {
-    // Find all verification tokens (including used ones to check if already verified)
-    const verifications = await this.prisma.emailVerification.findMany({
+    // Extract token prefix for fast lookup (first 16 chars)
+    const tokenPrefix = token.substring(0, 16);
+
+    // Find verification by prefix first (fast indexed lookup)
+    const verification = await this.prisma.emailVerification.findFirst({
       where: {
+        tokenPrefix,
         expiresAt: { gt: new Date() },
       },
       include: { user: true },
     });
 
-    // Find matching token
-    let matchedVerification = null;
-    for (const verification of verifications) {
+    // If no verification found by prefix, check legacy tokens without prefix
+    let matchedVerification = verification;
+    if (verification) {
+      // Verify the full token with bcrypt (only 1 comparison instead of N)
       const isMatch = await bcrypt.compare(token, verification.tokenHash);
-      if (isMatch) {
-        matchedVerification = verification;
-        break;
+      if (!isMatch) {
+        matchedVerification = null;
+      }
+    } else {
+      // Fallback for legacy tokens without tokenPrefix (backwards compatibility)
+      // This is a slower path but only used for old tokens
+      const legacyVerifications = await this.prisma.emailVerification.findMany({
+        where: {
+          tokenPrefix: null,
+          expiresAt: { gt: new Date() },
+        },
+        include: { user: true },
+        take: 100, // Limit to prevent performance issues
+      });
+
+      for (const legacyVerification of legacyVerifications) {
+        const isMatch = await bcrypt.compare(token, legacyVerification.tokenHash);
+        if (isMatch) {
+          matchedVerification = legacyVerification;
+          break;
+        }
       }
     }
 
@@ -532,6 +557,7 @@ export class AuthService {
 
     // Generate reset token
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenPrefix = token.substring(0, 16); // First 16 chars for fast lookup
     const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
@@ -540,11 +566,12 @@ export class AuthService {
       where: { userId: user.id },
     });
 
-    // Create new reset token
+    // Create new reset token with prefix for fast lookup
     await this.prisma.passwordReset.create({
       data: {
         userId: user.id,
         tokenHash,
+        tokenPrefix,
         expiresAt,
       },
     });
@@ -567,21 +594,43 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    // Find all non-expired reset tokens
-    const resets = await this.prisma.passwordReset.findMany({
+    // Extract token prefix for fast lookup (first 16 chars)
+    const tokenPrefix = dto.token.substring(0, 16);
+
+    // Find reset by prefix first (fast indexed lookup)
+    const reset = await this.prisma.passwordReset.findFirst({
       where: {
+        tokenPrefix,
         expiresAt: { gt: new Date() },
       },
       include: { user: true },
     });
 
-    // Find matching token
-    let validReset = null;
-    for (const reset of resets) {
+    // Verify the full token and handle legacy tokens
+    let validReset = reset;
+    if (reset) {
+      // Verify the full token with bcrypt (only 1 comparison instead of N)
       const isMatch = await bcrypt.compare(dto.token, reset.tokenHash);
-      if (isMatch) {
-        validReset = reset;
-        break;
+      if (!isMatch) {
+        validReset = null;
+      }
+    } else {
+      // Fallback for legacy tokens without tokenPrefix (backwards compatibility)
+      const legacyResets = await this.prisma.passwordReset.findMany({
+        where: {
+          tokenPrefix: null,
+          expiresAt: { gt: new Date() },
+        },
+        include: { user: true },
+        take: 100, // Limit to prevent performance issues
+      });
+
+      for (const legacyReset of legacyResets) {
+        const isMatch = await bcrypt.compare(dto.token, legacyReset.tokenHash);
+        if (isMatch) {
+          validReset = legacyReset;
+          break;
+        }
       }
     }
 
@@ -655,6 +704,7 @@ export class AuthService {
 
     // Generate invitation token
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenPrefix = token.substring(0, 16); // First 16 chars for fast lookup
     const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
@@ -664,6 +714,7 @@ export class AuthService {
         email: dto.email,
         role,
         tokenHash,
+        tokenPrefix,
         invitedByUserId,
         expiresAt,
       },
@@ -738,6 +789,7 @@ export class AuthService {
 
     // Generate token (needed for schema but not used for existing users)
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenPrefix = token.substring(0, 16); // First 16 chars for fast lookup
     const tokenHash = await bcrypt.hash(token, 10);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days for broker requests
 
@@ -747,6 +799,7 @@ export class AuthService {
         email: existingBroker.email,
         role: UserRole.BROKER,
         tokenHash,
+        tokenPrefix,
         invitedByUserId,
         targetUserId: existingBroker.id,
         expiresAt,
@@ -786,22 +839,45 @@ export class AuthService {
   }
 
   async acceptInvitation(dto: AcceptInvitationDto): Promise<AuthResponse> {
-    // Find all non-expired invitations
-    const invitations = await this.prisma.invitation.findMany({
+    // Extract token prefix for fast lookup (first 16 chars)
+    const tokenPrefix = dto.token.substring(0, 16);
+
+    // Find invitation by prefix first (fast indexed lookup)
+    const invitation = await this.prisma.invitation.findFirst({
       where: {
+        tokenPrefix,
         acceptedAt: null,
         expiresAt: { gt: new Date() },
       },
       include: { company: true },
     });
 
-    // Find matching invitation
-    let validInvitation = null;
-    for (const invitation of invitations) {
+    // Verify the full token and handle legacy tokens
+    let validInvitation = invitation;
+    if (invitation) {
+      // Verify the full token with bcrypt (only 1 comparison instead of N)
       const isMatch = await bcrypt.compare(dto.token, invitation.tokenHash);
-      if (isMatch) {
-        validInvitation = invitation;
-        break;
+      if (!isMatch) {
+        validInvitation = null;
+      }
+    } else {
+      // Fallback for legacy tokens without tokenPrefix (backwards compatibility)
+      const legacyInvitations = await this.prisma.invitation.findMany({
+        where: {
+          tokenPrefix: null,
+          acceptedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        include: { company: true },
+        take: 100, // Limit to prevent performance issues
+      });
+
+      for (const legacyInvitation of legacyInvitations) {
+        const isMatch = await bcrypt.compare(dto.token, legacyInvitation.tokenHash);
+        if (isMatch) {
+          validInvitation = legacyInvitation;
+          break;
+        }
       }
     }
 
