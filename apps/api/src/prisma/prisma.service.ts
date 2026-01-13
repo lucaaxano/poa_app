@@ -45,8 +45,11 @@ export class PrismaService
     try {
       const warmupStart = Date.now();
 
-      // Phase 1: Basic connection pool warmup with parallel queries
+      // Phase 1: Basic connection pool warmup with parallel queries (8 connections)
       await Promise.all([
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
@@ -61,8 +64,14 @@ export class PrismaService
         this.user.count().catch(() => 0),
       ]);
 
-      // Phase 3: Pre-warm common login-related queries
+      // Phase 3: Pre-warm the EXACT login query pattern (User + Company join)
+      // This is the critical query that runs during login
       await Promise.all([
+        this.user.findFirst({
+          where: { isActive: true },
+          include: { company: true },
+          take: 1,
+        }).catch(() => null),
         this.$queryRaw`SELECT id, email, role FROM "User" LIMIT 1`.catch(() => null),
         this.$queryRaw`SELECT id, name FROM "Company" LIMIT 1`.catch(() => null),
       ]);
@@ -85,11 +94,27 @@ export class PrismaService
       // Always do basic keep-alive
       await this.$queryRaw`SELECT 1`;
 
-      // If no queries in last 15 seconds, do a more thorough warmup
+      // If no queries in last 15 seconds, warm up login-related queries
       if (timeSinceLastQuery > 15000) {
         await Promise.all([
           this.$queryRaw`SELECT 1`,
-          this.user.findFirst({ take: 1, select: { id: true } }).catch(() => null),
+          this.$queryRaw`SELECT 1`,
+          // Keep the login query pattern warm (User + Company join)
+          this.user.findFirst({
+            where: { isActive: true },
+            include: { company: true },
+            take: 1,
+            select: { id: true, email: true, role: true, company: { select: { id: true } } },
+          }).catch(() => null),
+        ]);
+      }
+
+      // If no queries in last 30 seconds, do full warmup including admin stats queries
+      if (timeSinceLastQuery > 30000) {
+        await Promise.all([
+          this.company.count().catch(() => 0),
+          this.user.count().catch(() => 0),
+          this.claim.count().catch(() => 0),
         ]);
       }
 

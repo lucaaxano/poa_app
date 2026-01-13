@@ -2,6 +2,24 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
+// =============================================
+// LOGOUT FLAG - Prevents API calls during logout
+// =============================================
+let isLoggingOut = false;
+
+/**
+ * Set logout state - call this before clearing tokens
+ * This prevents pending API calls from causing timeout errors
+ */
+export const setLoggingOut = (value: boolean): void => {
+  isLoggingOut = value;
+};
+
+/**
+ * Check if currently logging out
+ */
+export const getLoggingOut = (): boolean => isLoggingOut;
+
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
@@ -210,6 +228,14 @@ const performTokenRefresh = async (retryCount = 0): Promise<{ accessToken: strin
 // Request interceptor - add auth header and check token expiry
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Skip request if logging out - prevents timeout errors
+    if (isLoggingOut) {
+      const controller = new AbortController();
+      controller.abort();
+      config.signal = controller.signal;
+      return config;
+    }
+
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -249,6 +275,11 @@ const notifySessionExpired = (reason: 'auth_failed' | 'server_error' | 'network_
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
+    // If logging out, don't retry or process errors - just reject silently
+    if (isLoggingOut) {
+      return Promise.reject(new Error('Request cancelled due to logout'));
+    }
+
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
 
     // Check if this is a CORS error (caused by 504 timeout from proxy)

@@ -62,11 +62,22 @@ export interface ClaimWithRelations extends Claim {
 
 @Injectable()
 export class AdminService {
+  // In-memory cache for system stats (30 second TTL)
+  private statsCache: AdminStats | null = null;
+  private statsCacheExpiry: number = 0;
+  private static readonly STATS_CACHE_TTL_MS = 30000; // 30 seconds
+
   constructor(private prisma: PrismaService) {}
 
   // ============ STATS ============
 
   async getSystemStats(): Promise<AdminStats> {
+    // Return cached stats if still valid (prevents DB overload on rapid page loads)
+    const currentTime = Date.now();
+    if (this.statsCache && currentTime < this.statsCacheExpiry) {
+      return this.statsCache;
+    }
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
@@ -106,7 +117,7 @@ export class AdminService {
       }),
     ]);
 
-    return {
+    const stats: AdminStats = {
       totalCompanies,
       totalUsers,
       totalClaims,
@@ -126,6 +137,12 @@ export class AdminService {
         pendingClaims,
       },
     };
+
+    // Cache the result
+    this.statsCache = stats;
+    this.statsCacheExpiry = Date.now() + AdminService.STATS_CACHE_TTL_MS;
+
+    return stats;
   }
 
   // ============ COMPANIES ============

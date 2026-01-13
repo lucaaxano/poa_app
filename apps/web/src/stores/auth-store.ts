@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
-import { getAccessToken, clearTokens } from '@/lib/api/client';
+import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut } from '@/lib/api/client';
 
 // Session-Flag to prevent race condition after login
 // This flag is set when login succeeds and prevents checkAuth from
@@ -193,17 +193,41 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        await authApi.logout();
+        // CRITICAL: Set logging out flag FIRST to prevent API calls from timing out
+        setLoggingOut(true);
+
+        // Stop API warmup to prevent background requests
+        stopApiWarmup();
+
+        // Reset the justLoggedIn flag to prevent race conditions
+        justLoggedIn = false;
+
+        // Clear state synchronously BEFORE async operations
         set({
           user: null,
           company: null,
           isAuthenticated: false,
+          isInitialized: false, // Force re-initialization on next login
           linkedCompanies: null,
           activeCompany: null,
         });
+
+        // Now safely clear tokens (this is synchronous)
+        await authApi.logout();
+
+        // Small delay to ensure all pending requests are cancelled
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Re-enable API calls for next login
+        setLoggingOut(false);
       },
 
       checkAuth: async () => {
+        // Skip if currently logging out
+        if (getLoggingOut()) {
+          return;
+        }
+
         const token = getAccessToken();
         const { user: cachedUser, isAuthenticated: wasAuthenticated, isInitialized: alreadyInitialized } = get();
 

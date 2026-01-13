@@ -53,7 +53,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=5&pool_timeout=10&connect_timeout=5
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=20&pool_timeout=30&connect_timeout=10
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
