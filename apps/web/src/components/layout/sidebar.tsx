@@ -124,9 +124,9 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         collapsed ? 'w-[72px]' : 'w-64'
       )}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
-        <div className="flex h-16 items-center border-b px-4">
+        <div className="flex h-16 shrink-0 items-center border-b px-4">
           <Link href="/dashboard" className="flex items-center gap-3">
             {collapsed ? (
               <Image
@@ -149,7 +149,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin">
           {filteredNavItems.map((item) => {
             // Special handling for settings: only exact match for /settings
             // For other items: match exact or starts with + /
@@ -177,7 +177,7 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
         </nav>
 
         {/* Collapse Button */}
-        <div className="border-t p-3">
+        <div className="shrink-0 border-t p-3">
           <Button
             variant="ghost"
             size="sm"

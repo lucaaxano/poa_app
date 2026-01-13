@@ -65,9 +65,9 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
         collapsed ? 'w-[72px]' : 'w-64'
       )}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
-        <div className="flex h-16 items-center border-b px-4">
+        <div className="flex h-16 shrink-0 items-center border-b px-4">
           <Link href={'/admin' as Route} className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-lg">
               A
@@ -79,7 +79,7 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
         </div>
 
         {/* Back to Dashboard */}
-        <div className="px-3 pt-4 pb-2">
+        <div className="shrink-0 px-3 pt-4 pb-2">
           <Link
             href="/dashboard"
             className={cn(
@@ -94,7 +94,7 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 px-3 py-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin">
           {adminNavItems.map((item) => {
             const isActive =
               item.href === ('/admin' as Route)
@@ -121,7 +121,7 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
         </nav>
 
         {/* Collapse Button */}
-        <div className="border-t p-3">
+        <div className="shrink-0 border-t p-3">
           <Button
             variant="ghost"
             size="sm"
