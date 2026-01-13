@@ -202,21 +202,18 @@ export const useAuthStore = create<AuthState>()(
         // Reset the justLoggedIn flag to prevent race conditions
         justLoggedIn = false;
 
-        // Clear state synchronously BEFORE async operations
+        // Clear tokens FIRST (synchronous)
+        await authApi.logout();
+
+        // Clear state - keep isInitialized TRUE so navigation works
         set({
           user: null,
           company: null,
           isAuthenticated: false,
-          isInitialized: false, // Force re-initialization on next login
+          isLoading: false,
           linkedCompanies: null,
           activeCompany: null,
         });
-
-        // Now safely clear tokens (this is synchronous)
-        await authApi.logout();
-
-        // Small delay to ensure all pending requests are cancelled
-        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Re-enable API calls for next login
         setLoggingOut(false);
