@@ -72,5 +72,5 @@ EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Start the application
-CMD ["node", "dist/apps/api/src/main.js"]
+# Run migrations and start the application
+CMD ["sh", "-c", "cd /app/packages/database && npx prisma migrate deploy && cd /app/apps/api && node dist/apps/api/src/main.js"]
