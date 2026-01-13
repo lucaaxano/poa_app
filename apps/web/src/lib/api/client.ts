@@ -7,7 +7,81 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
+
+// =============================================
+// API WARMUP - Keep connection pool alive
+// =============================================
+
+let warmupInterval: ReturnType<typeof setInterval> | null = null;
+let isApiWarmedUp = false;
+let lastWarmupTime = 0;
+const WARMUP_INTERVAL_MS = 25000; // 25 seconds (less than server's 30s keep-alive)
+
+/**
+ * Warm up the API connection - call this before critical operations
+ * Returns quickly and warms up in background if needed
+ */
+export const warmupApi = async (): Promise<boolean> => {
+  // If recently warmed up, skip
+  if (Date.now() - lastWarmupTime < 10000) {
+    return isApiWarmedUp;
+  }
+
+  try {
+    const response = await axios.get(`${API_URL}/warmup`, {
+      timeout: 5000, // 5 second timeout for warmup
+    });
+    isApiWarmedUp = response.data?.warmedUp ?? true;
+    lastWarmupTime = Date.now();
+    return true;
+  } catch (error) {
+    console.warn('[API Warmup] Failed:', error);
+    return false;
+  }
+};
+
+/**
+ * Start periodic API warmup to prevent cold starts
+ * Call this when the app initializes
+ */
+export const startApiWarmup = (): void => {
+  if (typeof window === 'undefined') return;
+
+  // Don't start multiple intervals
+  if (warmupInterval) return;
+
+  // Initial warmup
+  warmupApi().catch(() => {});
+
+  // Periodic warmup to keep connection alive
+  warmupInterval = setInterval(() => {
+    warmupApi().catch(() => {});
+  }, WARMUP_INTERVAL_MS);
+
+  // Also warmup when page becomes visible (user returns to tab)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      warmupApi().catch(() => {});
+    }
+  });
+};
+
+/**
+ * Stop periodic API warmup (for cleanup)
+ */
+export const stopApiWarmup = (): void => {
+  if (warmupInterval) {
+    clearInterval(warmupInterval);
+    warmupInterval = null;
+  }
+};
+
+/**
+ * Check if API is warmed up
+ */
+export const isApiReady = (): boolean => isApiWarmedUp;
 
 // Token management
 const TOKEN_KEY = 'poa_access_token';
@@ -177,15 +251,50 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
 
+    // Check if this is a CORS error (caused by 504 timeout from proxy)
+    // CORS errors have no response (error.response is undefined) and typically have
+    // code 'ERR_NETWORK' or message contains 'Network Error'
+    const isCorsOrNetworkError = !error.response && (
+      error.code === 'ERR_NETWORK' ||
+      error.message?.includes('Network Error') ||
+      error.message?.includes('CORS')
+    );
+
+    // Handle network/CORS errors (often caused by proxy timeouts)
+    if (isCorsOrNetworkError) {
+      const retryCount = originalRequest._retryCount || 0;
+      if (retryCount < 3) {
+        originalRequest._retryCount = retryCount + 1;
+        const delay = 1000 * Math.pow(2, retryCount); // 1s, 2s, 4s
+
+        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/3), retrying in ${delay}ms...`);
+
+        // Trigger API warmup before retry
+        await warmupApi();
+        await sleep(delay);
+
+        return apiClient(originalRequest);
+      }
+      // After retries failed, don't logout - just report error
+      console.error('[API] Network error persists after retries');
+      return Promise.reject(error);
+    }
+
     // Handle 5xx errors separately - don't treat as auth errors
     const status = error.response?.status;
     if (status && status >= 500) {
       // For server errors, we can retry the original request
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) {
+      if (retryCount < 3) {
         originalRequest._retryCount = retryCount + 1;
         const delay = 1000 * Math.pow(2, retryCount);
+
+        console.warn(`[API] Server error ${status} (attempt ${retryCount + 1}/3), retrying in ${delay}ms...`);
+
+        // Trigger API warmup before retry
+        await warmupApi();
         await sleep(delay);
+
         return apiClient(originalRequest);
       }
       // After retries, notify about server error but don't logout

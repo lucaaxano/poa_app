@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, warmupApi } from '@/lib/api/client';
 import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 
 export default function LoginPage() {
@@ -56,6 +56,10 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginSchema) => {
     try {
       setEmailNotVerified(false);
+
+      // Pre-warm API before login to prevent cold start timeouts
+      await warmupApi();
+
       const result = await login(data);
       if (!result.requires2FA) {
         toast.success('Erfolgreich angemeldet');

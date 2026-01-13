@@ -2,6 +2,7 @@
 
 import { useEffect, ReactNode } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
+import { startApiWarmup, stopApiWarmup, warmupApi } from '@/lib/api/client';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -11,13 +12,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { checkAuth, isInitialized } = useAuthStore();
 
   useEffect(() => {
+    // Start API warmup immediately to prevent cold starts
+    // This runs in background and keeps the connection pool alive
+    startApiWarmup();
+
     // Small delay to allow Zustand store rehydration to complete
     // This prevents race conditions where checkAuth runs before
     // persisted state is available
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
+      // Ensure API is warmed up before checking auth
+      await warmupApi();
       checkAuth();
     }, 50);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      stopApiWarmup();
+    };
   }, [checkAuth]);
 
   // Show nothing while checking auth to avoid flash
