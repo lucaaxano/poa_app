@@ -104,7 +104,6 @@ export class PrismaService
             where: { isActive: true },
             include: { company: true },
             take: 1,
-            select: { id: true, email: true, role: true, company: { select: { id: true } } },
           }).catch(() => null),
         ]);
       }
