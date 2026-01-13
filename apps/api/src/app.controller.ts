@@ -1,18 +1,27 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  /**
+   * Basic health check - MUST verify DB connection for container health
+   * Docker healthcheck uses this endpoint
+   */
   @Get('health')
-  healthCheck() {
-    return this.appService.healthCheck();
+  async healthCheck() {
+    const result = await this.appService.healthCheck();
+    // If DB is not connected, return 503 so Docker knows container is unhealthy
+    if (result.database?.status !== 'connected') {
+      throw new HttpException(result, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    return result;
   }
 
   /**
-   * Deep health check with database connectivity verification
-   * Use this for monitoring and to keep API warm
+   * Deep health check with detailed database metrics
+   * Use this for monitoring dashboards
    */
   @Get('health/deep')
   async deepHealthCheck() {

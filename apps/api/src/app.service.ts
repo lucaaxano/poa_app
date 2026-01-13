@@ -7,12 +7,34 @@ export class AppService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  healthCheck() {
+  /**
+   * Health check that verifies DB connection
+   * Used by Docker healthcheck - MUST return DB status
+   */
+  async healthCheck() {
+    let dbStatus = 'disconnected';
+    let dbLatency = 0;
+
+    try {
+      const start = Date.now();
+      await this.prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - start;
+      dbStatus = 'connected';
+      this.prisma.trackQuery();
+    } catch (error) {
+      this.logger.error('Health check DB query failed:', error);
+      dbStatus = 'error';
+    }
+
     return {
-      status: 'ok',
+      status: dbStatus === 'connected' ? 'ok' : 'unhealthy',
       timestamp: new Date().toISOString(),
       service: 'POA API',
       version: '0.0.1',
+      database: {
+        status: dbStatus,
+        latency: dbLatency,
+      },
     };
   }
 
