@@ -1,10 +1,34 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 
 interface QueryProviderProps {
   children: ReactNode;
+}
+
+// Global reference to QueryClient for logout cleanup
+let queryClientInstance: QueryClient | null = null;
+
+/**
+ * Get the current QueryClient instance
+ * Useful for accessing the client outside of React components
+ */
+export function getQueryClient(): QueryClient | null {
+  return queryClientInstance;
+}
+
+/**
+ * Clear all cached queries from the QueryClient
+ * Call this on logout to prevent data accumulation across sessions
+ */
+export function clearQueryCache(): void {
+  if (queryClientInstance) {
+    // Clear all queries from the cache
+    queryClientInstance.clear();
+    // Also cancel any in-flight queries
+    queryClientInstance.cancelQueries();
+  }
 }
 
 export function QueryProvider({ children }: QueryProviderProps) {
@@ -14,11 +38,20 @@ export function QueryProvider({ children }: QueryProviderProps) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
+            gcTime: 5 * 60 * 1000, // Garbage collection after 5 minutes (prevents memory buildup)
             refetchOnWindowFocus: false,
           },
         },
       })
   );
+
+  // Store the queryClient instance for external access (logout cleanup)
+  useEffect(() => {
+    queryClientInstance = queryClient;
+    return () => {
+      queryClientInstance = null;
+    };
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

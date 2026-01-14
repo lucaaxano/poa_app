@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
 import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut } from '@/lib/api/client';
+import { clearQueryCache } from '@/providers/query-provider';
 
 // Track login timestamp to prevent race conditions after login
 // Instead of a boolean flag, we use a timestamp which is more robust
@@ -223,6 +224,10 @@ export const useAuthStore = create<AuthState>()(
 
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
+
+          // CRITICAL: Clear React Query cache to prevent data accumulation
+          // This must happen before state reset to cancel any in-flight queries
+          clearQueryCache();
 
           // Clear local state IMMEDIATELY for fast UI response
           // This ensures user sees logout happen instantly

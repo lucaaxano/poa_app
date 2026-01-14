@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, NotificationFilters } from '@/lib/api/notifications';
+import { useAuthStore } from '@/stores/auth-store';
 
 // Query Keys
 export const notificationKeys = {
@@ -24,13 +25,19 @@ export function useNotifications(filters?: NotificationFilters) {
 /**
  * Hook to fetch unread notification count
  * Polls every 60 seconds for updates (optimized for performance)
+ * CRITICAL: Only polls when authenticated to prevent unnecessary API calls after logout
  */
 export function useUnreadCount() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => notificationsApi.getUnreadCount(),
-    refetchInterval: 60 * 1000, // Poll every 60 seconds (was 30s - reduced for better performance)
-    staleTime: 30 * 1000, // Consider data stale after 30 seconds (was 15s)
+    // Only poll when authenticated - stops polling immediately on logout
+    refetchInterval: isAuthenticated ? 60 * 1000 : false,
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    // Only fetch when authenticated - prevents 401 errors after logout
+    enabled: isAuthenticated,
   });
 }
 

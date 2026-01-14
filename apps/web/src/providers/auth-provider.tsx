@@ -14,6 +14,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isCheckingAuth = useRef<boolean>(false);
   const hasInitialized = useRef<boolean>(false);
 
+  // Use refs to avoid dependency array issues
+  // This prevents multiple event listener registrations
+  const checkAuthRef = useRef(checkAuth);
+  const isAuthenticatedRef = useRef(isAuthenticated);
+
+  // Keep refs up to date
+  useEffect(() => {
+    checkAuthRef.current = checkAuth;
+  }, [checkAuth]);
+
+  useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
+
   useEffect(() => {
     // Prevent double initialization in React StrictMode
     if (hasInitialized.current) return;
@@ -27,7 +41,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Falls back to setTimeout for browsers that don't support it
     const scheduleAuthCheck = () => {
       if (getLoggingOut()) return;
-      checkAuth();
+      checkAuthRef.current();
     };
 
     // Schedule auth check after store rehydration (microtask timing)
@@ -50,13 +64,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Skip if already checking or not authenticated
       if (isCheckingAuth.current) return;
-      if (!isAuthenticated) return;
+      if (!isAuthenticatedRef.current) return;
 
       isCheckingAuth.current = true;
 
       try {
         // No need to warmupApi() here - startApiWarmup handles it
-        await checkAuth();
+        await checkAuthRef.current();
       } catch (error) {
         console.warn('[AuthProvider] Visibility check failed:', error);
       } finally {
@@ -70,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       stopApiWarmup();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [checkAuth, isAuthenticated]);
+  }, []); // Empty dependency array - runs only once
 
   // Show loading spinner only during initial auth check
   // The spinner is minimal and doesn't block the entire UI
