@@ -35,7 +35,14 @@ export const apiClient = axios.create({
 let warmupInterval: ReturnType<typeof setInterval> | null = null;
 let isApiWarmedUp = false;
 let lastWarmupTime = 0;
-const WARMUP_INTERVAL_MS = 25000; // 25 seconds (less than server's 30s keep-alive)
+let consecutiveFailures = 0;
+let warmupPausedUntil = 0;
+
+// Warmup configuration - conservative to avoid server overload
+const BASE_WARMUP_INTERVAL_MS = 60000; // 60 seconds base interval
+const MIN_WARMUP_INTERVAL_MS = 30000; // Minimum 30 seconds between warmups
+const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
+const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
 
 // Store visibility change handler reference for proper cleanup
 let visibilityChangeHandler: (() => void) | null = null;
@@ -43,10 +50,26 @@ let visibilityChangeHandler: (() => void) | null = null;
 /**
  * Warm up the API connection - call this before critical operations
  * Returns quickly and warms up in background if needed
+ * Includes exponential backoff on failures to prevent server overload
  */
 export const warmupApi = async (): Promise<boolean> => {
-  // If recently warmed up, skip
-  if (Date.now() - lastWarmupTime < 10000) {
+  // Skip if tab is not visible - no background warmup
+  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+    return isApiWarmedUp;
+  }
+
+  // Skip if warmup is paused due to failures
+  if (Date.now() < warmupPausedUntil) {
+    return isApiWarmedUp;
+  }
+
+  // Skip if recently warmed up (within MIN_WARMUP_INTERVAL_MS)
+  if (Date.now() - lastWarmupTime < MIN_WARMUP_INTERVAL_MS) {
+    return isApiWarmedUp;
+  }
+
+  // Skip if logging out
+  if (isLoggingOut) {
     return isApiWarmedUp;
   }
 
@@ -56,9 +79,26 @@ export const warmupApi = async (): Promise<boolean> => {
     });
     isApiWarmedUp = response.data?.warmedUp ?? true;
     lastWarmupTime = Date.now();
+    consecutiveFailures = 0; // Reset failures on success
+    warmupPausedUntil = 0;
     return true;
   } catch (error) {
-    console.warn('[API Warmup] Failed:', error);
+    consecutiveFailures++;
+
+    // After MAX_CONSECUTIVE_FAILURES, pause warmup with exponential backoff
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      const pauseDuration = Math.min(
+        BASE_WARMUP_INTERVAL_MS * Math.pow(2, consecutiveFailures - MAX_CONSECUTIVE_FAILURES),
+        MAX_PAUSE_DURATION_MS
+      );
+      warmupPausedUntil = Date.now() + pauseDuration;
+      console.warn(`[API Warmup] Paused for ${pauseDuration / 1000}s after ${consecutiveFailures} failures`);
+    }
+
+    // Only log first failure and when pausing - avoid console spam
+    if (consecutiveFailures === 1 || consecutiveFailures === MAX_CONSECUTIVE_FAILURES) {
+      console.warn('[API Warmup] Failed:', error);
+    }
     return false;
   }
 };
@@ -73,19 +113,29 @@ export const startApiWarmup = (): void => {
   // Don't start multiple intervals
   if (warmupInterval) return;
 
-  // Initial warmup
-  warmupApi().catch(() => {});
+  // Reset state
+  consecutiveFailures = 0;
+  warmupPausedUntil = 0;
 
-  // Periodic warmup to keep connection alive
+  // Initial warmup (only if tab is visible)
+  if (document.visibilityState === 'visible') {
+    warmupApi().catch(() => {});
+  }
+
+  // Periodic warmup - only executes if conditions are met (visible, not paused, etc.)
   warmupInterval = setInterval(() => {
     warmupApi().catch(() => {});
-  }, WARMUP_INTERVAL_MS);
+  }, BASE_WARMUP_INTERVAL_MS);
 
-  // Only add visibility handler if not already registered
+  // Visibility handler - warmup when user returns to tab (after being away)
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       if (document.visibilityState === 'visible' && !isLoggingOut) {
-        warmupApi().catch(() => {});
+        // Only warmup on visibility change if we haven't warmed up recently
+        const timeSinceLastWarmup = Date.now() - lastWarmupTime;
+        if (timeSinceLastWarmup > MIN_WARMUP_INTERVAL_MS) {
+          warmupApi().catch(() => {});
+        }
       }
     };
     document.addEventListener('visibilitychange', visibilityChangeHandler);
@@ -106,12 +156,27 @@ export const stopApiWarmup = (): void => {
     document.removeEventListener('visibilitychange', visibilityChangeHandler);
     visibilityChangeHandler = null;
   }
+
+  // Reset state
+  consecutiveFailures = 0;
+  warmupPausedUntil = 0;
 };
 
 /**
  * Check if API is warmed up
  */
 export const isApiReady = (): boolean => isApiWarmedUp;
+
+/**
+ * Reset warmup state - call this after successful API calls
+ * This helps recover from temporary failures
+ */
+export const resetWarmupState = (): void => {
+  consecutiveFailures = 0;
+  warmupPausedUntil = 0;
+  isApiWarmedUp = true;
+  lastWarmupTime = Date.now();
+};
 
 // Token management
 const TOKEN_KEY = 'poa_access_token';
@@ -285,7 +350,16 @@ const notifySessionExpired = (reason: 'auth_failed' | 'server_error' | 'network_
 };
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Reset warmup state on successful responses - helps recover from temporary failures
+    if (consecutiveFailures > 0) {
+      consecutiveFailures = 0;
+      warmupPausedUntil = 0;
+      isApiWarmedUp = true;
+      lastWarmupTime = Date.now();
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     // If logging out, don't retry or process errors - just reject silently
     if (isLoggingOut) {
