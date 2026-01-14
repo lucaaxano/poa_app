@@ -73,10 +73,9 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-[width] duration-200',
+        'fixed left-0 top-0 z-40 h-screen border-r bg-white',
         collapsed ? 'w-[72px]' : 'w-64'
       )}
-      style={{ contain: 'layout style' }}
     >
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}

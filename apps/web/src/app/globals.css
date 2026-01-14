@@ -89,7 +89,7 @@
     scroll-behavior: auto; /* Disable smooth scrolling for better performance */
   }
 
-  /* Enable hardware acceleration for scrolling containers */
+  /* Enable smooth touch scrolling on mobile */
   .overflow-auto,
   .overflow-y-auto,
   .overflow-x-auto,
@@ -97,14 +97,6 @@
   .overflow-y-scroll,
   .overflow-x-scroll {
     -webkit-overflow-scrolling: touch;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-  }
-
-  /* Prevent layout thrashing from fixed elements during scroll */
-  .fixed {
-    transform: translateZ(0);
-    backface-visibility: hidden;
   }
 
   /* Custom scrollbar styles */

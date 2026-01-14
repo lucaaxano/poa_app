@@ -385,6 +385,10 @@ export default function LoginPage() {
                   Jetzt registrieren
                 </Link>
               </p>
+              {/* Build version - hidden in production, visible for debugging */}
+              <p className="mt-4 text-center text-[10px] text-muted-foreground/50">
+                v2025.01.14-fix3
+              </p>
             </>
           )}
         </div>
