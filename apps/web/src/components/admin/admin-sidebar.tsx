@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
@@ -55,15 +56,27 @@ interface AdminSidebarProps {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSidebarProps) {
+export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSidebarProps) {
   const pathname = usePathname();
+
+  // Memoize nav items with active state to prevent recalculation
+  const navItemsWithStatus = useMemo(
+    () => adminNavItems.map((item) => ({
+      ...item,
+      isActive: item.href === ('/admin' as Route)
+        ? pathname === '/admin'
+        : pathname === item.href || pathname.startsWith(item.href + '/')
+    })),
+    [pathname]
+  );
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-[width] duration-300 will-change-[width]',
+        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-[width] duration-200',
         collapsed ? 'w-[72px]' : 'w-64'
       )}
+      style={{ contain: 'layout style' }}
     >
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
@@ -83,7 +96,7 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
           <Link
             href="/dashboard"
             className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all',
+              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
               collapsed && 'justify-center px-2'
             )}
             title={collapsed ? 'Zurueck zum Dashboard' : undefined}
@@ -95,29 +108,23 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin">
-          {adminNavItems.map((item) => {
-            const isActive =
-              item.href === ('/admin' as Route)
-                ? pathname === '/admin'
-                : pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-red-600 text-white shadow-soft'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  collapsed && 'justify-center px-2'
-                )}
-                title={collapsed ? item.title : undefined}
-              >
-                {item.icon}
-                {!collapsed && <span>{item.title}</span>}
-              </Link>
-            );
-          })}
+          {navItemsWithStatus.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                item.isActive
+                  ? 'bg-red-600 text-white shadow-soft'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                collapsed && 'justify-center px-2'
+              )}
+              title={collapsed ? item.title : undefined}
+            >
+              {item.icon}
+              {!collapsed && <span>{item.title}</span>}
+            </Link>
+          ))}
         </nav>
 
         {/* Collapse Button */}
@@ -144,4 +151,4 @@ export function AdminSidebar({ collapsed = false, onCollapsedChange }: AdminSide
       </div>
     </aside>
   );
-}
+});
