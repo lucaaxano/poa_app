@@ -34,13 +34,11 @@ export function UserMenu() {
     try {
       await logout();
       toast.success('Erfolgreich abgemeldet');
-      router.push('/login');
+      // Navigation happens automatically via Dashboard layout useEffect
     } catch (error) {
-      // Even if API call fails, we should still navigate to login
-      // because local state has been cleared
       console.warn('Logout API call failed:', error);
       toast.success('Erfolgreich abgemeldet');
-      router.push('/login');
+      // Navigation happens automatically via Dashboard layout useEffect
     }
   };
 

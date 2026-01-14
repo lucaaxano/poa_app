@@ -18,7 +18,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
   const isBroker = user?.role === 'BROKER';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white/80 backdrop-blur-lg px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6">
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <Button

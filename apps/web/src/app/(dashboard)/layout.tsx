@@ -27,7 +27,8 @@ export default function DashboardLayout({
         router.replace('/admin');
       }
     }
-  }, [isAuthenticated, isInitialized, isLoading, user?.role, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isInitialized, isLoading, user?.role]);
 
   // Show loading while checking auth
   if (!isInitialized || isLoading) {
@@ -38,9 +39,13 @@ export default function DashboardLayout({
     );
   }
 
-  // Don't render layout if not authenticated or if SUPERADMIN (redirecting to /admin)
+  // Show spinner while redirecting (prevents white flash)
   if (!isAuthenticated || user?.role === 'SUPERADMIN') {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   return (

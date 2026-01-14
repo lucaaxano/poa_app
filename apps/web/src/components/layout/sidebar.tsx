@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Route } from 'next';
@@ -108,13 +109,26 @@ interface SidebarProps {
   onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const userRole = user?.role || '';
 
-  const filteredNavItems = navItems.filter(
-    (item) => !item.roles || item.roles.includes(userRole)
+  // Memoize filtered nav items to prevent recalculation on every render
+  const filteredNavItems = useMemo(
+    () => navItems.filter((item) => !item.roles || item.roles.includes(userRole)),
+    [userRole]
+  );
+
+  // Memoize nav items with active state to prevent recalculation
+  const navItemsWithStatus = useMemo(
+    () => filteredNavItems.map((item) => ({
+      ...item,
+      isActive: item.href === '/settings'
+        ? pathname === '/settings'
+        : pathname === item.href || pathname.startsWith(item.href + '/')
+    })),
+    [filteredNavItems, pathname]
   );
 
   return (
@@ -151,30 +165,23 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin">
-          {filteredNavItems.map((item) => {
-            // Special handling for settings: only exact match for /settings
-            // For other items: match exact or starts with + /
-            const isActive = item.href === '/settings'
-              ? pathname === '/settings'
-              : pathname === item.href || pathname.startsWith(item.href + '/');
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-soft'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  collapsed && 'justify-center px-2'
-                )}
-                title={collapsed ? item.title : undefined}
-              >
-                {item.icon}
-                {!collapsed && <span>{item.title}</span>}
-              </Link>
-            );
-          })}
+          {navItemsWithStatus.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                item.isActive
+                  ? 'bg-primary text-primary-foreground shadow-soft'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                collapsed && 'justify-center px-2'
+              )}
+              title={collapsed ? item.title : undefined}
+            >
+              {item.icon}
+              {!collapsed && <span>{item.title}</span>}
+            </Link>
+          ))}
         </nav>
 
         {/* Collapse Button */}
@@ -201,4 +208,4 @@ export function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) 
       </div>
     </aside>
   );
-}
+});
