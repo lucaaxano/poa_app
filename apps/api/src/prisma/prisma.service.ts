@@ -25,56 +25,34 @@ export class PrismaService
     await this.$connect();
     this.logger.log(`Database connected in ${Date.now() - startTime}ms`);
 
-    // Comprehensive warmup to ensure connection pool is fully ready
+    // Simple warmup - just verify connection works
     await this.warmupConnectionPool();
 
-    // CRITICAL FIX: Keep-alive every 10 seconds to prevent cold connections
-    // Also includes real table queries to keep PostgreSQL query cache warm
+    // Keep-alive every 60 seconds - reduced from 10s to prevent server overload
+    // PostgreSQL connections stay alive for 5+ minutes by default, so 60s is plenty
     this.keepAliveInterval = setInterval(async () => {
       await this.performKeepAlive();
-    }, 10000); // Every 10 seconds (reduced from 30s)
+    }, 60000); // Every 60 seconds
 
-    this.logger.log('Database keep-alive enabled (10s interval)');
+    this.logger.log('Database keep-alive enabled (60s interval)');
   }
 
   /**
-   * Warm up the connection pool with real queries
-   * This ensures connections are ready for immediate use
+   * Warm up the connection pool - simplified to reduce server load
+   * Just verifies connection works and warms up 2-3 connections
    */
   async warmupConnectionPool(): Promise<void> {
     try {
       const warmupStart = Date.now();
 
-      // Phase 1: Basic connection pool warmup with parallel queries (8 connections)
+      // Simple warmup: just 2 parallel queries to verify connection pool
       await Promise.all([
-        this.$queryRaw`SELECT 1`,
-        this.$queryRaw`SELECT 1`,
-        this.$queryRaw`SELECT 1`,
-        this.$queryRaw`SELECT 1`,
-        this.$queryRaw`SELECT 1`,
-        this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
       ]);
 
-      // Phase 2: Warm up actual table queries (keeps PostgreSQL query planner warm)
-      await Promise.all([
-        this.user.findFirst({ take: 1 }).catch(() => null),
-        this.company.findFirst({ take: 1 }).catch(() => null),
-        this.user.count().catch(() => 0),
-      ]);
-
-      // Phase 3: Pre-warm the EXACT login query pattern (User + Company join)
-      // This is the critical query that runs during login
-      await Promise.all([
-        this.user.findFirst({
-          where: { isActive: true },
-          include: { company: true },
-          take: 1,
-        }).catch(() => null),
-        this.$queryRaw`SELECT id, email, role FROM "User" LIMIT 1`.catch(() => null),
-        this.$queryRaw`SELECT id, name FROM "Company" LIMIT 1`.catch(() => null),
-      ]);
+      // One real table query to warm PostgreSQL query cache
+      await this.user.findFirst({ take: 1 }).catch(() => null);
 
       this.isWarmedUp = true;
       this.lastQueryTime = Date.now();
@@ -85,38 +63,13 @@ export class PrismaService
   }
 
   /**
-   * Perform keep-alive queries to maintain connection pool
+   * Perform keep-alive query - simplified to just one query
+   * PostgreSQL connections don't need aggressive keep-alive
    */
   private async performKeepAlive(): Promise<void> {
-    const timeSinceLastQuery = Date.now() - this.lastQueryTime;
-
     try {
-      // Always do basic keep-alive
+      // Single simple query is enough to keep connection alive
       await this.$queryRaw`SELECT 1`;
-
-      // If no queries in last 15 seconds, warm up login-related queries
-      if (timeSinceLastQuery > 15000) {
-        await Promise.all([
-          this.$queryRaw`SELECT 1`,
-          this.$queryRaw`SELECT 1`,
-          // Keep the login query pattern warm (User + Company join)
-          this.user.findFirst({
-            where: { isActive: true },
-            include: { company: true },
-            take: 1,
-          }).catch(() => null),
-        ]);
-      }
-
-      // If no queries in last 30 seconds, do full warmup including admin stats queries
-      if (timeSinceLastQuery > 30000) {
-        await Promise.all([
-          this.company.count().catch(() => 0),
-          this.user.count().catch(() => 0),
-          this.claim.count().catch(() => 0),
-        ]);
-      }
-
       this.lastQueryTime = Date.now();
     } catch (error) {
       this.logger.warn('Keep-alive query failed, reconnecting...', error);
