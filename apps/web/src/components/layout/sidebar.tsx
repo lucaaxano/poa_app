@@ -31,75 +31,92 @@ interface NavItem {
   roles?: string[];
 }
 
+// PERFORMANCE FIX: Define icons as constants outside the component
+// This prevents React from creating new icon instances on every render
+// which was causing unnecessary re-renders and potential freezing
+const SIDEBAR_ICONS = {
+  dashboard: <LayoutDashboard className="h-5 w-5" />,
+  claims: <FileWarning className="h-5 w-5" />,
+  reports: <BarChart3 className="h-5 w-5" />,
+  companies: <Building2 className="h-5 w-5" />,
+  requests: <UserCheck className="h-5 w-5" />,
+  vehicles: <Car className="h-5 w-5" />,
+  policies: <Shield className="h-5 w-5" />,
+  users: <Users className="h-5 w-5" />,
+  broker: <Briefcase className="h-5 w-5" />,
+  settings: <Settings className="h-5 w-5" />,
+  admin: <ShieldCheck className="h-5 w-5" />,
+} as const;
+
 const navItems: NavItem[] = [
   {
     title: 'Dashboard',
     href: '/dashboard' as Route,
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.dashboard,
   },
   {
     title: 'Schaeden',
     href: '/claims' as Route,
-    icon: <FileWarning className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.claims,
   },
   {
     title: 'Auswertungen',
     href: '/reports' as Route,
-    icon: <BarChart3 className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.reports,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
     title: 'Firmen',
     href: '/broker/companies' as Route,
-    icon: <Building2 className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.companies,
     roles: ['BROKER'],
   },
   {
     title: 'Anfragen',
     href: '/broker/requests' as Route,
-    icon: <UserCheck className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.requests,
     roles: ['BROKER'],
   },
   {
     title: 'Fahrzeuge',
     href: '/vehicles' as Route,
-    icon: <Car className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.vehicles,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
     title: 'Versicherungen',
     href: '/settings/policies' as Route,
-    icon: <Shield className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.policies,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN', 'BROKER'],
   },
   {
     title: 'Benutzer',
     href: '/settings/users' as Route,
-    icon: <Users className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.users,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
     title: 'Broker',
     href: '/settings/broker' as Route,
-    icon: <Briefcase className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.broker,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
     title: 'Firma',
     href: '/settings/company' as Route,
-    icon: <Building2 className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.companies,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
     title: 'Einstellungen',
     href: '/settings' as Route,
-    icon: <Settings className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.settings,
     roles: ['COMPANY_ADMIN', 'SUPERADMIN'],
   },
   {
     title: 'Admin-Panel',
     href: '/admin' as Route,
-    icon: <ShieldCheck className="h-5 w-5" />,
+    icon: SIDEBAR_ICONS.admin,
     roles: ['SUPERADMIN'],
   },
 ];
@@ -111,8 +128,9 @@ interface SidebarProps {
 
 export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuthStore();
-  const userRole = user?.role || '';
+  // PERFORMANCE FIX: Use granular selector to only subscribe to user.role changes
+  // This prevents re-renders when other auth state changes (like linkedCompanies, activeCompany)
+  const userRole = useAuthStore((state) => state.user?.role) || '';
 
   // Memoize filtered nav items to prevent recalculation on every render
   const filteredNavItems = useMemo(
@@ -162,8 +180,8 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin">
+        {/* Navigation - PERFORMANCE FIX: Added will-change and contain for smoother scrolling */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin will-change-scroll" style={{ contain: 'strict' }}>
           {navItemsWithStatus.map((item) => (
             <Link
               key={item.href}

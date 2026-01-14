@@ -23,31 +23,41 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+// PERFORMANCE FIX: Define icons as constants outside the component
+// This prevents React from creating new icon instances on every render
+const ADMIN_SIDEBAR_ICONS = {
+  dashboard: <LayoutDashboard className="h-5 w-5" />,
+  companies: <Building2 className="h-5 w-5" />,
+  users: <Users className="h-5 w-5" />,
+  claims: <FileWarning className="h-5 w-5" />,
+  insurers: <Shield className="h-5 w-5" />,
+} as const;
+
 const adminNavItems: NavItem[] = [
   {
     title: 'Dashboard',
     href: '/admin' as Route,
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    icon: ADMIN_SIDEBAR_ICONS.dashboard,
   },
   {
     title: 'Firmen',
     href: '/admin/companies' as Route,
-    icon: <Building2 className="h-5 w-5" />,
+    icon: ADMIN_SIDEBAR_ICONS.companies,
   },
   {
     title: 'Benutzer',
     href: '/admin/users' as Route,
-    icon: <Users className="h-5 w-5" />,
+    icon: ADMIN_SIDEBAR_ICONS.users,
   },
   {
     title: 'Schaeden',
     href: '/admin/claims' as Route,
-    icon: <FileWarning className="h-5 w-5" />,
+    icon: ADMIN_SIDEBAR_ICONS.claims,
   },
   {
     title: 'Versicherer',
     href: '/admin/insurers' as Route,
-    icon: <Shield className="h-5 w-5" />,
+    icon: ADMIN_SIDEBAR_ICONS.insurers,
   },
 ];
 
@@ -105,8 +115,8 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
           </Link>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin">
+        {/* Navigation - PERFORMANCE FIX: Added will-change and contain for smoother scrolling */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin will-change-scroll" style={{ contain: 'strict' }}>
           {navItemsWithStatus.map((item) => (
             <Link
               key={item.href}

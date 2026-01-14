@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,11 @@ interface HeaderProps {
   showMenuButton?: boolean;
 }
 
-export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
-  const { user } = useAuthStore();
-  const isBroker = user?.role === 'BROKER';
+// PERFORMANCE FIX: Memoized component with granular selector
+export const Header = memo(function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
+  // PERFORMANCE FIX: Use granular selector to only subscribe to user.role changes
+  const userRole = useAuthStore((state) => state.user?.role);
+  const isBroker = userRole === 'BROKER';
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6">
@@ -58,4 +61,4 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
       </div>
     </header>
   );
-}
+});

@@ -225,12 +225,8 @@ export const useAuthStore = create<AuthState>()(
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
 
-          // CRITICAL: Clear React Query cache to prevent data accumulation
-          // This must happen before state reset to cancel any in-flight queries
-          clearQueryCache();
-
           // Clear local state IMMEDIATELY for fast UI response
-          // This ensures user sees logout happen instantly
+          // This ensures user sees logout happen instantly - don't wait for cache clear!
           set({
             user: null,
             company: null,
@@ -242,6 +238,16 @@ export const useAuthStore = create<AuthState>()(
 
           // Clear tokens from localStorage
           clearTokens();
+
+          // PERFORMANCE FIX: Clear React Query cache AFTER state reset
+          // Use requestIdleCallback to not block the main thread
+          // This allows the UI to redirect immediately while cache clears in background
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(() => clearQueryCache(), { timeout: 1000 });
+          } else {
+            // Fallback for browsers without requestIdleCallback
+            setTimeout(() => clearQueryCache(), 0);
+          }
 
           // API logout call is fire-and-forget - don't wait for it
           // The local state is already cleared, so user is effectively logged out
@@ -282,35 +288,46 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        // If we have cached auth data but not initialized, use cache immediately
-        // and verify in background (for page refresh scenarios)
+        // CRITICAL FIX: If we have cached auth data, set initialized IMMEDIATELY
+        // This prevents the blocking spinner and allows the UI to render instantly
+        // Background verification happens silently without blocking the user
         if (cachedUser && wasAuthenticated) {
-          set({ isInitialized: true });
-          // Update in background without blocking - no artificial delay needed
-          // The API client handles retries and warmup automatically
+          // Set initialized and authenticated IMMEDIATELY - no waiting for API
+          set({ isInitialized: true, isAuthenticated: true });
+
+          // Verify in background - errors are handled silently
+          // Only logout if it's a genuine auth error (401/403), not network issues
           authApi.getProfile().then((response) => {
-            set({
-              user: response.user,
-              company: response.company,
-              isAuthenticated: true,
-            });
-          }).catch(() => {
-            // Only clear tokens if the error is an auth error (401/403)
-            // Don't log out on network errors or server errors
-            clearTokens();
-            set({
-              user: null,
-              company: null,
-              isAuthenticated: false,
-              linkedCompanies: null,
-              activeCompany: null,
-            });
+            // Update user data silently if different
+            const current = get();
+            if (current.user?.id === response.user.id) {
+              set({
+                user: response.user,
+                company: response.company,
+              });
+            }
+          }).catch((error) => {
+            // Only clear auth on definitive auth errors (401/403)
+            // Network errors or server errors should NOT logout the user
+            const status = error?.response?.status;
+            if (status === 401 || status === 403) {
+              clearTokens();
+              set({
+                user: null,
+                company: null,
+                isAuthenticated: false,
+                linkedCompanies: null,
+                activeCompany: null,
+              });
+            }
+            // For other errors (network, 5xx), keep user logged in with cached data
           });
           return;
         }
 
-        // No cached data - show loading and fetch
-        set({ isLoading: true });
+        // No cached data - must fetch, but set initialized first to not block UI
+        // Show a brief loading state only when there's no cached data at all
+        set({ isInitialized: true, isLoading: true });
         try {
           const response = await authApi.getProfile();
           set({
@@ -318,7 +335,6 @@ export const useAuthStore = create<AuthState>()(
             company: response.company,
             isAuthenticated: true,
             isLoading: false,
-            isInitialized: true,
           });
         } catch {
           clearTokens();
@@ -327,7 +343,6 @@ export const useAuthStore = create<AuthState>()(
             company: null,
             isAuthenticated: false,
             isLoading: false,
-            isInitialized: true,
             linkedCompanies: null,
             activeCompany: null,
           });

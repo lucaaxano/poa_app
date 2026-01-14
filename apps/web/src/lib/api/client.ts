@@ -38,9 +38,10 @@ let lastWarmupTime = 0;
 let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
-// Warmup configuration - conservative to avoid server overload
-const BASE_WARMUP_INTERVAL_MS = 60000; // 60 seconds base interval
-const MIN_WARMUP_INTERVAL_MS = 30000; // Minimum 30 seconds between warmups
+// Warmup configuration - more conservative to reduce server load and improve client performance
+// PERFORMANCE FIX: Increased intervals to reduce background network activity
+const BASE_WARMUP_INTERVAL_MS = 120000; // 120 seconds (2 minutes) base interval
+const MIN_WARMUP_INTERVAL_MS = 60000; // Minimum 60 seconds between warmups
 const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
 const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
 

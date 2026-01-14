@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
@@ -14,24 +14,31 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isAuthenticated, isInitialized, isLoading } = useAuthStore();
+
+  // PERFORMANCE FIX: Use granular selectors to prevent unnecessary re-renders
+  // Each selector only triggers re-render when that specific value changes
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const userRole = useAuthStore((state) => state.user?.role);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Redirect to login if not authenticated, or to admin if SUPERADMIN
   useEffect(() => {
-    if (isInitialized && !isLoading) {
-      if (!isAuthenticated) {
-        router.replace('/login');
-      } else if (user?.role === 'SUPERADMIN') {
-        router.replace('/admin');
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isInitialized, isLoading, user?.role]);
+    // Only redirect after initialization is complete
+    if (!isInitialized) return;
 
-  // Show loading while checking auth
-  if (!isInitialized || isLoading) {
+    if (!isAuthenticated) {
+      router.replace('/login');
+    } else if (userRole === 'SUPERADMIN') {
+      router.replace('/admin');
+    }
+  }, [isAuthenticated, isInitialized, router, userRole]);
+
+  // OPTIMIZED: Single loading check - only show spinner when truly necessary
+  if (!isInitialized || (!isAuthenticated && isLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -39,13 +46,9 @@ export default function DashboardLayout({
     );
   }
 
-  // Show spinner while redirecting (prevents white flash)
-  if (!isAuthenticated || user?.role === 'SUPERADMIN') {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+  // If not authenticated (after init), return nothing while redirect happens
+  if (!isAuthenticated || userRole === 'SUPERADMIN') {
+    return null;
   }
 
   return (

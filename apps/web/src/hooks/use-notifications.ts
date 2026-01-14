@@ -14,11 +14,18 @@ export const notificationKeys = {
 
 /**
  * Hook to fetch notifications with pagination and filters
+ * PERFORMANCE FIX: Only fetches when filters are provided (enabled: !!filters)
+ * This allows lazy loading - notifications are only fetched when explicitly requested
  */
 export function useNotifications(filters?: NotificationFilters) {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   return useQuery({
     queryKey: notificationKeys.list(filters),
     queryFn: () => notificationsApi.getAll(filters),
+    // Only fetch when authenticated AND filters are provided
+    // This enables lazy loading - component can pass undefined to skip fetch
+    enabled: isAuthenticated && !!filters,
   });
 }
 

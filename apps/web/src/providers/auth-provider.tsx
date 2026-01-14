@@ -86,15 +86,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []); // Empty dependency array - runs only once
 
-  // Show loading spinner only during initial auth check
-  // The spinner is minimal and doesn't block the entire UI
-  if (!isInitialized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-
+  // CRITICAL FIX: Don't block rendering with a spinner here
+  // The auth-store now sets isInitialized immediately when cached data exists
+  // Each layout handles its own loading state for a smoother UX
+  // This prevents the "white screen" problem on first load
   return <>{children}</>;
 }

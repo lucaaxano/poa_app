@@ -37,8 +37,10 @@ export function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1 minute
-            gcTime: 5 * 60 * 1000, // Garbage collection after 5 minutes (prevents memory buildup)
+            // PERFORMANCE FIX: Reduced cache times for faster cleanup on logout
+            // This prevents memory buildup and makes logout faster
+            staleTime: 30 * 1000, // 30 seconds - data considered fresh
+            gcTime: 2 * 60 * 1000, // Garbage collection after 2 minutes (was 5 minutes)
             refetchOnWindowFocus: false,
           },
         },

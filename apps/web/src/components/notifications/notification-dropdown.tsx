@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { Bell, Check, Loader2 } from 'lucide-react';
@@ -19,10 +20,20 @@ import {
   useMarkAllAsRead,
 } from '@/hooks/use-notifications';
 
-export function NotificationDropdown() {
-  // Fetch notifications and unread count
-  const { data: notificationsData, isLoading } = useNotifications({ limit: 10 });
+// PERFORMANCE FIX: Memoized component to prevent unnecessary re-renders
+export const NotificationDropdown = memo(function NotificationDropdown() {
+  // Track if dropdown has been opened at least once
+  const [hasBeenOpened, setHasBeenOpened] = useState(false);
+
+  // PERFORMANCE FIX: Only fetch unread count (lightweight), not full notifications
+  // Full notifications are loaded only when dropdown is opened
   const { data: unreadCount = 0 } = useUnreadCount();
+
+  // PERFORMANCE FIX: Only fetch notifications after dropdown is opened for the first time
+  // This prevents heavy API calls during initial page load
+  const { data: notificationsData, isLoading } = useNotifications(
+    hasBeenOpened ? { limit: 10 } : undefined
+  );
 
   // Mutations
   const markAsRead = useMarkAsRead();
@@ -39,8 +50,15 @@ export function NotificationDropdown() {
     markAllAsRead.mutate();
   };
 
+  // Handle dropdown open to trigger notifications fetch
+  const handleOpenChange = (open: boolean) => {
+    if (open && !hasBeenOpened) {
+      setHasBeenOpened(true);
+    }
+  };
+
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -126,4 +144,4 @@ export function NotificationDropdown() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});
