@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, User, Settings, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,11 +25,23 @@ function getInitials(firstName?: string, lastName?: string): string {
 export function UserMenu() {
   const router = useRouter();
   const { user, company, logout } = useAuthStore();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    toast.success('Erfolgreich abgemeldet');
-    router.push('/login');
+    if (isLoggingOut) return; // Prevent double clicks
+
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      toast.success('Erfolgreich abgemeldet');
+      router.push('/login');
+    } catch (error) {
+      // Even if API call fails, we should still navigate to login
+      // because local state has been cleared
+      console.warn('Logout API call failed:', error);
+      toast.success('Erfolgreich abgemeldet');
+      router.push('/login');
+    }
   };
 
   const initials = getInitials(user?.firstName, user?.lastName);
@@ -77,10 +90,15 @@ export function UserMenu() {
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem
           onClick={handleLogout}
+          disabled={isLoggingOut}
           className="rounded-lg cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Abmelden</span>
+          {isLoggingOut ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="mr-2 h-4 w-4" />
+          )}
+          <span>{isLoggingOut ? 'Abmelden...' : 'Abmelden'}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

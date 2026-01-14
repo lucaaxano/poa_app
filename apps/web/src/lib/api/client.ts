@@ -37,6 +37,9 @@ let isApiWarmedUp = false;
 let lastWarmupTime = 0;
 const WARMUP_INTERVAL_MS = 25000; // 25 seconds (less than server's 30s keep-alive)
 
+// Store visibility change handler reference for proper cleanup
+let visibilityChangeHandler: (() => void) | null = null;
+
 /**
  * Warm up the API connection - call this before critical operations
  * Returns quickly and warms up in background if needed
@@ -78,12 +81,15 @@ export const startApiWarmup = (): void => {
     warmupApi().catch(() => {});
   }, WARMUP_INTERVAL_MS);
 
-  // Also warmup when page becomes visible (user returns to tab)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      warmupApi().catch(() => {});
-    }
-  });
+  // Only add visibility handler if not already registered
+  if (!visibilityChangeHandler) {
+    visibilityChangeHandler = () => {
+      if (document.visibilityState === 'visible' && !isLoggingOut) {
+        warmupApi().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
+  }
 };
 
 /**
@@ -93,6 +99,12 @@ export const stopApiWarmup = (): void => {
   if (warmupInterval) {
     clearInterval(warmupInterval);
     warmupInterval = null;
+  }
+
+  // Remove visibility change handler to prevent memory leaks
+  if (visibilityChangeHandler) {
+    document.removeEventListener('visibilitychange', visibilityChangeHandler);
+    visibilityChangeHandler = null;
   }
 };
 
@@ -294,14 +306,13 @@ apiClient.interceptors.response.use(
     // Handle network/CORS errors (often caused by proxy timeouts)
     if (isCorsOrNetworkError) {
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 3) {
+      if (retryCount < 2) { // Reduced from 3 to 2 retries for faster failure
         originalRequest._retryCount = retryCount + 1;
-        const delay = 1000 * Math.pow(2, retryCount); // 1s, 2s, 4s
+        const delay = 500 * Math.pow(2, retryCount); // 500ms, 1s (faster recovery)
 
-        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/3), retrying in ${delay}ms...`);
+        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
 
-        // Trigger API warmup before retry
-        await warmupApi();
+        // Skip warmupApi() before retry - it adds unnecessary delay
         await sleep(delay);
 
         return apiClient(originalRequest);
@@ -316,14 +327,13 @@ apiClient.interceptors.response.use(
     if (status && status >= 500) {
       // For server errors, we can retry the original request
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 3) {
+      if (retryCount < 2) { // Reduced from 3 to 2 retries
         originalRequest._retryCount = retryCount + 1;
-        const delay = 1000 * Math.pow(2, retryCount);
+        const delay = 500 * Math.pow(2, retryCount); // 500ms, 1s (faster recovery)
 
-        console.warn(`[API] Server error ${status} (attempt ${retryCount + 1}/3), retrying in ${delay}ms...`);
+        console.warn(`[API] Server error ${status} (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
 
-        // Trigger API warmup before retry
-        await warmupApi();
+        // Skip warmupApi() before retry - it adds unnecessary delay
         await sleep(delay);
 
         return apiClient(originalRequest);

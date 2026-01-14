@@ -224,10 +224,8 @@ export const useAuthStore = create<AuthState>()(
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
 
-          // Clear tokens FIRST (synchronous)
-          await authApi.logout();
-
-          // Clear state - keep isInitialized TRUE so navigation works
+          // Clear local state IMMEDIATELY for fast UI response
+          // This ensures user sees logout happen instantly
           set({
             user: null,
             company: null,
@@ -235,6 +233,15 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             linkedCompanies: null,
             activeCompany: null,
+          });
+
+          // Clear tokens from localStorage
+          clearTokens();
+
+          // API logout call is fire-and-forget - don't wait for it
+          // The local state is already cleared, so user is effectively logged out
+          authApi.logout().catch(() => {
+            // Silently ignore API errors - local logout already complete
           });
         } finally {
           // ALWAYS re-enable API calls, even if an error occurred
