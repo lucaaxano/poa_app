@@ -28,13 +28,13 @@ export class PrismaService
     // Simple warmup - just verify connection works
     await this.warmupConnectionPool();
 
-    // Keep-alive every 60 seconds - reduced from 10s to prevent server overload
-    // PostgreSQL connections stay alive for 5+ minutes by default, so 60s is plenty
+    // Keep-alive every 30 seconds - balanced for responsiveness
+    // Prevents slow first query after inactivity while limiting server load
     this.keepAliveInterval = setInterval(async () => {
       await this.performKeepAlive();
-    }, 60000); // Every 60 seconds
+    }, 30000); // Every 30 seconds
 
-    this.logger.log('Database keep-alive enabled (60s interval)');
+    this.logger.log('Database keep-alive enabled (30s interval)');
   }
 
   /**
