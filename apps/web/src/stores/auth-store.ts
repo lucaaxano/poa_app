@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
 import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut } from '@/lib/api/client';
-import { clearQueryCache } from '@/providers/query-provider';
+import { clearQueryCache, cancelAllQueries } from '@/providers/query-provider';
 
 // Track login timestamp to prevent race conditions after login
 // Instead of a boolean flag, we use a timestamp which is more robust
@@ -222,6 +222,10 @@ export const useAuthStore = create<AuthState>()(
           // Stop API warmup to prevent background requests
           stopApiWarmup();
 
+          // CRITICAL: Cancel all in-flight queries IMMEDIATELY
+          // This prevents UI freezes from abandoned requests trying to update state
+          cancelAllQueries();
+
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
 
@@ -239,9 +243,8 @@ export const useAuthStore = create<AuthState>()(
           // Clear tokens from localStorage
           clearTokens();
 
-          // PERFORMANCE FIX: Clear React Query cache AFTER state reset
+          // Clear React Query cache in background (queries already cancelled above)
           // Use requestIdleCallback to not block the main thread
-          // This allows the UI to redirect immediately while cache clears in background
           if (typeof requestIdleCallback !== 'undefined') {
             requestIdleCallback(() => clearQueryCache(), { timeout: 1000 });
           } else {

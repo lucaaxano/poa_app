@@ -115,8 +115,8 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
           </Link>
         </div>
 
-        {/* Navigation - PERFORMANCE FIX: Added will-change and contain for smoother scrolling */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin will-change-scroll" style={{ contain: 'content' }}>
+        {/* Navigation - Optimized for smooth scrolling */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin">
           {navItemsWithStatus.map((item) => (
             <Link
               key={item.href}

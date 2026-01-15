@@ -19,15 +19,26 @@ export function getQueryClient(): QueryClient | null {
 }
 
 /**
+ * Cancel all in-flight queries immediately
+ * Call this FIRST on logout to prevent UI freezes from abandoned requests
+ */
+export function cancelAllQueries(): void {
+  if (queryClientInstance) {
+    queryClientInstance.cancelQueries();
+  }
+}
+
+/**
  * Clear all cached queries from the QueryClient
  * Call this on logout to prevent data accumulation across sessions
+ * IMPORTANT: Call cancelAllQueries() first for immediate effect
  */
 export function clearQueryCache(): void {
   if (queryClientInstance) {
+    // Cancel any remaining in-flight queries
+    queryClientInstance.cancelQueries();
     // Clear all queries from the cache
     queryClientInstance.clear();
-    // Also cancel any in-flight queries
-    queryClientInstance.cancelQueries();
   }
 }
 
