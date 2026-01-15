@@ -399,8 +399,28 @@ apiClient.interceptors.response.use(
 
     // Handle 5xx errors separately - don't treat as auth errors
     const status = error.response?.status;
+
+    // Special handling for 504 Gateway Timeout - use faster retry
+    // 504 often means the backend was temporarily slow but is now ready
+    if (status === 504) {
+      const retryCount = originalRequest._retryCount || 0;
+      if (retryCount < 2) {
+        originalRequest._retryCount = retryCount + 1;
+        // Faster retry for 504 - backend is likely ready now
+        const delay = 300 * (retryCount + 1); // 300ms, 600ms
+
+        console.warn(`[API] Gateway timeout 504 (attempt ${retryCount + 1}/2), quick retry in ${delay}ms...`);
+
+        await sleep(delay);
+        return apiClient(originalRequest);
+      }
+      // After retries, don't freeze - just report error
+      console.error('[API] Gateway timeout persists after retries');
+      return Promise.reject(error);
+    }
+
     if (status && status >= 500) {
-      // For server errors, we can retry the original request
+      // For other server errors, we can retry the original request
       const retryCount = originalRequest._retryCount || 0;
       if (retryCount < 2) { // Reduced from 3 to 2 retries
         originalRequest._retryCount = retryCount + 1;
