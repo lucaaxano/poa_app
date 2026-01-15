@@ -9,7 +9,10 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { checkAuth, isInitialized, isAuthenticated } = useAuthStore();
+  // PERFORMANCE FIX: Use granular selectors to prevent unnecessary re-renders
+  // Only subscribe to the specific values/functions we need
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const lastVisibilityCheck = useRef<number>(0);
   const isCheckingAuth = useRef<boolean>(false);
   const hasInitialized = useRef<boolean>(false);

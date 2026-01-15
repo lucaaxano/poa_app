@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { Building2, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,12 +19,16 @@ interface CompanySwitcherProps {
   collapsed?: boolean;
 }
 
-export function CompanySwitcher({ collapsed = false }: CompanySwitcherProps) {
-  const { user, activeCompany, setActiveCompany } = useAuthStore();
+// PERFORMANCE FIX: Memoized component with granular selectors
+export const CompanySwitcher = memo(function CompanySwitcher({ collapsed = false }: CompanySwitcherProps) {
+  // PERFORMANCE FIX: Use granular selectors to prevent unnecessary re-renders
+  const userRole = useAuthStore((state) => state.user?.role);
+  const activeCompany = useAuthStore((state) => state.activeCompany);
+  const setActiveCompany = useAuthStore((state) => state.setActiveCompany);
   const { data: companies, isLoading } = useBrokerCompanies();
 
   // Only show for BROKER role
-  if (user?.role !== 'BROKER') {
+  if (userRole !== 'BROKER') {
     return null;
   }
 
@@ -129,4 +134,4 @@ export function CompanySwitcher({ collapsed = false }: CompanySwitcherProps) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});
