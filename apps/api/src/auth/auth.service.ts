@@ -307,6 +307,10 @@ export class AuthService {
     const startTime = Date.now();
     this.logger.log(`[LOGIN] Starting login for ${dto.email}`);
 
+    // CRITICAL: Ensure DB connection is ready before any queries
+    // This prevents 504 timeouts when connection pool is cold
+    await this.prisma.ensureConnectionReady();
+
     const dbStartTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -469,6 +473,9 @@ export class AuthService {
   }
 
   async validateUser(userId: string): Promise<(User & { company: Company | null }) | null> {
+    // Ensure DB connection is ready for JWT validation (called on every authenticated request)
+    await this.prisma.ensureConnectionReady();
+
     const startTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -484,6 +491,9 @@ export class AuthService {
   }
 
   async getProfile(userId: string): Promise<ProfileResponse> {
+    // Ensure DB connection is ready for profile fetch
+    await this.prisma.ensureConnectionReady();
+
     const startTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -522,6 +532,9 @@ export class AuthService {
   }
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
+    // Ensure DB connection is ready for token refresh
+    await this.prisma.ensureConnectionReady();
+
     try {
       const payload = this.jwtService.verify(refreshToken);
       const user = await this.prisma.user.findUnique({

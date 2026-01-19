@@ -9,7 +9,10 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
   private keepAliveInterval: ReturnType<typeof setInterval> | null = null;
   private lastQueryTime: number = Date.now();
+  private lastSuccessfulQuery: number = Date.now();
   private isWarmedUp: boolean = false;
+  private connectionHealthy: boolean = true;
+  private reconnectInProgress: boolean = false;
 
   constructor() {
     super({
@@ -25,62 +28,153 @@ export class PrismaService
     await this.$connect();
     this.logger.log(`Database connected in ${Date.now() - startTime}ms`);
 
-    // Simple warmup - just verify connection works
+    // Aggressive warmup - ensure multiple connections are ready
     await this.warmupConnectionPool();
 
-    // Keep-alive every 15 seconds - more aggressive to prevent cold starts
-    // Prevents slow first query after inactivity (especially after weekends)
+    // Keep-alive every 10 seconds - very aggressive to prevent ANY cold starts
+    // This is critical for preventing 504 timeouts after inactivity
     this.keepAliveInterval = setInterval(async () => {
       await this.performKeepAlive();
-    }, 15000); // Every 15 seconds
+    }, 10000); // Every 10 seconds
 
-    this.logger.log('Database keep-alive enabled (15s interval)');
+    this.logger.log('Database keep-alive enabled (10s interval)');
   }
 
   /**
-   * Warm up the connection pool - simplified to reduce server load
-   * Just verifies connection works and warms up 2-3 connections
+   * Warm up the connection pool aggressively
+   * Creates multiple connections and validates they work
    */
   async warmupConnectionPool(): Promise<void> {
     try {
       const warmupStart = Date.now();
 
-      // Simple warmup: just 2 parallel queries to verify connection pool
+      // Create 5 parallel connections to warm the pool
       await Promise.all([
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
         this.$queryRaw`SELECT 1`,
       ]);
 
-      // One real table query to warm PostgreSQL query cache
-      await this.user.findFirst({ take: 1 }).catch(() => null);
+      // Warm PostgreSQL query cache with real table queries
+      await Promise.all([
+        this.user.findFirst({ take: 1 }).catch(() => null),
+        this.company.findFirst({ take: 1 }).catch(() => null),
+      ]);
 
       this.isWarmedUp = true;
+      this.connectionHealthy = true;
       this.lastQueryTime = Date.now();
+      this.lastSuccessfulQuery = Date.now();
       this.logger.log(`Database warmup completed in ${Date.now() - warmupStart}ms`);
     } catch (error) {
-      this.logger.error('Database warmup query failed:', error);
+      this.logger.error('Database warmup failed:', error);
+      this.connectionHealthy = false;
     }
   }
 
   /**
-   * Perform keep-alive query - simplified to just one query
-   * PostgreSQL connections don't need aggressive keep-alive
+   * Perform keep-alive query with connection validation
+   * If connection is unhealthy, attempt reconnection
    */
   private async performKeepAlive(): Promise<void> {
+    // Skip if reconnection is already in progress
+    if (this.reconnectInProgress) {
+      return;
+    }
+
     try {
-      // Single simple query is enough to keep connection alive
+      const start = Date.now();
       await this.$queryRaw`SELECT 1`;
+      const latency = Date.now() - start;
+
       this.lastQueryTime = Date.now();
+      this.lastSuccessfulQuery = Date.now();
+      this.connectionHealthy = true;
+
+      // Log warning if latency is high (potential connection issue)
+      if (latency > 1000) {
+        this.logger.warn(`Keep-alive query slow: ${latency}ms - potential connection issue`);
+      }
     } catch (error) {
-      this.logger.warn('Keep-alive query failed, reconnecting...', error);
+      this.logger.warn('Keep-alive query failed, initiating reconnection...', error);
+      this.connectionHealthy = false;
+      await this.reconnect();
+    }
+  }
+
+  /**
+   * Reconnect to database and warm up connections
+   */
+  private async reconnect(): Promise<void> {
+    if (this.reconnectInProgress) {
+      return;
+    }
+
+    this.reconnectInProgress = true;
+
+    try {
+      this.logger.log('Attempting database reconnection...');
+
+      // Disconnect first to clear any stale connections
       try {
         await this.$disconnect();
-        await this.$connect();
-        await this.warmupConnectionPool();
-        this.logger.log('Database reconnected and warmed up successfully');
-      } catch (reconnectError) {
-        this.logger.error('Reconnection failed:', reconnectError);
+      } catch {
+        // Ignore disconnect errors
       }
+
+      // Wait a moment before reconnecting
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Reconnect
+      await this.$connect();
+
+      // Warm up connections
+      await this.warmupConnectionPool();
+
+      this.logger.log('Database reconnected and warmed up successfully');
+    } catch (reconnectError) {
+      this.logger.error('Reconnection failed:', reconnectError);
+      this.connectionHealthy = false;
+    } finally {
+      this.reconnectInProgress = false;
+    }
+  }
+
+  /**
+   * Ensure connection is ready before critical operations
+   * Call this before auth operations to prevent 504 timeouts
+   */
+  async ensureConnectionReady(): Promise<boolean> {
+    // If connection is healthy and recent, skip check
+    const timeSinceLastSuccess = Date.now() - this.lastSuccessfulQuery;
+    if (this.connectionHealthy && timeSinceLastSuccess < 30000) {
+      return true;
+    }
+
+    try {
+      const start = Date.now();
+      await this.$queryRaw`SELECT 1`;
+      const latency = Date.now() - start;
+
+      this.lastSuccessfulQuery = Date.now();
+      this.connectionHealthy = true;
+
+      // If latency is very high, warn but continue
+      if (latency > 500) {
+        this.logger.warn(`Connection validation slow: ${latency}ms`);
+      }
+
+      return true;
+    } catch (error) {
+      this.logger.error('Connection validation failed:', error);
+      this.connectionHealthy = false;
+
+      // Try to reconnect
+      await this.reconnect();
+
+      return this.connectionHealthy;
     }
   }
 
@@ -89,6 +183,8 @@ export class PrismaService
    */
   trackQuery(): void {
     this.lastQueryTime = Date.now();
+    this.lastSuccessfulQuery = Date.now();
+    this.connectionHealthy = true;
   }
 
   /**
@@ -96,6 +192,13 @@ export class PrismaService
    */
   isConnectionWarmedUp(): boolean {
     return this.isWarmedUp;
+  }
+
+  /**
+   * Check if connection is healthy
+   */
+  isConnectionHealthy(): boolean {
+    return this.connectionHealthy;
   }
 
   async onModuleDestroy() {
@@ -108,6 +211,7 @@ export class PrismaService
 
   /**
    * Execute a query with automatic retry on connection errors
+   * Use this for critical operations that must not fail due to stale connections
    */
   async executeWithRetry<T>(
     operation: () => Promise<T>,
@@ -118,19 +222,33 @@ export class PrismaService
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await operation();
+        // On first attempt, ensure connection is ready
+        if (attempt === 1) {
+          await this.ensureConnectionReady();
+        }
+
+        const result = await operation();
+        this.trackQuery();
+        return result;
       } catch (error) {
         lastError = error as Error;
         const isConnectionError =
           error instanceof Error &&
           (error.message.includes('connection') ||
             error.message.includes('timeout') ||
-            error.message.includes('ECONNREFUSED'));
+            error.message.includes('ECONNREFUSED') ||
+            error.message.includes('Connection') ||
+            error.message.includes('prepared statement'));
 
         if (isConnectionError && attempt < maxRetries) {
           this.logger.warn(
             `Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`,
           );
+
+          // Mark connection as unhealthy and reconnect
+          this.connectionHealthy = false;
+          await this.reconnect();
+
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay *= 2; // Exponential backoff
         } else {

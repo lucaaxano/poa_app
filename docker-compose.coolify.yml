@@ -124,6 +124,16 @@ services:
       - "log_statement=none"
       - "-c"
       - "log_min_duration_statement=1000"
+      # TCP Keepalive settings - detect dead connections faster
+      - "-c"
+      - "tcp_keepalives_idle=30"
+      - "-c"
+      - "tcp_keepalives_interval=10"
+      - "-c"
+      - "tcp_keepalives_count=3"
+      # Prevent idle connections from being dropped
+      - "-c"
+      - "idle_in_transaction_session_timeout=60000"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-poa_admin} -d ${DB_NAME:-poa_production}"]
       interval: 10s
