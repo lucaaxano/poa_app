@@ -63,17 +63,43 @@ export class PrismaService
 
   /**
    * Warmup the connection pool with parallel queries
+   * Includes table-specific queries to warm up query plans
    */
   private async warmupConnectionPool(): Promise<void> {
     try {
-      // Run 5 parallel queries to establish multiple connections
-      const warmupPromises = Array(5).fill(null).map(() =>
+      const startTime = Date.now();
+
+      // Phase 1: Basic connection warmup (5 parallel SELECT 1)
+      const basicWarmup = Array(5).fill(null).map(() =>
         this.$queryRaw`SELECT 1`
       );
-      await Promise.all(warmupPromises);
+      await Promise.all(basicWarmup);
+
+      // Phase 2: Table-specific warmup to prepare query plans
+      // These queries warm up the most critical paths (login, auth check)
+      // Using LIMIT 0 or non-existent IDs to avoid returning data
+      await Promise.all([
+        // Warm up User table index (email lookup - used in login)
+        this.user.findFirst({
+          where: { email: 'warmup@nonexistent.local' },
+          select: { id: true },
+        }).catch(() => null),
+
+        // Warm up User table with company join (used in login/auth)
+        this.user.findFirst({
+          where: { id: '00000000-0000-0000-0000-000000000000' },
+          include: { company: true },
+        }).catch(() => null),
+
+        // Warm up Company table
+        this.company.findFirst({
+          where: { id: '00000000-0000-0000-0000-000000000000' },
+        }).catch(() => null),
+      ]);
+
       this.consecutiveFailures = 0;
       this.lastSuccessfulQuery = Date.now();
-      this.logger.log('Database connection pool warmed up (5 connections)');
+      this.logger.log(`Database warmup completed in ${Date.now() - startTime}ms (connections + query plans)`);
     } catch (error) {
       this.logger.error('Database warmup failed:', error);
     }
