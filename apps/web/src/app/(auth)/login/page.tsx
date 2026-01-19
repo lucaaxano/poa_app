@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
@@ -56,6 +57,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginSchema) => {
     try {
       setEmailNotVerified(false);
+      setLoginError(null);
 
       // Pre-warm API before login to prevent cold start timeouts
       await warmupApi();
@@ -73,6 +75,7 @@ export default function LoginPage() {
         setEmailNotVerified(true);
         setUnverifiedEmail(data.email);
       } else {
+        setLoginError(errorMessage);
         toast.error(errorMessage);
       }
     }
@@ -233,6 +236,15 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Login Error Message */}
+          {loginError && !emailNotVerified && (
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
+              <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                {loginError}
+              </p>
             </div>
           )}
 
