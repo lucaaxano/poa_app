@@ -9,27 +9,17 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  // PERFORMANCE FIX: Use granular selectors to prevent unnecessary re-renders
-  // Only subscribe to the specific values/functions we need
+  // Get checkAuth function from store
   const checkAuth = useAuthStore((state) => state.checkAuth);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const lastVisibilityCheck = useRef<number>(0);
-  const isCheckingAuth = useRef<boolean>(false);
   const hasInitialized = useRef<boolean>(false);
 
-  // Use refs to avoid dependency array issues
-  // This prevents multiple event listener registrations
+  // Use ref to avoid dependency array issues
   const checkAuthRef = useRef(checkAuth);
-  const isAuthenticatedRef = useRef(isAuthenticated);
 
-  // Keep refs up to date
+  // Keep ref up to date
   useEffect(() => {
     checkAuthRef.current = checkAuth;
   }, [checkAuth]);
-
-  useEffect(() => {
-    isAuthenticatedRef.current = isAuthenticated;
-  }, [isAuthenticated]);
 
   useEffect(() => {
     // Prevent double initialization in React StrictMode
@@ -54,48 +44,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setTimeout(scheduleAuthCheck, 10);
     });
 
-    // Visibility change handler - only for re-verifying auth when user returns
-    // Note: startApiWarmup already handles warmup on visibility change
-    // Uses requestIdleCallback to prevent main thread blocking during UI interactions
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (getLoggingOut()) return;
-
-      // Debounce: only check if more than 10 seconds since last check
-      const now = Date.now();
-      if (now - lastVisibilityCheck.current < 10000) return;
-      lastVisibilityCheck.current = now;
-
-      // Skip if already checking or not authenticated
-      if (isCheckingAuth.current) return;
-      if (!isAuthenticatedRef.current) return;
-
-      // requestIdleCallback prevents UI freeze when returning to tab
-      const performAuthCheck = async () => {
-        if (isCheckingAuth.current) return;
-        isCheckingAuth.current = true;
-        try {
-          // No need to warmupApi() here - startApiWarmup handles it
-          await checkAuthRef.current();
-        } catch (error) {
-          console.warn('[AuthProvider] Visibility check failed:', error);
-        } finally {
-          isCheckingAuth.current = false;
-        }
-      };
-
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => performAuthCheck(), { timeout: 3000 });
-      } else {
-        setTimeout(() => performAuthCheck(), 100);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+    // NOTE: No visibility change handler here!
+    // The warmup in client.ts handles keeping connections alive.
+    // Auth re-verification on visibility change was causing duplicate API calls
+    // and slowdowns over time. The token refresh mechanism handles expired tokens.
 
     return () => {
       stopApiWarmup();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []); // Empty dependency array - runs only once
 

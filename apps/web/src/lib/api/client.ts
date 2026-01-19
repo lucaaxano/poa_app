@@ -38,10 +38,10 @@ let lastWarmupTime = 0;
 let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
-// Warmup configuration - balanced for responsiveness and server load
-// Keep connections warm to prevent slow responses after inactivity
-const BASE_WARMUP_INTERVAL_MS = 45000; // 45 seconds base interval
-const MIN_WARMUP_INTERVAL_MS = 30000; // Minimum 30 seconds between warmups
+// Warmup configuration - reduced frequency to prevent slowdowns over time
+// The backend keep-alive (15s) handles connection warmth
+const BASE_WARMUP_INTERVAL_MS = 90000; // 90 seconds - reduced from 45s
+const MIN_WARMUP_INTERVAL_MS = 60000; // Minimum 60 seconds between warmups
 const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
 const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
 
@@ -135,22 +135,16 @@ export const startApiWarmup = (): void => {
   }, BASE_WARMUP_INTERVAL_MS);
 
   // Visibility handler - warmup when user returns to tab
-  // Uses requestIdleCallback to prevent main thread blocking
+  // Simple and direct - no requestIdleCallback to avoid accumulating deferred work
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       // Only warmup if authenticated and visible
       if (document.visibilityState === 'visible' && !isLoggingOut && getAccessToken()) {
-        // Always warmup when returning to tab if more than 15s since last warmup
-        // Use force=true to bypass normal interval checks
+        // Warmup when returning to tab if more than 30s since last warmup
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
-        if (timeSinceLastWarmup > 15000) { // 15 seconds - more responsive
-          // requestIdleCallback prevents main thread blocking during UI interactions
-          const scheduleWarmup = () => warmupApi(true).catch(() => {});
-          if ('requestIdleCallback' in window) {
-            requestIdleCallback(scheduleWarmup, { timeout: 2000 });
-          } else {
-            setTimeout(scheduleWarmup, 100);
-          }
+        if (timeSinceLastWarmup > 30000) { // 30 seconds threshold
+          // Direct call - simple and predictable
+          warmupApi(true).catch(() => {});
         }
       }
     };
