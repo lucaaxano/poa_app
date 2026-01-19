@@ -307,6 +307,12 @@ export class AuthService {
     const startTime = Date.now();
     this.logger.log(`[LOGIN] Starting login for ${dto.email}`);
 
+    // Pre-query warmup: Ensure DB connection is ready before critical operation
+    // This prevents cold connection delays from affecting login time
+    const warmupStartTime = Date.now();
+    await this.prisma.$queryRaw`SELECT 1`;
+    this.logger.log(`[LOGIN] DB warmup took ${Date.now() - warmupStartTime}ms`);
+
     const dbStartTime = Date.now();
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },

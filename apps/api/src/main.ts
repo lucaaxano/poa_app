@@ -47,6 +47,29 @@ async function bootstrap() {
     next();
   });
 
+  // ===========================================
+  // SLOW REQUEST LOGGING MIDDLEWARE
+  // ===========================================
+  // Log requests that take longer than 3 seconds to help diagnose timeout issues
+  const requestTimings = new Map<Response, number>();
+
+  expressApp.use((req: Request, res: Response, next: NextFunction) => {
+    requestTimings.set(res, Date.now());
+
+    res.on('finish', () => {
+      const startTime = requestTimings.get(res);
+      requestTimings.delete(res);
+      if (startTime) {
+        const duration = Date.now() - startTime;
+        if (duration > 3000) {
+          logger.warn(`[SLOW_REQUEST] ${req.method} ${req.path} took ${duration}ms - Status: ${res.statusCode}`);
+        }
+      }
+    });
+
+    next();
+  });
+
   // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({

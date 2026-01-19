@@ -7,7 +7,7 @@ import { PrismaClient } from '@poa/database';
 // &connect_timeout=10 - Max time for initial connection (seconds)
 
 // Keep-alive interval - more aggressive than default to prevent cold connections
-const KEEPALIVE_INTERVAL_MS = 15000; // 15 seconds
+const KEEPALIVE_INTERVAL_MS = 10000; // 10 seconds (reduced from 15s for better warmth)
 
 // Max consecutive failures before forcing reconnect
 const MAX_CONSECUTIVE_FAILURES = 3;

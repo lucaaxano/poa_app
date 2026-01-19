@@ -3,6 +3,18 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // =============================================
+// TIMEOUT CONFIGURATION - Differentiated by endpoint type
+// =============================================
+// Auth endpoints need longer timeouts due to potential DB warmup + bcrypt
+// Default endpoints get standard timeout
+// Quick endpoints for fast operations
+const TIMEOUT_CONFIG = {
+  auth: 30000,      // 30s for Login/Logout (can require DB warmup + bcrypt)
+  default: 15000,   // 15s standard (increased from 10s)
+  quick: 5000,      // 5s for health checks and fast endpoints
+};
+
+// =============================================
 // LOGOUT FLAG - Prevents API calls during logout
 // =============================================
 let isLoggingOut = false;
@@ -25,7 +37,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 second timeout - fail fast
+  timeout: TIMEOUT_CONFIG.default, // Default timeout, overridden per-request
 });
 
 // =============================================
@@ -312,7 +324,7 @@ const performTokenRefresh = async (retryCount = 0): Promise<{ accessToken: strin
   }
 };
 
-// Request interceptor - add auth header and check token expiry
+// Request interceptor - add auth header, set dynamic timeout, and check token expiry
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Skip request if logging out - prevents timeout errors
@@ -322,6 +334,17 @@ apiClient.interceptors.request.use(
       config.signal = controller.signal;
       return config;
     }
+
+    // Apply differentiated timeouts based on endpoint type
+    // Auth endpoints need longer timeouts due to potential DB warmup + bcrypt
+    if (config.url?.includes('/auth/login') ||
+        config.url?.includes('/auth/register') ||
+        config.url?.includes('/auth/2fa')) {
+      config.timeout = TIMEOUT_CONFIG.auth;
+    } else if (config.url?.includes('/health') || config.url?.includes('/warmup')) {
+      config.timeout = TIMEOUT_CONFIG.quick;
+    }
+    // Other requests use the default timeout from axios create
 
     const token = getAccessToken();
     if (token) {
@@ -403,6 +426,24 @@ apiClient.interceptors.response.use(
       }
       // After retries failed, don't logout - just report error
       console.error('[API] Network error persists after retries');
+      return Promise.reject(error);
+    }
+
+    // Handle Axios timeout errors (ECONNABORTED)
+    // These occur when the request exceeds the configured timeout
+    if (error.code === 'ECONNABORTED' && error.message?.includes('timeout')) {
+      const retryCount = originalRequest._retryCount || 0;
+      if (retryCount < 2) {
+        originalRequest._retryCount = retryCount + 1;
+        // Longer delay for timeout errors - server might be under load
+        const delay = 1000 * (retryCount + 1); // 1s, 2s
+
+        console.warn(`[API] Request timeout (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
+
+        await sleep(delay);
+        return apiClient(originalRequest);
+      }
+      console.error('[API] Request timeout persists after retries');
       return Promise.reject(error);
     }
 
