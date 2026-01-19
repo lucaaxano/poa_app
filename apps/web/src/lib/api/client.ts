@@ -448,7 +448,15 @@ apiClient.interceptors.response.use(
     }
 
     // If error is 401 and we haven't tried to refresh yet
-    if (status === 401 && !originalRequest._retry) {
+    // Skip refresh logic for auth endpoints - they handle their own 401 errors
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                           originalRequest.url?.includes('/auth/register') ||
+                           originalRequest.url?.includes('/auth/forgot-password') ||
+                           originalRequest.url?.includes('/auth/reset-password') ||
+                           originalRequest.url?.includes('/auth/2fa/validate') ||
+                           originalRequest.url?.includes('/auth/2fa/backup');
+
+    if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // Wait for the refresh to complete
         return new Promise((resolve, reject) => {
