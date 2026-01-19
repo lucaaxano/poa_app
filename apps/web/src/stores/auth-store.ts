@@ -229,8 +229,14 @@ export const useAuthStore = create<AuthState>()(
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
 
+          // API logout call FIRST - it clears tokens and fires API request
+          // This is fire-and-forget, returns immediately after clearing tokens
+          authApi.logout().catch(() => {
+            // Silently ignore API errors - local logout already complete
+          });
+
           // Clear local state IMMEDIATELY for fast UI response
-          // This ensures user sees logout happen instantly - don't wait for cache clear!
+          // This ensures user sees logout happen instantly
           set({
             user: null,
             company: null,
@@ -240,9 +246,6 @@ export const useAuthStore = create<AuthState>()(
             activeCompany: null,
           });
 
-          // Clear tokens from localStorage
-          clearTokens();
-
           // Clear React Query cache in background (queries already cancelled above)
           // Use requestIdleCallback to not block the main thread
           if (typeof requestIdleCallback !== 'undefined') {
@@ -251,12 +254,6 @@ export const useAuthStore = create<AuthState>()(
             // Fallback for browsers without requestIdleCallback
             setTimeout(() => clearQueryCache(), 0);
           }
-
-          // API logout call is fire-and-forget - don't wait for it
-          // The local state is already cleared, so user is effectively logged out
-          authApi.logout().catch(() => {
-            // Silently ignore API errors - local logout already complete
-          });
         } finally {
           // ALWAYS re-enable API calls, even if an error occurred
           // This prevents the app from being stuck in a "logging out" state
