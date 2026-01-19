@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
-import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut } from '@/lib/api/client';
+import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut, resetAuthState } from '@/lib/api/client';
 import { clearQueryCache, cancelAllQueries } from '@/providers/query-provider';
 
 // Track login timestamp to prevent race conditions after login
@@ -215,14 +215,18 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        // CRITICAL: Set logging out flag FIRST to prevent API calls from timing out
+        // CRITICAL: Set logging out flag FIRST - this also aborts all pending axios requests
         setLoggingOut(true);
 
         try {
           // Stop API warmup to prevent background requests
           stopApiWarmup();
 
-          // CRITICAL: Cancel all in-flight queries IMMEDIATELY
+          // Reset auth state (clear failedQueue, reset isRefreshing)
+          // This prevents accumulated requests from blocking logout
+          resetAuthState();
+
+          // CRITICAL: Cancel all in-flight React Query queries IMMEDIATELY
           // This prevents UI freezes from abandoned requests trying to update state
           cancelAllQueries();
 

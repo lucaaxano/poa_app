@@ -25,12 +25,51 @@ let isLoggingOut = false;
  */
 export const setLoggingOut = (value: boolean): void => {
   isLoggingOut = value;
+  // When starting logout, immediately abort all pending requests
+  if (value) {
+    abortAllPendingRequests();
+  }
 };
 
 /**
  * Check if currently logging out
  */
 export const getLoggingOut = (): boolean => isLoggingOut;
+
+// =============================================
+// GLOBAL REQUEST ABORTION - For instant logout
+// =============================================
+// Track all pending request AbortControllers for aggressive cancellation
+let pendingRequestControllers = new Set<AbortController>();
+
+/**
+ * Register a request's AbortController for potential cancellation
+ */
+const registerPendingRequest = (controller: AbortController): void => {
+  pendingRequestControllers.add(controller);
+};
+
+/**
+ * Unregister a completed request's AbortController
+ */
+const unregisterPendingRequest = (controller: AbortController): void => {
+  pendingRequestControllers.delete(controller);
+};
+
+/**
+ * Abort ALL pending requests immediately
+ * Called on logout for instant cleanup
+ */
+export const abortAllPendingRequests = (): void => {
+  pendingRequestControllers.forEach(controller => {
+    try {
+      controller.abort();
+    } catch {
+      // Ignore abort errors
+    }
+  });
+  pendingRequestControllers.clear();
+};
 
 export const apiClient = axios.create({
   baseURL: API_URL,
@@ -324,7 +363,7 @@ const performTokenRefresh = async (retryCount = 0): Promise<{ accessToken: strin
   }
 };
 
-// Request interceptor - add auth header, set dynamic timeout, and check token expiry
+// Request interceptor - add auth header, set dynamic timeout, track requests, and check token expiry
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Skip request if logging out - prevents timeout errors
@@ -334,6 +373,14 @@ apiClient.interceptors.request.use(
       config.signal = controller.signal;
       return config;
     }
+
+    // Create AbortController for this request and register it
+    // This allows us to abort all pending requests on logout
+    const controller = new AbortController();
+    config.signal = controller.signal;
+    registerPendingRequest(controller);
+    // Store controller reference for cleanup in response interceptor
+    (config as InternalAxiosRequestConfig & { _abortController?: AbortController })._abortController = controller;
 
     // Apply differentiated timeouts based on endpoint type
     // Auth endpoints need longer timeouts due to potential DB warmup + bcrypt
@@ -373,6 +420,19 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+/**
+ * Reset auth state on logout - clears pending refresh queue
+ * This prevents accumulated requests from blocking logout
+ */
+export const resetAuthState = (): void => {
+  // Reject all pending requests in the failed queue
+  failedQueue.forEach((promise) => {
+    promise.reject(new Error('Logged out'));
+  });
+  failedQueue = [];
+  isRefreshing = false;
+};
+
 // Custom event for session expiry notification
 export const SESSION_EXPIRED_EVENT = 'poa:session-expired';
 
@@ -384,6 +444,12 @@ const notifySessionExpired = (reason: 'auth_failed' | 'server_error' | 'network_
 
 apiClient.interceptors.response.use(
   (response) => {
+    // Unregister the AbortController for this completed request
+    const config = response.config as InternalAxiosRequestConfig & { _abortController?: AbortController };
+    if (config._abortController) {
+      unregisterPendingRequest(config._abortController);
+    }
+
     // Reset warmup state on successful responses - helps recover from temporary failures
     if (consecutiveFailures > 0) {
       consecutiveFailures = 0;
@@ -394,6 +460,12 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    // Unregister the AbortController for this failed request
+    const errorConfig = error.config as InternalAxiosRequestConfig & { _abortController?: AbortController } | undefined;
+    if (errorConfig?._abortController) {
+      unregisterPendingRequest(errorConfig._abortController);
+    }
+
     // If logging out, don't retry or process errors - just reject silently
     if (isLoggingOut) {
       return Promise.reject(new Error('Request cancelled due to logout'));
