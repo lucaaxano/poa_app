@@ -20,7 +20,6 @@ export class AppService {
       await this.prisma.$queryRaw`SELECT 1`;
       dbLatency = Date.now() - start;
       dbStatus = 'connected';
-      this.prisma.trackQuery();
     } catch (error) {
       this.logger.error('Health check DB query failed:', error);
       dbStatus = 'error';
@@ -39,8 +38,7 @@ export class AppService {
   }
 
   /**
-   * Deep health check that also warms up the database connection
-   * This endpoint should be called by monitoring/frontend to keep API warm
+   * Deep health check - same as health check but with more info
    */
   async deepHealthCheck() {
     const startTime = Date.now();
@@ -52,9 +50,6 @@ export class AppService {
       await this.prisma.$queryRaw`SELECT 1`;
       dbLatency = Date.now() - dbStart;
       dbStatus = 'connected';
-
-      // Track query to help keep-alive optimization
-      this.prisma.trackQuery();
     } catch (error) {
       dbStatus = 'error';
       this.logger.warn('Database health check failed:', error);
@@ -69,33 +64,30 @@ export class AppService {
       database: {
         status: dbStatus,
         latency: dbLatency,
-        warmedUp: this.prisma.isConnectionWarmedUp(),
       },
     };
   }
 
   /**
-   * Warmup endpoint - called to ensure API and DB are ready
-   * Returns quickly but triggers background warmup if needed
+   * Warmup endpoint - simple ping to verify API is ready
    */
   async warmup() {
     const startTime = Date.now();
 
-    // Quick ping to verify basic connectivity
     try {
       await this.prisma.$queryRaw`SELECT 1`;
-      this.prisma.trackQuery();
+      return {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        latency: Date.now() - startTime,
+      };
     } catch (error) {
       this.logger.error('Warmup ping failed:', error);
-      // Try to reconnect in background
-      this.prisma.warmupConnectionPool().catch(() => {});
+      return {
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        latency: Date.now() - startTime,
+      };
     }
-
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      latency: Date.now() - startTime,
-      warmedUp: this.prisma.isConnectionWarmedUp(),
-    };
   }
 }
