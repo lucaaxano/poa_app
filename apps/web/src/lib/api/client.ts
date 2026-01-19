@@ -129,8 +129,8 @@ export const startApiWarmup = (): void => {
     warmupApi().catch(() => {});
   }, BASE_WARMUP_INTERVAL_MS);
 
-  // Visibility handler - warmup IMMEDIATELY when user returns to tab
-  // This prevents slow first request after user was away
+  // Visibility handler - warmup when user returns to tab
+  // Uses requestIdleCallback to prevent main thread blocking
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       if (document.visibilityState === 'visible' && !isLoggingOut) {
@@ -138,11 +138,17 @@ export const startApiWarmup = (): void => {
         // Use force=true to bypass normal interval checks
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
         if (timeSinceLastWarmup > 15000) { // 15 seconds - more responsive
-          warmupApi(true).catch(() => {}); // Force warmup on visibility change
+          // requestIdleCallback prevents main thread blocking during UI interactions
+          const scheduleWarmup = () => warmupApi(true).catch(() => {});
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(scheduleWarmup, { timeout: 2000 });
+          } else {
+            setTimeout(scheduleWarmup, 100);
+          }
         }
       }
     };
-    document.addEventListener('visibilitychange', visibilityChangeHandler);
+    document.addEventListener('visibilitychange', visibilityChangeHandler, { passive: true });
   }
 };
 

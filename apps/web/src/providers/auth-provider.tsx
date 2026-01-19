@@ -56,7 +56,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Visibility change handler - only for re-verifying auth when user returns
     // Note: startApiWarmup already handles warmup on visibility change
-    const handleVisibilityChange = async () => {
+    // Uses requestIdleCallback to prevent main thread blocking during UI interactions
+    const handleVisibilityChange = () => {
       if (document.visibilityState !== 'visible') return;
       if (getLoggingOut()) return;
 
@@ -69,19 +70,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (isCheckingAuth.current) return;
       if (!isAuthenticatedRef.current) return;
 
-      isCheckingAuth.current = true;
+      // requestIdleCallback prevents UI freeze when returning to tab
+      const performAuthCheck = async () => {
+        if (isCheckingAuth.current) return;
+        isCheckingAuth.current = true;
+        try {
+          // No need to warmupApi() here - startApiWarmup handles it
+          await checkAuthRef.current();
+        } catch (error) {
+          console.warn('[AuthProvider] Visibility check failed:', error);
+        } finally {
+          isCheckingAuth.current = false;
+        }
+      };
 
-      try {
-        // No need to warmupApi() here - startApiWarmup handles it
-        await checkAuthRef.current();
-      } catch (error) {
-        console.warn('[AuthProvider] Visibility check failed:', error);
-      } finally {
-        isCheckingAuth.current = false;
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => performAuthCheck(), { timeout: 3000 });
+      } else {
+        setTimeout(() => performAuthCheck(), 100);
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
 
     return () => {
       stopApiWarmup();

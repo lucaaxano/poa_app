@@ -182,8 +182,8 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
 
         {/* Navigation - Optimized for smooth scrolling */}
         <nav
-          className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin"
-          style={{ contain: 'strict' }}
+          className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin will-change-scroll"
+          style={{ contain: 'layout paint' }}
         >
           {navItemsWithStatus.map((item) => (
             <Link
