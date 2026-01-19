@@ -1,5 +1,8 @@
-import { apiClient, setTokens, clearTokens } from './client';
+import axios from 'axios';
+import { apiClient, setTokens, clearTokens, getAccessToken } from './client';
 import type { User } from '@poa/shared';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 // Types
 export interface Company {
@@ -222,18 +225,36 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
-    // Try to notify server about logout (for cache invalidation)
-    // Don't fail if this fails - we still want to clear local tokens
-    try {
-      await apiClient.post('/auth/logout');
-    } catch {
-      // Ignore errors - logout should still succeed locally
-    }
+    // Get token BEFORE clearing for the API call
+    const token = getAccessToken();
+
+    // Clear tokens FIRST - user is logged out locally immediately
     clearTokens();
+
+    // Fire-and-forget API call - no await, bypasses apiClient interceptors
+    if (token) {
+      axios.post(`${API_URL}/auth/logout`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 3000, // 3 second max
+      }).catch(() => {
+        // Silently ignore - local logout already complete
+      });
+    }
   },
 
   async getProfile(): Promise<ProfileResponse> {
     const response = await apiClient.get<ProfileResponse>('/auth/me');
+    return response.data;
+  },
+
+  async getProfileFast(): Promise<ProfileResponse> {
+    // Fast-fail version - no retries, short timeout
+    // Used for background verification after visibility change
+    const token = getAccessToken();
+    const response = await axios.get<ProfileResponse>(`${API_URL}/auth/me`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      timeout: 5000, // 5 second max
+    });
     return response.data;
   },
 

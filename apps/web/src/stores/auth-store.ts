@@ -300,7 +300,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Verify in background - errors are handled silently
           // Only logout if it's a genuine auth error (401/403), not network issues
-          authApi.getProfile().then((response) => {
+          authApi.getProfileFast().then((response) => {
             // Update user data silently if different
             const current = get();
             if (current.user?.id === response.user.id) {

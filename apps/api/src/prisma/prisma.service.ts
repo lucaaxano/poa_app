@@ -28,13 +28,13 @@ export class PrismaService
     // Simple warmup - just verify connection works
     await this.warmupConnectionPool();
 
-    // Keep-alive every 30 seconds - balanced for responsiveness
-    // Prevents slow first query after inactivity while limiting server load
+    // Keep-alive every 15 seconds - more aggressive to prevent cold starts
+    // Prevents slow first query after inactivity (especially after weekends)
     this.keepAliveInterval = setInterval(async () => {
       await this.performKeepAlive();
-    }, 30000); // Every 30 seconds
+    }, 15000); // Every 15 seconds
 
-    this.logger.log('Database keep-alive enabled (30s interval)');
+    this.logger.log('Database keep-alive enabled (15s interval)');
   }
 
   /**
