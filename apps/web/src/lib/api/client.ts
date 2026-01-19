@@ -84,7 +84,7 @@ export const warmupApi = async (force = false): Promise<boolean> => {
     consecutiveFailures = 0; // Reset failures on success
     warmupPausedUntil = 0;
     return true;
-  } catch (error) {
+  } catch {
     consecutiveFailures++;
 
     // After MAX_CONSECUTIVE_FAILURES, pause warmup with exponential backoff
@@ -94,13 +94,11 @@ export const warmupApi = async (force = false): Promise<boolean> => {
         MAX_PAUSE_DURATION_MS
       );
       warmupPausedUntil = Date.now() + pauseDuration;
-      console.warn(`[API Warmup] Paused for ${pauseDuration / 1000}s after ${consecutiveFailures} failures`);
+      // Silent pause - warmup is just a background optimization
     }
 
-    // Only log first failure and when pausing - avoid console spam
-    if (consecutiveFailures === 1 || consecutiveFailures === MAX_CONSECUTIVE_FAILURES) {
-      console.warn('[API Warmup] Failed:', error);
-    }
+    // Silent failure - warmup failures are expected during cold starts
+    // and shouldn't spam the console
     return false;
   }
 };
@@ -108,6 +106,7 @@ export const warmupApi = async (force = false): Promise<boolean> => {
 /**
  * Start periodic API warmup to prevent cold starts
  * Call this when the app initializes
+ * Only performs warmup when user is authenticated (has tokens)
  */
 export const startApiWarmup = (): void => {
   if (typeof window === 'undefined') return;
@@ -119,21 +118,28 @@ export const startApiWarmup = (): void => {
   consecutiveFailures = 0;
   warmupPausedUntil = 0;
 
-  // Initial warmup (only if tab is visible)
-  if (document.visibilityState === 'visible') {
-    warmupApi().catch(() => {});
+  // Only do initial warmup if authenticated (has token) and tab is visible
+  // This prevents unnecessary warmup failures on the login page after deploy
+  const hasToken = !!getAccessToken();
+  if (hasToken && document.visibilityState === 'visible') {
+    // Small delay to allow backend to be ready after cold start
+    setTimeout(() => warmupApi().catch(() => {}), 1000);
   }
 
-  // Periodic warmup - only executes if conditions are met (visible, not paused, etc.)
+  // Periodic warmup - only executes if authenticated and conditions are met
   warmupInterval = setInterval(() => {
-    warmupApi().catch(() => {});
+    // Only warmup if authenticated
+    if (getAccessToken()) {
+      warmupApi().catch(() => {});
+    }
   }, BASE_WARMUP_INTERVAL_MS);
 
   // Visibility handler - warmup when user returns to tab
   // Uses requestIdleCallback to prevent main thread blocking
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
-      if (document.visibilityState === 'visible' && !isLoggingOut) {
+      // Only warmup if authenticated and visible
+      if (document.visibilityState === 'visible' && !isLoggingOut && getAccessToken()) {
         // Always warmup when returning to tab if more than 15s since last warmup
         // Use force=true to bypass normal interval checks
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
