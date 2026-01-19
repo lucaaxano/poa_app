@@ -4,6 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { Request, Response, NextFunction } from 'express';
 
+// Global request timeout - respond BEFORE reverse proxy times out
+// Coolify/Caddy default is ~30s, so we use 25s to ensure we respond first
+const REQUEST_TIMEOUT_MS = 25000;
+
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule, {
@@ -13,6 +17,35 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
+
+  // ===========================================
+  // CRITICAL: Global Request Timeout Middleware
+  // ===========================================
+  // This MUST be the first middleware to ensure ALL requests have a timeout
+  // Without this, slow DB queries or bcrypt can cause 504 Gateway Timeout
+  const expressApp = app.getHttpAdapter().getInstance();
+
+  expressApp.use((req: Request, res: Response, next: NextFunction) => {
+    // Skip timeout for health checks (needed for Docker healthcheck)
+    if (req.path === '/api/health' || req.path === '/api/health/deep') {
+      return next();
+    }
+
+    // Set response timeout
+    res.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      if (!res.headersSent) {
+        logger.warn(`Request timeout after ${REQUEST_TIMEOUT_MS}ms: ${req.method} ${req.path}`);
+        res.status(503).json({
+          statusCode: 503,
+          message: 'Server ist überlastet. Bitte versuchen Sie es erneut.',
+          error: 'Service Unavailable',
+          timeout: true,
+        });
+      }
+    });
+
+    next();
+  });
 
   // Global Validation Pipe
   app.useGlobalPipes(
@@ -40,9 +73,8 @@ async function bootstrap() {
 
   logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 
-  // CRITICAL: Add CORS headers EARLY via middleware - before any other processing
+  // CORS headers middleware - after timeout middleware
   // This ensures CORS headers are set even if the request times out or errors
-  const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
     const origin = req.headers.origin;
 
