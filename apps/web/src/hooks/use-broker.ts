@@ -55,7 +55,6 @@ export function useBrokerStats() {
     queryKey: brokerKeys.stats(),
     queryFn: brokerApi.getAggregatedStats,
     enabled: isBroker,
-    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -70,7 +69,6 @@ export function useBrokerCompanyStats(companyId: string | null) {
     queryKey: brokerKeys.companyStats(companyId || ''),
     queryFn: () => brokerApi.getCompanyStats(companyId!),
     enabled: isBroker && !!companyId,
-    staleTime: 30 * 1000,
   });
 }
 
@@ -85,7 +83,6 @@ export function useBrokerClaims(filters?: BrokerClaimFilters) {
     queryKey: brokerKeys.claims(filters),
     queryFn: () => brokerApi.getClaims(filters),
     enabled: isBroker,
-    staleTime: 30 * 1000,
   });
 }
 

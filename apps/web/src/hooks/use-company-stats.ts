@@ -41,7 +41,6 @@ export function useCompanyStats() {
   return useQuery({
     queryKey: companyKeys.stats(),
     queryFn: companiesApi.getStats,
-    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -52,7 +51,6 @@ export function useStatsTimeline(
   return useQuery({
     queryKey: companyKeys.statsTimeline(period, range),
     queryFn: () => companiesApi.getStatsTimeline(period, range),
-    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -60,7 +58,6 @@ export function useStatsByVehicle(limit: number = 10) {
   return useQuery({
     queryKey: companyKeys.statsByVehicle(limit),
     queryFn: () => companiesApi.getStatsByVehicle(limit),
-    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -68,7 +65,6 @@ export function useStatsByDriver(limit: number = 10) {
   return useQuery({
     queryKey: companyKeys.statsByDriver(limit),
     queryFn: () => companiesApi.getStatsByDriver(limit),
-    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -76,7 +72,6 @@ export function useStatsByCategory() {
   return useQuery({
     queryKey: companyKeys.statsByCategory(),
     queryFn: companiesApi.getStatsByCategory,
-    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -84,7 +79,6 @@ export function useQuotaStats(year?: number) {
   return useQuery({
     queryKey: companyKeys.statsQuota(year),
     queryFn: () => companiesApi.getQuotaStats(year),
-    staleTime: 60 * 1000, // 1 minute
   });
 }
 
@@ -95,7 +89,7 @@ export function useUpdateCompany() {
     mutationFn: (data: UpdateCompanyInput) => companiesApi.update(data),
     onSuccess: (updatedCompany) => {
       queryClient.setQueryData(companyKeys.current(), updatedCompany);
-      queryClient.invalidateQueries({ queryKey: companyKeys.stats() });
+      // Stats are NOT invalidated - they use the global staleTime
     },
   });
 }
