@@ -6,6 +6,11 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
+  // Disable image optimization to reduce server load
+  // Images will be served as-is without on-the-fly optimization
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

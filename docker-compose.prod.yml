@@ -26,6 +26,15 @@ services:
       - "3000"
     environment:
       - NODE_ENV=production
+      # Limit Node.js memory to prevent OOM
+      - NODE_OPTIONS=--max-old-space-size=512
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 256M
     depends_on:
       - api
     healthcheck:
