@@ -29,7 +29,6 @@ export function useRecentClaims(limit: number = 5) {
   return useQuery({
     queryKey: claimKeys.recent(limit),
     queryFn: () => claimsApi.getRecent(limit),
-    staleTime: 30 * 1000, // 30 seconds
   });
 }
 

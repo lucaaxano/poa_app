@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 // Quick endpoints for fast operations
 const TIMEOUT_CONFIG = {
   auth: 45000,      // 45s for Login/Logout (increased for cold starts with DB warmup + bcrypt)
-  default: 15000,   // 15s standard (increased from 10s)
+  default: 30000,   // 30s standard (increased from 15s for concurrent dashboard requests)
   quick: 5000,      // 5s for health checks and fast endpoints
 };
 
