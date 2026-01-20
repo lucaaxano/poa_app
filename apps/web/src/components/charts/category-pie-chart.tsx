@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import {
   PieChart,
   Pie,
@@ -12,6 +13,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStatsByCategory } from '@/hooks/use-company-stats';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { DamageCategory } from '@poa/shared';
+
+// Hook to ensure container has valid dimensions before rendering chart
+function useValidDimensions() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasValidDimensions, setHasValidDimensions] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const checkDimensions = () => {
+      const { width, height } = container.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        setHasValidDimensions(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (checkDimensions()) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (checkDimensions()) {
+        resizeObserver.disconnect();
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  return { containerRef, hasValidDimensions };
+}
 
 interface CategoryPieChartProps {
   title?: string;
@@ -54,6 +88,7 @@ export function CategoryPieChart({
   className,
 }: CategoryPieChartProps) {
   const { data, isLoading, error } = useStatsByCategory();
+  const { containerRef, hasValidDimensions } = useValidDimensions();
 
   if (isLoading) {
     return (
@@ -97,7 +132,10 @@ export function CategoryPieChart({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div ref={containerRef} className="h-[280px]">
+          {!hasValidDimensions ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <PieChart>
               <Pie
@@ -139,6 +177,7 @@ export function CategoryPieChart({
               />
             </PieChart>
           </ResponsiveContainer>
+          )}
         </div>
       </CardContent>
     </Card>

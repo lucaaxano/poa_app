@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -14,6 +15,39 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStatsByVehicle } from '@/hooks/use-company-stats';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+
+// Hook to ensure container has valid dimensions before rendering chart
+function useValidDimensions() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasValidDimensions, setHasValidDimensions] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const checkDimensions = () => {
+      const { width, height } = container.getBoundingClientRect();
+      if (width > 0 && height > 0) {
+        setHasValidDimensions(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (checkDimensions()) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (checkDimensions()) {
+        resizeObserver.disconnect();
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  return { containerRef, hasValidDimensions };
+}
 
 interface VehicleBarChartProps {
   limit?: number;
@@ -36,6 +70,7 @@ export function VehicleBarChart({
   className,
 }: VehicleBarChartProps) {
   const { data, isLoading, error } = useStatsByVehicle(limit);
+  const { containerRef, hasValidDimensions } = useValidDimensions();
 
   if (isLoading) {
     return (
@@ -83,7 +118,10 @@ export function VehicleBarChart({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
+        <div ref={containerRef} className="h-[300px]">
+          {!hasValidDimensions ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <BarChart
               data={chartData}
@@ -131,6 +169,7 @@ export function VehicleBarChart({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          )}
         </div>
         {data.length > 0 && (
           <div className="mt-4 text-center">
