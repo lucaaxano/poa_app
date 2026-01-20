@@ -159,7 +159,7 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center border-b px-4">
-          <Link href="/dashboard" className="flex items-center gap-3">
+          <Link href="/dashboard" prefetch={false} className="flex items-center gap-3">
             {collapsed ? (
               <Image
                 src="/logo-icon.png"
@@ -181,6 +181,8 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
         </div>
 
         {/* Navigation - Optimized for smooth scrolling */}
+        {/* PERFORMANCE FIX: prefetch={false} prevents Next.js from prefetching all visible links */}
+        {/* This was causing 504 errors when scrolling - all links triggered server requests */}
         <nav
           className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin will-change-scroll"
           style={{ contain: 'layout paint' }}
@@ -189,6 +191,7 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                 item.isActive
