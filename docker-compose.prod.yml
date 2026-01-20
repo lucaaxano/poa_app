@@ -94,10 +94,14 @@ services:
       - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.de`)"
       - "traefik.http.routers.poa-api-http.entrypoints=web"
       - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
-      # Timeout configuration for long-running requests
-      - "traefik.http.middlewares.api-timeout.buffering.maxRequestBodyBytes=10485760"
-      - "traefik.http.middlewares.api-timeout.buffering.maxResponseBodyBytes=10485760"
+      # Timeout and connection configuration for long-running requests
+      # Note: Actual timeout values are configured at Traefik entrypoint level
       - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
+      - "traefik.http.services.poa-api.loadbalancer.passhostheader=true"
+      # Health check to ensure backend is ready before routing traffic
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=5s"
 
   # ===========================================
   # Database - PostgreSQL

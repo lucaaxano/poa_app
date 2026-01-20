@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 // Default endpoints get standard timeout
 // Quick endpoints for fast operations
 const TIMEOUT_CONFIG = {
-  auth: 30000,      // 30s for Login/Logout (can require DB warmup + bcrypt)
+  auth: 45000,      // 45s for Login/Logout (increased for cold starts with DB warmup + bcrypt)
   default: 15000,   // 15s standard (increased from 10s)
   quick: 5000,      // 5s for health checks and fast endpoints
 };
@@ -227,6 +227,49 @@ export const stopApiWarmup = (): void => {
  * Check if API is warmed up
  */
 export const isApiReady = (): boolean => isApiWarmedUp;
+
+/**
+ * Ensure API is ready before critical operations like login
+ * This function will retry multiple times with increasing delays
+ * Returns true if API is ready, false if all attempts failed
+ *
+ * Use this before login to prevent timeout errors during cold starts
+ */
+export const ensureApiReady = async (maxAttempts = 3): Promise<boolean> => {
+  // Skip if logging out
+  if (isLoggingOut) {
+    return false;
+  }
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await axios.get(`${API_URL}/warmup`, {
+        timeout: 10000, // 10 second timeout per attempt
+      });
+
+      if (response.data?.status === 'ok') {
+        isApiWarmedUp = true;
+        lastWarmupTime = Date.now();
+        consecutiveFailures = 0;
+        warmupPausedUntil = 0;
+        return true;
+      }
+    } catch (error) {
+      // Log attempt failure but don't spam console
+      if (attempt === maxAttempts) {
+        console.warn(`[API] Warmup failed after ${maxAttempts} attempts, proceeding anyway`);
+      }
+    }
+
+    // Wait before next attempt (increasing delay: 1s, 2s, 3s)
+    if (attempt < maxAttempts) {
+      await sleep(attempt * 1000);
+    }
+  }
+
+  // Return false but don't block - let the actual request try
+  return false;
+};
 
 /**
  * Reset warmup state - call this after successful API calls
