@@ -62,8 +62,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install only runtime dependencies
+# Install runtime dependencies + sharp for Next.js image optimization
 RUN apk add --no-cache libc6-compat
+RUN npm install --os=linux --cpu=x64 sharp@0.33.2
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
