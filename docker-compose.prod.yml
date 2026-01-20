@@ -56,6 +56,9 @@ services:
       - "traefik.http.services.poa-web.loadbalancer.healthcheck.path=/api/health"
       - "traefik.http.services.poa-web.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.poa-web.loadbalancer.healthcheck.timeout=5s"
+      # Response buffering and forwarding
+      - "traefik.http.services.poa-web.loadbalancer.responseforwarding.flushinterval=100ms"
+      - "traefik.http.services.poa-web.loadbalancer.passhostheader=true"
       # HTTP to HTTPS redirect
       - "traefik.http.routers.poa-web-http.rule=Host(`poa-platform.de`) || Host(`www.poa-platform.de`)"
       - "traefik.http.routers.poa-web-http.entrypoints=web"
