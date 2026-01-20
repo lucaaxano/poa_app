@@ -148,7 +148,7 @@ export default function ClaimsPage() {
         <div className="flex items-center gap-2">
           {(isAdmin || isBroker) && <ExportButton />}
           {!isBroker && (
-            <Link href={'/claims/new' as Route}>
+            <Link href={'/claims/new' as Route} prefetch={false}>
               <Button className="rounded-xl">
                 <Plus className="mr-2 h-4 w-4" />
                 Neuen Schaden melden
@@ -225,6 +225,7 @@ export default function ClaimsPage() {
                       <TableCell>
                         <Link
                           href={`/claims/${claim.id}` as Route}
+                          prefetch={false}
                           className="font-medium text-primary hover:underline"
                         >
                           {claim.claimNumber}
@@ -267,7 +268,7 @@ export default function ClaimsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link href={`/claims/${claim.id}` as Route}>
+                              <Link href={`/claims/${claim.id}` as Route} prefetch={false}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 Details anzeigen
                               </Link>
@@ -292,7 +293,7 @@ export default function ClaimsPage() {
                   : 'Melden Sie Ihren ersten Schaden.'}
               </p>
               {!search && statusFilter === 'all' && (
-                <Link href={'/claims/new' as Route} className="mt-6">
+                <Link href={'/claims/new' as Route} prefetch={false} className="mt-6">
                   <Button className="rounded-xl">
                     <Plus className="mr-2 h-4 w-4" />
                     Ersten Schaden melden

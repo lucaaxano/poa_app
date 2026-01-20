@@ -69,7 +69,7 @@ interface QuickActionProps {
 
 function QuickAction({ icon, title, description, href }: QuickActionProps) {
   return (
-    <Link href={href}>
+    <Link href={href} prefetch={false}>
       <div className="group flex items-center gap-4 rounded-xl border bg-white p-4 transition-all hover:border-primary/20 hover:shadow-soft">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-colors">
           {icon}
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                       <CardTitle>Detaillierte Auswertungen</CardTitle>
                       <CardDescription>Tiefgehende Analysen und Reports</CardDescription>
                     </div>
-                    <Link href={'/reports' as Route}>
+                    <Link href={'/reports' as Route} prefetch={false}>
                       <Button variant="outline" className="rounded-xl">
                         <BarChart3 className="mr-2 h-4 w-4" />
                         Auswertungen öffnen
@@ -375,7 +375,7 @@ export default function DashboardPage() {
                     : 'Die neuesten Schadenmeldungen'}
               </CardDescription>
             </div>
-            <Link href={'/claims' as Route}>
+            <Link href={'/claims' as Route} prefetch={false}>
               <Button variant="ghost" size="sm" className="text-primary">
                 Alle anzeigen
                 <ArrowRight className="ml-1 h-4 w-4" />
@@ -393,6 +393,7 @@ export default function DashboardPage() {
                   <Link
                     key={claim.id}
                     href={`/claims/${claim.id}` as Route}
+                    prefetch={false}
                     className="block"
                   >
                     <div className="flex items-center justify-between rounded-xl border p-4 transition-all hover:border-primary/20 hover:shadow-soft">
@@ -438,7 +439,7 @@ export default function DashboardPage() {
                     : 'Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.'}
                 </p>
                 {!isBroker && (
-                  <Link href={'/claims/new' as Route} className="mt-6">
+                  <Link href={'/claims/new' as Route} prefetch={false} className="mt-6">
                     <Button className="rounded-xl">
                       <Plus className="mr-2 h-4 w-4" />
                       Ersten Schaden melden
