@@ -44,11 +44,18 @@ export const adminQueryKeys = {
   insurerDetail: (id: string) => [...adminQueryKeys.insurers(), 'detail', id] as const,
 };
 
+// Retry configuration for transient errors (e.g., 401 during cold-start)
+const adminQueryOptions = {
+  retry: 2,
+  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 3000),
+};
+
 // Stats hook
 export function useAdminStats() {
   return useQuery({
     queryKey: adminQueryKeys.stats(),
     queryFn: getAdminStats,
+    ...adminQueryOptions,
   });
 }
 
@@ -57,6 +64,7 @@ export function useAdminCompanies(filters: AdminCompanyFilters = {}) {
   return useQuery({
     queryKey: adminQueryKeys.companiesList(filters),
     queryFn: () => getAdminCompanies(filters),
+    ...adminQueryOptions,
   });
 }
 
@@ -65,6 +73,7 @@ export function useAdminCompanyDetail(id: string) {
     queryKey: adminQueryKeys.companyDetail(id),
     queryFn: () => getAdminCompanyById(id),
     enabled: !!id,
+    ...adminQueryOptions,
   });
 }
 
@@ -73,6 +82,7 @@ export function useAdminUsers(filters: AdminUserFilters = {}) {
   return useQuery({
     queryKey: adminQueryKeys.usersList(filters),
     queryFn: () => getAdminUsers(filters),
+    ...adminQueryOptions,
   });
 }
 
@@ -81,6 +91,7 @@ export function useAdminUserDetail(id: string) {
     queryKey: adminQueryKeys.userDetail(id),
     queryFn: () => getAdminUserById(id),
     enabled: !!id,
+    ...adminQueryOptions,
   });
 }
 
@@ -113,6 +124,7 @@ export function useAdminClaims(filters: AdminClaimFilters = {}) {
   return useQuery({
     queryKey: adminQueryKeys.claimsList(filters),
     queryFn: () => getAdminClaims(filters),
+    ...adminQueryOptions,
   });
 }
 
@@ -121,6 +133,7 @@ export function useAdminClaimDetail(id: string) {
     queryKey: adminQueryKeys.claimDetail(id),
     queryFn: () => getAdminClaimById(id),
     enabled: !!id,
+    ...adminQueryOptions,
   });
 }
 
@@ -129,6 +142,7 @@ export function useAdminInsurers(filters: AdminInsurerFilters = {}) {
   return useQuery({
     queryKey: adminQueryKeys.insurersList(filters),
     queryFn: () => getAdminInsurers(filters),
+    ...adminQueryOptions,
   });
 }
 
@@ -137,6 +151,7 @@ export function useAdminInsurerDetail(id: string) {
     queryKey: adminQueryKeys.insurerDetail(id),
     queryFn: () => getAdminInsurerById(id),
     enabled: !!id,
+    ...adminQueryOptions,
   });
 }
 

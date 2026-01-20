@@ -1,21 +1,30 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, FileWarning, Car, Shield, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Building2, Users, FileWarning, Car, Shield, TrendingUp, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAdminStats } from '@/hooks/use-admin';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import type { Route } from 'next';
 
 export default function AdminDashboardPage() {
-  const { data: stats, isLoading, error } = useAdminStats();
+  const { data: stats, isLoading, error, refetch, isRefetching } = useAdminStats();
 
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <p className="text-muted-foreground">Fehler beim Laden der Statistiken</p>
+          <p className="text-muted-foreground mb-4">Fehler beim Laden der Statistiken</p>
+          <Button
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            variant="outline"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />
+            {isRefetching ? 'Wird geladen...' : 'Erneut versuchen'}
+          </Button>
         </div>
       </div>
     );

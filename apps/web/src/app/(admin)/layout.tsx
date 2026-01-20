@@ -46,9 +46,13 @@ export default function AdminLayout({
     );
   }
 
-  // If not authenticated or not SUPERADMIN (after init), return nothing while redirect happens
+  // If not authenticated or not SUPERADMIN (after init), show loading while redirect happens
   if (!isAuthenticated || userRole !== 'SUPERADMIN') {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      </div>
+    );
   }
 
   return (
