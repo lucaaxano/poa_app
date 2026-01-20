@@ -23,16 +23,16 @@ services:
       - NODE_ENV=production
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
       start_period: 30s
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 768M
         reservations:
-          memory: 256M
+          memory: 384M
     depends_on:
       api:
         condition: service_healthy
@@ -53,8 +53,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      # Optimized connection pool: 20 connections, 20s pool timeout, 10s connect timeout
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=20&pool_timeout=20&connect_timeout=10
+      # Optimized connection pool with keepalive to prevent cold-start delays
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=20&pool_timeout=20&connect_timeout=10&keepAlive=true&keepAliveInitialDelayMillis=10000
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
@@ -85,16 +85,16 @@ services:
       - "caddy.reverse_proxy.transport.http.write_timeout=60s"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
-      interval: 15s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
       start_period: 30s
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1024M
         reservations:
-          memory: 256M
+          memory: 512M
     depends_on:
       db:
         condition: service_healthy
