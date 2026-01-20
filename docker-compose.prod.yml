@@ -28,6 +28,12 @@ services:
       - NODE_ENV=production
     depends_on:
       - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - poa-network
     labels:
@@ -37,6 +43,10 @@ services:
       - "traefik.http.routers.poa-web.tls=true"
       - "traefik.http.routers.poa-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.poa-web.loadbalancer.server.port=3000"
+      # Health check for Traefik
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.timeout=5s"
       # HTTP to HTTPS redirect
       - "traefik.http.routers.poa-web-http.rule=Host(`poa-platform.de`) || Host(`www.poa-platform.de`)"
       - "traefik.http.routers.poa-web-http.entrypoints=web"

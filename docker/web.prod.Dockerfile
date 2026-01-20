@@ -62,12 +62,16 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install runtime dependencies + sharp for Next.js image optimization
-RUN apk add --no-cache libc6-compat
-RUN npm install --os=linux --cpu=x64 sharp@0.33.2
+# Install runtime dependencies for sharp and wget for health checks
+RUN apk add --no-cache libc6-compat wget
+
+# Install sharp globally for Next.js image optimization
+RUN npm install -g sharp@0.33.2
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Tell Next.js where to find sharp
+ENV NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs
