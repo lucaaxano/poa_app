@@ -90,9 +90,9 @@ let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
 // Warmup configuration - reduced frequency to prevent slowdowns over time
-// The backend keep-alive (15s) handles connection warmth
-const BASE_WARMUP_INTERVAL_MS = 90000; // 90 seconds - reduced from 45s
-const MIN_WARMUP_INTERVAL_MS = 60000; // Minimum 60 seconds between warmups
+// PERFORMANCE FIX: Further reduced to prevent accumulation of background API calls
+const BASE_WARMUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const MIN_WARMUP_INTERVAL_MS = 3 * 60 * 1000; // Minimum 3 minutes between warmups
 const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
 const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
 

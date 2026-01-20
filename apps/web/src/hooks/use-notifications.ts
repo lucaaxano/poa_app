@@ -41,8 +41,9 @@ export function useUnreadCount() {
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => notificationsApi.getUnreadCount(),
     // Only poll when authenticated - stops polling immediately on logout
-    refetchInterval: isAuthenticated ? 60 * 1000 : false,
-    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    // PERFORMANCE FIX: Reduced polling frequency from 60s to 3 minutes
+    refetchInterval: isAuthenticated ? 3 * 60 * 1000 : false, // 3 minutes
+    staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes
     // Only fetch when authenticated - prevents 401 errors after logout
     enabled: isAuthenticated,
   });

@@ -57,7 +57,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=50&pool_timeout=20&connect_timeout=10
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
@@ -94,6 +94,10 @@ services:
       - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.de`)"
       - "traefik.http.routers.poa-api-http.entrypoints=web"
       - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
+      # Timeout configuration for long-running requests
+      - "traefik.http.middlewares.api-timeout.buffering.maxRequestBodyBytes=10485760"
+      - "traefik.http.middlewares.api-timeout.buffering.maxResponseBodyBytes=10485760"
+      - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
 
   # ===========================================
   # Database - PostgreSQL

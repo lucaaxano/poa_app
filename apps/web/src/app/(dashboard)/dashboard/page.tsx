@@ -11,7 +11,7 @@ import { useCompanyStats } from '@/hooks/use-company-stats';
 import { useRecentClaims } from '@/hooks/use-claims';
 import { useBrokerStats, useBrokerCompanyStats, useBrokerClaims } from '@/hooks/use-broker';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
-import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge } from '@/components/charts';
+import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge, LazyChart } from '@/components/charts';
 
 interface StatCardProps {
   title: string;
@@ -232,38 +232,47 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section - Only for Admins and Brokers */}
+      {/* PERFORMANCE FIX: Charts wrapped in LazyChart for deferred loading */}
       {(isAdmin || isBroker) && !activeCompany && (
         <div className="space-y-6">
           {/* Timeline Chart - Full Width */}
-          <TimelineChart
-            period="month"
-            range={12}
-            title="Schadenentwicklung (12 Monate)"
-            className="rounded-2xl border shadow-soft"
-          />
+          <LazyChart fallbackTitle="Schadenentwicklung" fallbackHeight="h-[300px]">
+            <TimelineChart
+              period="month"
+              range={12}
+              title="Schadenentwicklung (12 Monate)"
+              className="rounded-2xl border shadow-soft"
+            />
+          </LazyChart>
 
           {/* Charts Row */}
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Category Pie Chart */}
-            <CategoryPieChart
-              title="Schäden nach Kategorie"
-              className="rounded-2xl border shadow-soft"
-            />
+            <LazyChart fallbackTitle="Schäden nach Kategorie" fallbackHeight="h-[250px]">
+              <CategoryPieChart
+                title="Schäden nach Kategorie"
+                className="rounded-2xl border shadow-soft"
+              />
+            </LazyChart>
 
             {/* Vehicle Bar Chart */}
-            <VehicleBarChart
-              limit={5}
-              title="Top 5 Fahrzeuge"
-              className="rounded-2xl border shadow-soft lg:col-span-2"
-            />
+            <LazyChart fallbackTitle="Top 5 Fahrzeuge" fallbackHeight="h-[250px]" className="lg:col-span-2">
+              <VehicleBarChart
+                limit={5}
+                title="Top 5 Fahrzeuge"
+                className="rounded-2xl border shadow-soft"
+              />
+            </LazyChart>
           </div>
 
           {/* Quota Section */}
           <div className="grid gap-6 lg:grid-cols-4">
-            <QuotaGauge
-              title="Schadenquote"
-              className="rounded-2xl border shadow-soft"
-            />
+            <LazyChart fallbackTitle="Schadenquote" fallbackHeight="h-[200px]">
+              <QuotaGauge
+                title="Schadenquote"
+                className="rounded-2xl border shadow-soft"
+              />
+            </LazyChart>
             <div className="lg:col-span-3">
               <Card className="rounded-2xl border shadow-soft h-full">
                 <CardHeader>
