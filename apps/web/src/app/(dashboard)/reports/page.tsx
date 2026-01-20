@@ -19,7 +19,7 @@ import {
   useStatsByCategory,
   useQuotaStats,
 } from '@/hooks/use-company-stats';
-import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge } from '@/components/charts';
+import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge, LazyChart } from '@/components/charts';
 import { ExportButton } from '@/components/claims/export-button';
 import {
   Table,
@@ -189,12 +189,14 @@ export default function ReportsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <TimelineChart
-            period={timelinePeriod}
-            range={timelinePeriod === 'month' ? 12 : 26}
-            showCosts={true}
-            className="border-0 shadow-none"
-          />
+          <LazyChart fallbackTitle="Schadenentwicklung" fallbackHeight="h-[300px]">
+            <TimelineChart
+              period={timelinePeriod}
+              range={timelinePeriod === 'month' ? 12 : 26}
+              showCosts={true}
+              className="border-0 shadow-none"
+            />
+          </LazyChart>
         </CardContent>
       </Card>
 
@@ -218,10 +220,12 @@ export default function ReportsPage() {
         {/* Category Tab */}
         <TabsContent value="category" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            <CategoryPieChart
-              title="Verteilung nach Schadenkategorie"
-              className="rounded-2xl border shadow-soft"
-            />
+            <LazyChart fallbackTitle="Verteilung nach Kategorie" fallbackHeight="h-[280px]">
+              <CategoryPieChart
+                title="Verteilung nach Schadenkategorie"
+                className="rounded-2xl border shadow-soft"
+              />
+            </LazyChart>
             <Card className="rounded-2xl border shadow-soft">
               <CardHeader>
                 <CardTitle>Kategorie-Details</CardTitle>
@@ -267,11 +271,13 @@ export default function ReportsPage() {
         {/* Vehicles Tab */}
         <TabsContent value="vehicles" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
-            <VehicleBarChart
-              limit={10}
-              title="Top 10 Fahrzeuge nach Schäden"
-              className="rounded-2xl border shadow-soft"
-            />
+            <LazyChart fallbackTitle="Top 10 Fahrzeuge" fallbackHeight="h-[300px]">
+              <VehicleBarChart
+                limit={10}
+                title="Top 10 Fahrzeuge nach Schäden"
+                className="rounded-2xl border shadow-soft"
+              />
+            </LazyChart>
             <Card className="rounded-2xl border shadow-soft">
               <CardHeader>
                 <CardTitle>Alle Fahrzeuge mit Schäden</CardTitle>

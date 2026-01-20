@@ -71,7 +71,7 @@ export default function VehiclesPage() {
         <p className="mt-1 text-sm text-muted-foreground max-w-xs">
           Bitte waehlen Sie zuerst eine Firma aus, um deren Fahrzeuge anzuzeigen.
         </p>
-        <Link href={'/broker/companies' as Route} className="mt-6">
+        <Link href={'/broker/companies' as Route} prefetch={false} className="mt-6">
           <Button className="rounded-xl">
             Firma auswaehlen
           </Button>
@@ -149,7 +149,7 @@ export default function VehiclesPage() {
           </p>
         </div>
         {canManageVehicles && (
-          <Link href={'/vehicles/new' as Route}>
+          <Link href={'/vehicles/new' as Route} prefetch={false}>
             <Button className="rounded-xl">
               <Plus className="mr-2 h-4 w-4" />
               Neues Fahrzeug
@@ -215,6 +215,7 @@ export default function VehiclesPage() {
                       <TableCell>
                         <Link
                           href={`/vehicles/${vehicle.id}` as Route}
+                          prefetch={false}
                           className="font-medium text-primary hover:underline"
                         >
                           {vehicle.licensePlate}
@@ -249,7 +250,7 @@ export default function VehiclesPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem asChild>
-                                <Link href={`/vehicles/${vehicle.id}` as Route}>
+                                <Link href={`/vehicles/${vehicle.id}` as Route} prefetch={false}>
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Bearbeiten
                                 </Link>
@@ -304,7 +305,7 @@ export default function VehiclesPage() {
                   : 'Erstellen Sie Ihr erstes Fahrzeug.'}
               </p>
               {!search && canManageVehicles && (
-                <Link href={'/vehicles/new' as Route} className="mt-6">
+                <Link href={'/vehicles/new' as Route} prefetch={false} className="mt-6">
                   <Button className="rounded-xl">
                     <Plus className="mr-2 h-4 w-4" />
                     Erstes Fahrzeug erstellen

@@ -61,6 +61,7 @@ export default function SettingsLayout({
             <Link
               key={item.href}
               href={item.href as Route}
+              prefetch={false}
               className={cn(
                 'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors',
                 isActive
