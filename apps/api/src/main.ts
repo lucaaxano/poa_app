@@ -17,14 +17,66 @@ async function bootstrap() {
   });
 
   const configService = app.get(ConfigService);
+  const expressApp = app.getHttpAdapter().getInstance();
+
+  // ===========================================
+  // CORS Configuration - MUST BE FIRST MIDDLEWARE
+  // ===========================================
+  // This ensures CORS headers are set for ALL responses including errors/timeouts
+  const frontendUrl = configService.get('FRONTEND_URL') || 'https://poa-platform.de';
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://poa-platform.de',
+    'https://www.poa-platform.de',
+    frontendUrl,
+    frontendUrl?.replace(/\/$/, ''),
+    frontendUrl?.replace('https://', 'https://www.'),
+  ].filter(Boolean) as string[];
+
+  logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+
+  // Helper function to set CORS headers
+  const setCorsHeaders = (req: Request, res: Response) => {
+    const origin = req.headers.origin;
+
+    if (origin) {
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      const isAllowed = allowedOrigins.some(allowed => {
+        const normalizedAllowed = allowed.replace(/\/$/, '');
+        return normalizedOrigin === normalizedAllowed;
+      });
+
+      if (isAllowed) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
+        res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
+        res.setHeader('Access-Control-Max-Age', '86400');
+      }
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+  };
+
+  // CORS middleware - FIRST to handle preflight immediately
+  expressApp.use((req: Request, res: Response, next: NextFunction) => {
+    setCorsHeaders(req, res);
+
+    // Handle preflight OPTIONS requests immediately - no further processing needed
+    if (req.method === 'OPTIONS') {
+      res.status(204).end();
+      return;
+    }
+
+    next();
+  });
 
   // ===========================================
   // CRITICAL: Global Request Timeout Middleware
   // ===========================================
-  // This MUST be the first middleware to ensure ALL requests have a timeout
-  // Without this, slow DB queries or bcrypt can cause 504 Gateway Timeout
-  const expressApp = app.getHttpAdapter().getInstance();
-
+  // This ensures ALL requests have a timeout to prevent 504 Gateway Timeout
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
     // Skip timeout for health checks (needed for Docker healthcheck)
     if (req.path === '/api/health' || req.path === '/api/health/deep') {
@@ -35,6 +87,7 @@ async function bootstrap() {
     res.setTimeout(REQUEST_TIMEOUT_MS, () => {
       if (!res.headersSent) {
         logger.warn(`Request timeout after ${REQUEST_TIMEOUT_MS}ms: ${req.method} ${req.path}`);
+        // CORS headers already set by first middleware
         res.status(503).json({
           statusCode: 503,
           message: 'Server ist überlastet. Bitte versuchen Sie es erneut.',
@@ -81,55 +134,6 @@ async function bootstrap() {
       },
     }),
   );
-
-  // CORS Configuration - More permissive and robust
-  const frontendUrl = configService.get('FRONTEND_URL') || 'https://poa-platform.de';
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://poa-platform.de',
-    'https://www.poa-platform.de',
-    frontendUrl,
-    frontendUrl?.replace(/\/$/, ''),
-    frontendUrl?.replace('https://', 'https://www.'),
-  ].filter(Boolean) as string[];
-
-  logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
-
-  // CORS headers middleware - after timeout middleware
-  // This ensures CORS headers are set even if the request times out or errors
-  expressApp.use((req: Request, res: Response, next: NextFunction) => {
-    const origin = req.headers.origin;
-
-    // Set CORS headers for ALL responses (including errors/timeouts)
-    if (origin) {
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      const isAllowed = allowedOrigins.some(allowed => {
-        const normalizedAllowed = allowed.replace(/\/$/, '');
-        return normalizedOrigin === normalizedAllowed;
-      });
-
-      if (isAllowed) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With');
-        res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
-        res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-      }
-    } else {
-      // Allow requests with no origin (mobile apps, curl, server-to-server)
-      res.setHeader('Access-Control-Allow-Origin', '*');
-    }
-
-    // Handle preflight OPTIONS requests immediately
-    if (req.method === 'OPTIONS') {
-      res.status(204).end();
-      return;
-    }
-
-    next();
-  });
 
   // Still enable NestJS CORS for proper integration
   app.enableCors({
