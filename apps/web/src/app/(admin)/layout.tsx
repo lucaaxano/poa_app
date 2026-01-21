@@ -6,6 +6,7 @@ import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { Header } from '@/components/layout/header';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuthStore } from '@/stores/auth-store';
+import { ensureApiReady } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
 export default function AdminLayout({
@@ -24,6 +25,14 @@ export default function AdminLayout({
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isApiReady, setIsApiReady] = useState(false);
+
+  // Warm up API before loading admin dashboard data
+  useEffect(() => {
+    if (isAuthenticated && userRole === 'SUPERADMIN' && !isApiReady) {
+      ensureApiReady(2).then(() => setIsApiReady(true));
+    }
+  }, [isAuthenticated, userRole, isApiReady]);
 
   // Redirect if not authenticated or not SUPERADMIN
   useEffect(() => {
@@ -51,6 +60,16 @@ export default function AdminLayout({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Wait for API warmup before rendering dashboard
+  if (!isApiReady) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+        <p className="text-sm text-muted-foreground">Verbinde zum Server...</p>
       </div>
     );
   }
