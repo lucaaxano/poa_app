@@ -90,7 +90,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center border-b px-4">
-          <Link href={'/admin' as Route} className="flex items-center gap-3">
+          <Link href={'/admin' as Route} prefetch={false} className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white font-bold text-lg">
               A
             </div>
@@ -104,6 +104,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
         <div className="shrink-0 px-3 pt-4 pb-2">
           <Link
             href="/dashboard"
+            prefetch={false}
             className={cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
               collapsed && 'justify-center px-2'
@@ -121,6 +122,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                 item.isActive
