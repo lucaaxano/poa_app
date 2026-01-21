@@ -24,18 +24,28 @@ interface OnboardingDialogProps {
 export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) {
   const { seenOnboardings, markOnboardingSeen, helpEnabled } = useHelpStore();
   const userRole = useAuthStore((state) => state.user?.role);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [isOpen, setIsOpen] = React.useState(false);
 
   const content = getOnboardingContent(pageKey);
   const hasPermanentlyDismissed = seenOnboardings[pageKey] === true;
   const isSuperAdmin = userRole === 'SUPERADMIN';
 
-  // Show dialog on mount if:
+  // Show dialog on mount or when navigating to a new page if:
+  // - User is authenticated (auth state is loaded)
   // - Not permanently dismissed by user
   // - Help is enabled
   // - Content exists
   // - User is NOT a SUPERADMIN
   React.useEffect(() => {
+    // Reset isOpen when pageKey changes (navigation between pages)
+    setIsOpen(false);
+
+    // Wait for auth to be ready
+    if (!isAuthenticated) {
+      return;
+    }
+
     if (!hasPermanentlyDismissed && helpEnabled && content && !isSuperAdmin) {
       // Small delay to allow page to render first
       const timer = setTimeout(() => {
@@ -43,7 +53,7 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [hasPermanentlyDismissed, helpEnabled, content, isSuperAdmin]);
+  }, [pageKey, isAuthenticated, hasPermanentlyDismissed, helpEnabled, content, isSuperAdmin]);
 
   // Don't render anything for SUPERADMIN or if no content
   if (!content || isSuperAdmin) {
