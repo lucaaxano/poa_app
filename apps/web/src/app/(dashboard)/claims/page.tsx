@@ -126,9 +126,12 @@ export default function ClaimsPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-red-600">Fehler beim Laden der Schaeden</p>
-      </div>
+      <>
+        <OnboardingDialog pageKey="claims" />
+        <div className="flex items-center justify-center py-12">
+          <p className="text-red-600">Fehler beim Laden der Schaeden</p>
+        </div>
+      </>
     );
   }
 
