@@ -1,7 +1,8 @@
 import type { UserRole } from '@poa/shared';
 
 // Page keys for onboarding dialogs
-export type PageKey = 'dashboard' | 'claims' | 'vehicles' | 'reports' | 'settings';
+export type PageKey = 'dashboard' | 'claims' | 'vehicles' | 'reports' | 'settings'
+  | 'users' | 'company' | 'policies' | 'broker' | 'broker-requests';
 
 // Help topic keys for inline help popovers
 export type HelpTopicKey =
@@ -82,6 +83,51 @@ export const onboardingContent: Record<PageKey, OnboardingContent> = {
       'Aktivieren Sie 2FA fuer mehr Sicherheit',
       'Stellen Sie Ihre bevorzugte Sprache ein',
       'Verwalten Sie Benutzer und Berechtigungen',
+    ],
+  },
+  users: {
+    title: 'Benutzerverwaltung',
+    description: 'Verwalten Sie hier alle Benutzer Ihrer Organisation. Laden Sie neue Mitarbeiter ein oder aendern Sie Berechtigungen.',
+    tips: [
+      'Laden Sie neue Mitarbeiter per E-Mail ein',
+      'Aendern Sie Rollen zwischen Mitarbeiter und Administrator',
+      'Deaktivieren Sie Benutzer, die nicht mehr aktiv sind',
+    ],
+  },
+  company: {
+    title: 'Firmeneinstellungen',
+    description: 'Bearbeiten Sie hier die Stammdaten Ihrer Firma wie Name, Adresse und Kontaktdaten.',
+    tips: [
+      'Laden Sie Ihr Firmenlogo hoch (max. 2MB)',
+      'Halten Sie Ihre Kontaktdaten aktuell',
+      'Die Firmendaten erscheinen auf Dokumenten',
+    ],
+  },
+  policies: {
+    title: 'Versicherungspolicen',
+    description: 'Verwalten Sie hier Ihre Versicherungspolicen. Erfassen Sie neue Policen und behalten Sie den Ueberblick.',
+    tips: [
+      'Erfassen Sie alle aktiven Versicherungspolicen',
+      'Waehlen Sie das passende Preismodell aus',
+      'Beachten Sie die Gueltigkeitsdaten',
+    ],
+  },
+  broker: {
+    title: 'Betreute Firmen',
+    description: 'Hier sehen Sie alle Firmen, die Sie als Broker betreuen. Wechseln Sie zwischen den Firmen.',
+    tips: [
+      'Klicken Sie auf eine Firma, um deren Dashboard zu oeffnen',
+      'Die Statistiken zeigen aggregierte Daten aller Firmen',
+      'Offene Schaeden werden rot markiert',
+    ],
+  },
+  'broker-requests': {
+    title: 'Broker-Anfragen',
+    description: 'Hier sehen Sie Anfragen von Firmen, die Sie als Broker hinzufuegen moechten.',
+    tips: [
+      'Pruefen Sie neue Anfragen regelmaessig',
+      'Akzeptieren Sie Anfragen, um Zugriff auf die Firma zu erhalten',
+      'Abgelehnte Anfragen koennen nicht rueckgaengig gemacht werden',
     ],
   },
 };

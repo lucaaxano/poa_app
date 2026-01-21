@@ -52,6 +52,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Pencil, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Policy, CreatePolicyData, UpdatePolicyData } from '@/lib/api/policies';
+import { OnboardingDialog } from '@/components/help';
 
 type PolicyFormData = {
   insurerId: string;
@@ -237,6 +238,7 @@ export default function PoliciesPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="policies" />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Policen</h2>

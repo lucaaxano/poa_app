@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useBrokerCompanies, useBrokerStats } from '@/hooks/use-broker';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
+import { OnboardingDialog } from '@/components/help';
 
 export default function BrokerCompaniesPage() {
   const router = useRouter();
@@ -36,6 +37,7 @@ export default function BrokerCompaniesPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="broker" />
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Betreute Firmen</h1>

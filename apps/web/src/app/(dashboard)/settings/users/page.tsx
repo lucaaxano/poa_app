@@ -40,6 +40,7 @@ import { InviteModal } from '@/components/users/invite-modal';
 import { useAuthStore } from '@/stores/auth-store';
 import { UserRole } from '@poa/shared';
 import { toast } from 'sonner';
+import { OnboardingDialog } from '@/components/help';
 
 const roleLabels: Record<UserRole, string> = {
   [UserRole.EMPLOYEE]: 'Mitarbeiter',
@@ -137,6 +138,7 @@ export default function UsersSettingsPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="users" />
       <Tabs defaultValue="users" className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="rounded-xl">

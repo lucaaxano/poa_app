@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi, type BrokerRequest } from '@/lib/api/auth';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/api/client';
+import { OnboardingDialog } from '@/components/help';
 
 export default function BrokerRequestsPage() {
   const queryClient = useQueryClient();
@@ -68,6 +69,7 @@ export default function BrokerRequestsPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="broker-requests" />
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Broker-Anfragen</h1>
         <p className="text-muted-foreground">

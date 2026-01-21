@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useCompany, useUpdateCompany, useUploadLogo, useDeleteLogo } from '@/hooks/use-company-stats';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/api/client';
+import { OnboardingDialog } from '@/components/help';
 
 const companySchema = z.object({
   name: z.string().min(1, 'Firmenname ist erforderlich').max(200),
@@ -133,6 +134,7 @@ export default function CompanySettingsPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="company" />
       {/* Logo Upload - Outside form */}
       <Card className="rounded-2xl border shadow-soft">
         <CardHeader>
