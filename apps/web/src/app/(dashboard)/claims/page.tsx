@@ -124,14 +124,25 @@ export default function ClaimsPage() {
     }).format(value);
   };
 
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <OnboardingDialog pageKey="claims" />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
-      <>
+      <div className="space-y-6">
         <OnboardingDialog pageKey="claims" />
         <div className="flex items-center justify-center py-12">
           <p className="text-red-600">Fehler beim Laden der Schaeden</p>
         </div>
-      </>
+      </div>
     );
   }
 
