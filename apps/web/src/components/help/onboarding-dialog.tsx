@@ -41,38 +41,57 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
 
   // Show dialog when all conditions are met
   React.useEffect(() => {
+    // DEBUG: Log all conditions
+    console.log('[OnboardingDialog] Checking conditions:', {
+      pageKey,
+      isMounted,
+      isAuthenticated,
+      userRole,
+      isSuperAdmin,
+      hasContent: !!content,
+      hasPermanentlyDismissed,
+      seenOnboardings,
+    });
+
     // Wait for component to be mounted (client-side)
     if (!isMounted) {
+      console.log('[OnboardingDialog] Not mounted yet');
       return;
     }
 
     // Wait for authentication to be ready
     if (!isAuthenticated) {
+      console.log('[OnboardingDialog] Not authenticated');
       return;
     }
 
     // Don't show for SUPERADMIN
     if (isSuperAdmin) {
+      console.log('[OnboardingDialog] User is SUPERADMIN, skipping');
       return;
     }
 
     // Don't show if no content for this page
     if (!content) {
+      console.log('[OnboardingDialog] No content for pageKey:', pageKey);
       return;
     }
 
     // Don't show if user has permanently dismissed this popup
     if (hasPermanentlyDismissed) {
+      console.log('[OnboardingDialog] User has permanently dismissed this popup');
       return;
     }
 
+    console.log('[OnboardingDialog] All conditions met, showing dialog in 800ms');
     // Show the popup after a small delay to allow page to render
     const timer = setTimeout(() => {
+      console.log('[OnboardingDialog] Setting isOpen to true');
       setIsOpen(true);
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [isMounted, isAuthenticated, isSuperAdmin, content, hasPermanentlyDismissed, pageKey]);
+  }, [isMounted, isAuthenticated, isSuperAdmin, content, hasPermanentlyDismissed, pageKey, userRole, seenOnboardings]);
 
   // Reset when navigating to a new page
   React.useEffect(() => {
