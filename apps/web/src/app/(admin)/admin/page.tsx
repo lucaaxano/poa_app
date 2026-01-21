@@ -209,7 +209,7 @@ function StatsCard({
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return <Link href={href} prefetch={false}>{content}</Link>;
   }
 
   return content;
@@ -256,7 +256,7 @@ function ActivityCard({
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return <Link href={href} prefetch={false}>{content}</Link>;
   }
 
   return content;
@@ -275,7 +275,7 @@ function QuickLink({
   icon: React.ReactNode;
 }) {
   return (
-    <Link href={href}>
+    <Link href={href} prefetch={false}>
       <div className="flex items-center gap-4 p-4 rounded-xl border hover:bg-muted/50 transition-colors">
         <div className="text-muted-foreground">{icon}</div>
         <div>

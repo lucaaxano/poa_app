@@ -175,6 +175,7 @@ export function VehicleBarChart({
           <div className="mt-4 text-center">
             <Link
               href="/vehicles"
+              prefetch={false}
               className="text-sm text-muted-foreground hover:text-primary"
             >
               Alle Fahrzeuge anzeigen →

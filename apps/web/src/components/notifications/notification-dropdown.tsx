@@ -130,7 +130,7 @@ export const NotificationDropdown = memo(function NotificationDropdown() {
           <>
             <DropdownMenuSeparator className="m-0" />
             <div className="p-2">
-              <Link href={'/notifications' as Route}>
+              <Link href={'/notifications' as Route} prefetch={false}>
                 <Button
                   variant="ghost"
                   className="w-full h-9 text-sm"
