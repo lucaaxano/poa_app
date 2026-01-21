@@ -52,7 +52,7 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <DialogContent className={cn('sm:max-w-md sm:rounded-2xl', className)}>
         <DialogHeader className="space-y-4">
           {/* Icon Container */}
@@ -87,17 +87,17 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
           <Button
-            onClick={handleDontShowAgain}
+            onClick={handleClose}
             className="w-full rounded-xl"
           >
             Verstanden
           </Button>
           <Button
-            variant="ghost"
-            onClick={handleClose}
-            className="w-full text-muted-foreground hover:text-foreground"
+            variant="outline"
+            onClick={handleDontShowAgain}
+            className="w-full rounded-xl"
           >
-            Spaeter erinnern
+            Nicht mehr anzeigen
           </Button>
         </DialogFooter>
       </DialogContent>

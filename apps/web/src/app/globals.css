@@ -136,4 +136,17 @@
     transform: translateZ(0);
     backface-visibility: hidden;
   }
+
+  /* IMPORTANT: Ensure sidebar navigation can scroll even when dialogs are open */
+  /* Radix UI adds overflow:hidden to body when modal is open, this overrides it for the sidebar */
+  aside nav {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent body scroll lock from affecting fixed sidebars */
+  body[data-scroll-locked] aside {
+    pointer-events: auto;
+  }
 }
