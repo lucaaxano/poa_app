@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart3, Users, Car, TrendingUp, PieChart } from 'lucide-react';
+import { OnboardingDialog, InlineHelp } from '@/components/help';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('de-DE', {
@@ -85,10 +86,16 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8">
+      {/* Onboarding Dialog */}
+      <OnboardingDialog pageKey="reports" />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Auswertungen</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Auswertungen</h1>
+            <InlineHelp topicKey="reports-charts" />
+          </div>
           <p className="text-muted-foreground">
             Detaillierte Analysen und Reports Ihrer Schadendaten
           </p>

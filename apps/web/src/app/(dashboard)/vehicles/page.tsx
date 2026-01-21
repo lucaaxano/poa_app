@@ -37,6 +37,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { VehicleType } from '@poa/shared';
 import type { Vehicle } from '@poa/shared';
 import { toast } from 'sonner';
+import { OnboardingDialog, InlineHelp } from '@/components/help';
 
 const vehicleTypeLabels: Record<VehicleType, string> = {
   [VehicleType.CAR]: 'PKW',
@@ -138,10 +139,16 @@ export default function VehiclesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Onboarding Dialog */}
+      <OnboardingDialog pageKey="vehicles" />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fahrzeuge</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Fahrzeuge</h1>
+            <InlineHelp topicKey="vehicles-list" />
+          </div>
           <p className="text-muted-foreground">
             {isBroker && activeCompany
               ? `Fahrzeuge von ${activeCompany.name}`

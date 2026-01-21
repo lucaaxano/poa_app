@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingDialog, InlineHelp } from '@/components/help';
 
 const settingsCards = [
   {
@@ -52,8 +53,23 @@ const settingsCards = [
 
 export default function SettingsPage() {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {settingsCards.map((card) => (
+    <div className="space-y-6">
+      {/* Onboarding Dialog */}
+      <OnboardingDialog pageKey="settings" />
+
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Einstellungen</h1>
+          <InlineHelp topicKey="settings-profile" />
+        </div>
+        <p className="text-muted-foreground">
+          Verwalten Sie Ihre Plattform-Einstellungen
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {settingsCards.map((card) => (
         <Link key={card.href} href={card.href as Route}>
           <Card className="rounded-2xl border shadow-soft hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardHeader>
@@ -69,6 +85,7 @@ export default function SettingsPage() {
           </Card>
         </Link>
       ))}
+      </div>
     </div>
   );
 }

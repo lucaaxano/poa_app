@@ -12,6 +12,7 @@ import { useRecentClaims } from '@/hooks/use-claims';
 import { useBrokerStats, useBrokerCompanyStats, useBrokerClaims } from '@/hooks/use-broker';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
 import { TimelineChart, CategoryPieChart, VehicleBarChart, QuotaGauge, LazyChart } from '@/components/charts';
+import { OnboardingDialog, InlineHelp } from '@/components/help';
 
 interface StatCardProps {
   title: string;
@@ -163,11 +164,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Onboarding Dialog */}
+      <OnboardingDialog pageKey="dashboard" />
+
       {/* Welcome Section */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Willkommen zurueck, {user?.firstName}!
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Willkommen zurueck, {user?.firstName}!
+          </h1>
+        </div>
         <p className="text-muted-foreground">
           {isBroker
             ? `Hier ist eine Uebersicht ueber ${displayName}`
@@ -316,7 +322,10 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <Card className="rounded-2xl border shadow-soft lg:col-span-2">
           <CardHeader>
-            <CardTitle>Schnellzugriff</CardTitle>
+            <div className="flex items-center gap-1">
+              <CardTitle>Schnellzugriff</CardTitle>
+              <InlineHelp topicKey="dashboard-quickactions" />
+            </div>
             <CardDescription>Haeufige Aktionen</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

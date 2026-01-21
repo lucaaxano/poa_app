@@ -46,6 +46,7 @@ import { useBrokerClaims } from '@/hooks/use-broker';
 import { useAuthStore } from '@/stores/auth-store';
 import { ClaimStatus, DamageCategory } from '@poa/shared';
 import { ExportButton } from '@/components/claims/export-button';
+import { OnboardingDialog, InlineHelp } from '@/components/help';
 
 const statusLabels: Record<ClaimStatus, string> = {
   [ClaimStatus.DRAFT]: 'Entwurf',
@@ -133,10 +134,16 @@ export default function ClaimsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Onboarding Dialog */}
+      <OnboardingDialog pageKey="claims" />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Schaeden</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Schaeden</h1>
+            <InlineHelp topicKey="claims-list" />
+          </div>
           <p className="text-muted-foreground">
             {isBroker
               ? activeCompany
@@ -173,6 +180,7 @@ export default function ClaimsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
+              <InlineHelp topicKey="claims-filters" className="ml-0" />
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[180px] rounded-xl">
                   <SelectValue placeholder="Status filtern" />
