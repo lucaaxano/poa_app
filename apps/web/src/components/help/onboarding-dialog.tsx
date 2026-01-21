@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useHelpStore } from '@/stores/help-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { getOnboardingContent, type PageKey } from './help-content';
 import { cn } from '@/lib/utils';
 
@@ -22,31 +23,45 @@ interface OnboardingDialogProps {
 
 export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) {
   const { seenOnboardings, markOnboardingSeen, helpEnabled } = useHelpStore();
+  const userRole = useAuthStore((state) => state.user?.role);
   const [isOpen, setIsOpen] = React.useState(false);
 
   const content = getOnboardingContent(pageKey);
-  const hasSeen = seenOnboardings[pageKey] === true;
+  const hasPermanentlyDismissed = seenOnboardings[pageKey] === true;
+  const isSuperAdmin = userRole === 'SUPERADMIN';
 
-  // Show dialog on mount if not seen before and help is enabled
+  // Show dialog on mount if:
+  // - Not permanently dismissed by user
+  // - Help is enabled
+  // - Content exists
+  // - User is NOT a SUPERADMIN
   React.useEffect(() => {
-    if (!hasSeen && helpEnabled && content) {
+    if (!hasPermanentlyDismissed && helpEnabled && content && !isSuperAdmin) {
       // Small delay to allow page to render first
       const timer = setTimeout(() => {
         setIsOpen(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [hasSeen, helpEnabled, content]);
+  }, [hasPermanentlyDismissed, helpEnabled, content, isSuperAdmin]);
 
-  if (!content) {
+  // Don't render anything for SUPERADMIN or if no content
+  if (!content || isSuperAdmin) {
     return null;
   }
 
-  const handleClose = () => {
+  // "Verstanden" - User understood, just close (will appear again on next visit)
+  const handleUnderstood = () => {
     setIsOpen(false);
   };
 
-  const handleDontShowAgain = () => {
+  // "Spaeter erinnern" - Remind later, just close (will appear again on next visit)
+  const handleRemindLater = () => {
+    setIsOpen(false);
+  };
+
+  // "Nicht mehr erinnern" - Never show again for this page
+  const handleNeverShowAgain = () => {
     markOnboardingSeen(pageKey);
     setIsOpen(false);
   };
@@ -86,18 +101,28 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
         )}
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
+          {/* Primary action: User understood */}
           <Button
-            onClick={handleClose}
+            onClick={handleUnderstood}
             className="w-full rounded-xl"
           >
             Verstanden
           </Button>
+          {/* Secondary action: Remind later */}
           <Button
             variant="outline"
-            onClick={handleDontShowAgain}
+            onClick={handleRemindLater}
             className="w-full rounded-xl"
           >
-            Nicht mehr anzeigen
+            Spaeter erinnern
+          </Button>
+          {/* Tertiary action: Never show again */}
+          <Button
+            variant="ghost"
+            onClick={handleNeverShowAgain}
+            className="w-full rounded-xl text-muted-foreground hover:text-foreground"
+          >
+            Nicht mehr erinnern
           </Button>
         </DialogFooter>
       </DialogContent>
