@@ -235,16 +235,21 @@ export const isApiReady = (): boolean => isApiWarmedUp;
  *
  * Use this before login to prevent timeout errors during cold starts
  */
-export const ensureApiReady = async (maxAttempts = 3): Promise<boolean> => {
+export const ensureApiReady = async (maxAttempts = 2): Promise<boolean> => {
   // Skip if logging out
   if (isLoggingOut) {
     return false;
   }
 
+  // Skip if recently warmed up (within 30 seconds)
+  if (isApiWarmedUp && lastWarmupTime && (Date.now() - lastWarmupTime < 30000)) {
+    return true;
+  }
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await axios.get(`${API_URL}/warmup`, {
-        timeout: 10000, // 10 second timeout per attempt
+        timeout: 5000, // 5 second timeout (reduced from 10s)
       });
 
       if (response.data?.status === 'ok') {
@@ -255,15 +260,14 @@ export const ensureApiReady = async (maxAttempts = 3): Promise<boolean> => {
         return true;
       }
     } catch (error) {
-      // Log attempt failure but don't spam console
       if (attempt === maxAttempts) {
         console.warn(`[API] Warmup failed after ${maxAttempts} attempts, proceeding anyway`);
       }
     }
 
-    // Wait before next attempt (increasing delay: 1s, 2s, 3s)
+    // Fixed 1 second delay between attempts (simplified from attempt * 1000)
     if (attempt < maxAttempts) {
-      await sleep(attempt * 1000);
+      await sleep(1000);
     }
   }
 

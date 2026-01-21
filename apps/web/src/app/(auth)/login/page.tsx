@@ -63,7 +63,7 @@ export default function LoginPage() {
       // Show connecting state while warming up the API
       // This prevents timeout errors during cold starts
       setIsConnecting(true);
-      await ensureApiReady(3); // 3 attempts with 10s timeout each
+      await ensureApiReady(2); // 2 attempts with 5s timeout each
       setIsConnecting(false);
 
       const result = await login(data);
