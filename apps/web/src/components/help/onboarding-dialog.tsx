@@ -22,55 +22,79 @@ interface OnboardingDialogProps {
 }
 
 export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) {
-  const { seenOnboardings, markOnboardingSeen, helpEnabled } = useHelpStore();
+  const seenOnboardings = useHelpStore((state) => state.seenOnboardings);
+  const markOnboardingSeen = useHelpStore((state) => state.markOnboardingSeen);
   const userRole = useAuthStore((state) => state.user?.role);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   const content = getOnboardingContent(pageKey);
   const hasPermanentlyDismissed = seenOnboardings[pageKey] === true;
   const isSuperAdmin = userRole === 'SUPERADMIN';
 
-  // Show dialog on mount or when navigating to a new page if:
-  // - User is authenticated (auth state is loaded)
-  // - Not permanently dismissed by user
-  // - Help is enabled
-  // - Content exists
-  // - User is NOT a SUPERADMIN
+  // Wait for client-side mount (hydration complete)
   React.useEffect(() => {
-    // Reset isOpen when pageKey changes (navigation between pages)
-    setIsOpen(false);
+    setIsMounted(true);
+  }, []);
 
-    // Wait for auth to be ready
+  // Show dialog when all conditions are met
+  React.useEffect(() => {
+    // Wait for component to be mounted (client-side)
+    if (!isMounted) {
+      return;
+    }
+
+    // Wait for authentication to be ready
     if (!isAuthenticated) {
       return;
     }
 
-    if (!hasPermanentlyDismissed && helpEnabled && content && !isSuperAdmin) {
-      // Small delay to allow page to render first
-      const timer = setTimeout(() => {
-        setIsOpen(true);
-      }, 500);
-      return () => clearTimeout(timer);
+    // Don't show for SUPERADMIN
+    if (isSuperAdmin) {
+      return;
     }
-  }, [pageKey, isAuthenticated, hasPermanentlyDismissed, helpEnabled, content, isSuperAdmin]);
 
-  // Don't render anything for SUPERADMIN or if no content
-  if (!content || isSuperAdmin) {
+    // Don't show if no content for this page
+    if (!content) {
+      return;
+    }
+
+    // Don't show if user has permanently dismissed this popup
+    if (hasPermanentlyDismissed) {
+      return;
+    }
+
+    // Show the popup after a small delay to allow page to render
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [isMounted, isAuthenticated, isSuperAdmin, content, hasPermanentlyDismissed, pageKey]);
+
+  // Reset when navigating to a new page
+  React.useEffect(() => {
+    setIsOpen(false);
+  }, [pageKey]);
+
+  // Don't render anything server-side or for SUPERADMIN
+  if (!isMounted || !content || isSuperAdmin) {
     return null;
   }
 
-  // "Verstanden" - User understood, just close (will appear again on next visit)
+  // "Verstanden" - User understood, just close (will appear again on next page visit)
   const handleUnderstood = () => {
     setIsOpen(false);
   };
 
-  // "Spaeter erinnern" - Remind later, just close (will appear again on next visit)
+  // "Spaeter erinnern" - Same as understood, just close
   const handleRemindLater = () => {
     setIsOpen(false);
   };
 
-  // "Nicht mehr erinnern" - Never show again for this page
+  // "Nicht mehr erinnern" - Permanently disable this popup
   const handleNeverShowAgain = () => {
     markOnboardingSeen(pageKey);
     setIsOpen(false);
@@ -140,7 +164,7 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
   );
 }
 
-// Component to manually trigger onboarding dialog (e.g., from settings)
+// Component to manually trigger onboarding dialog reset (e.g., from settings)
 interface OnboardingResetButtonProps {
   pageKey: PageKey;
   className?: string;
