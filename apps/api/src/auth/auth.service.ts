@@ -228,7 +228,7 @@ export class AuthService {
           expiresAt: { gt: new Date() },
         },
         include: { user: true },
-        take: 100, // Limit to prevent performance issues
+        take: 10, // Reduced from 100 to prevent 504 timeouts with bcrypt loops
       });
 
       for (const legacyVerification of legacyVerifications) {
@@ -306,12 +306,6 @@ export class AuthService {
   async login(dto: LoginDto): Promise<AuthResponse | TwoFactorRequiredResponse> {
     const startTime = Date.now();
     this.logger.log(`[LOGIN] Starting login for ${dto.email}`);
-
-    // Pre-query warmup: Ensure DB connection is ready before critical operation
-    // This prevents cold connection delays from affecting login time
-    const warmupStartTime = Date.now();
-    await this.prisma.$queryRaw`SELECT 1`;
-    this.logger.log(`[LOGIN] DB warmup took ${Date.now() - warmupStartTime}ms`);
 
     const dbStartTime = Date.now();
     const user = await this.prisma.user.findUnique({
@@ -632,7 +626,7 @@ export class AuthService {
           expiresAt: { gt: new Date() },
         },
         include: { user: true },
-        take: 100, // Limit to prevent performance issues
+        take: 10, // Reduced from 100 to prevent 504 timeouts with bcrypt loops
       });
 
       for (const legacyReset of legacyResets) {
@@ -879,7 +873,7 @@ export class AuthService {
           expiresAt: { gt: new Date() },
         },
         include: { company: true },
-        take: 100, // Limit to prevent performance issues
+        take: 10, // Reduced from 100 to prevent 504 timeouts with bcrypt loops
       });
 
       for (const legacyInvitation of legacyInvitations) {

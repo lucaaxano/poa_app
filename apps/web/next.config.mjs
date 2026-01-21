@@ -11,6 +11,16 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Redirect /favicon.ico to /favicon.png to prevent 404 errors
+  async redirects() {
+    return [
+      {
+        source: '/favicon.ico',
+        destination: '/favicon.png',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
