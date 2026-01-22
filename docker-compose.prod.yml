@@ -194,11 +194,12 @@ services:
       - "traefik.http.services.poa-storage.loadbalancer.server.port=9000"
 
   # ===========================================
-  # MinIO Setup - Creates bucket on startup
+  # MinIO Setup - Creates bucket on startup (runs once)
   # ===========================================
   storage-setup:
     image: minio/mc
     container_name: poa-storage-setup
+    restart: "no"
     depends_on:
       - storage
     entrypoint: >
