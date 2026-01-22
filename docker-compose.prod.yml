@@ -194,12 +194,13 @@ services:
       - "traefik.http.services.poa-storage.loadbalancer.server.port=9000"
 
   # ===========================================
-  # MinIO Setup - Creates bucket on startup (runs once)
+  # MinIO Setup - Creates bucket (run manually with --profile storage-setup)
+  # Usage: docker compose -f docker-compose.prod.yml --profile storage-setup up storage-setup
   # ===========================================
   storage-setup:
     image: minio/mc
     container_name: poa-storage-setup
-    restart: 'no'
+    restart: "no"
     depends_on:
       - storage
     entrypoint: >
@@ -211,10 +212,11 @@ services:
       mc mb myminio/poa-uploads --ignore-existing;
       mc anonymous set download myminio/poa-uploads;
       echo 'MinIO bucket configured successfully!';
-      exit 0;
       "
     networks:
       - poa-network
+    profiles:
+      - storage-setup
 
   # ===========================================
   # Database Migrations (run manually)
