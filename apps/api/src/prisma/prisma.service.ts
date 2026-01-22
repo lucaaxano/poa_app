@@ -11,9 +11,10 @@ import { PrismaClient } from '@poa/database';
 // &pool_timeout=20 - Max time to wait for connection (seconds)
 // &connect_timeout=10 - Max time for initial connection (seconds)
 
-// Keep-alive interval - balanced between preventing cold connections and reducing load
-// PERFORMANCE FIX: Increased from 10s to 30s to reduce database load
-const KEEPALIVE_INTERVAL_MS = 30000; // 30 seconds
+// Keep-alive interval - minimal frequency to reduce database load
+// PERFORMANCE FIX: Increased from 30s to 60s to further reduce load
+// Database connections are managed by connection pool, frequent pings are unnecessary
+const KEEPALIVE_INTERVAL_MS = 60000; // 60 seconds
 
 // Max consecutive failures before forcing reconnect
 const MAX_CONSECUTIVE_FAILURES = 3;

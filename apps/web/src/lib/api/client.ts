@@ -89,12 +89,13 @@ let lastWarmupTime = 0;
 let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
-// Warmup configuration - minimal frequency to prevent slowdowns over time
-// PERFORMANCE FIX: Increased intervals to reduce background API calls
-const BASE_WARMUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes (increased from 5)
-const MIN_WARMUP_INTERVAL_MS = 5 * 60 * 1000; // Minimum 5 minutes between warmups
-const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
-const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
+// PERFORMANCE FIX: Drastically reduced warmup frequency
+// The API client has built-in retry logic, so warmup is mostly redundant
+// These settings minimize background API calls to reduce server load
+const BASE_WARMUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (was 10)
+const MIN_WARMUP_INTERVAL_MS = 15 * 60 * 1000; // Minimum 15 minutes between warmups
+const MAX_PAUSE_DURATION_MS = 30 * 60 * 1000; // Max 30 minutes pause after failures
+const MAX_CONSECUTIVE_FAILURES = 2; // Pause after just 2 failures
 
 // Store visibility change handler reference for proper cleanup
 let visibilityChangeHandler: (() => void) | null = null;
@@ -185,16 +186,15 @@ export const startApiWarmup = (): void => {
     }
   }, BASE_WARMUP_INTERVAL_MS);
 
-  // Visibility handler - warmup when user returns to tab
-  // Simple and direct - no requestIdleCallback to avoid accumulating deferred work
+  // Visibility handler - warmup when user returns to tab after long absence
+  // PERFORMANCE FIX: Increased threshold to reduce unnecessary API calls
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       // Only warmup if authenticated and visible
       if (document.visibilityState === 'visible' && !isLoggingOut && getAccessToken()) {
-        // Warmup when returning to tab if more than 30s since last warmup
+        // Only warmup if tab was hidden for more than 5 minutes
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
-        if (timeSinceLastWarmup > 30000) { // 30 seconds threshold
-          // Direct call - simple and predictable
+        if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold (was 30s)
           warmupApi(true).catch(() => {});
         }
       }
