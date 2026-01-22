@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
-import { getErrorMessage, ensureApiReady } from '@/lib/api/client';
+import { getErrorMessage } from '@/lib/api/client';
 import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 
 export default function LoginPage() {
@@ -27,7 +27,7 @@ export default function LoginPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  // PERFORMANCE FIX: Removed isConnecting state - no longer blocking on warmup
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
@@ -60,12 +60,8 @@ export default function LoginPage() {
       setEmailNotVerified(false);
       setLoginError(null);
 
-      // Show connecting state while warming up the API
-      // This prevents timeout errors during cold starts
-      setIsConnecting(true);
-      await ensureApiReady(2); // 2 attempts with 5s timeout each
-      setIsConnecting(false);
-
+      // PERFORMANCE FIX: No longer blocking on warmup
+      // The API client has retry logic built-in for handling cold starts
       const result = await login(data);
       if (!result.requires2FA) {
         toast.success('Erfolgreich angemeldet');
@@ -73,7 +69,6 @@ export default function LoginPage() {
       }
       // If 2FA is required, the UI will switch to show the 2FA input
     } catch (error) {
-      setIsConnecting(false);
       const errorMessage = getErrorMessage(error);
       // Check if it's an email verification error
       if (errorMessage.includes('E-Mail-Adresse') && errorMessage.includes('bestätigen')) {
@@ -388,14 +383,10 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="h-12 w-full rounded-xl text-base"
-                  disabled={isLoading || isConnecting}
+                  disabled={isLoading}
                 >
-                  {isConnecting
-                    ? 'Verbinde zum Server...'
-                    : isLoading
-                      ? 'Wird angemeldet...'
-                      : 'Anmelden'}
-                  {!isLoading && !isConnecting && <ArrowRight className="ml-2 h-5 w-5" />}
+                  {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
+                  {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
                 </Button>
               </form>
 

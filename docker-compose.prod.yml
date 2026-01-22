@@ -26,15 +26,16 @@ services:
       - "3000"
     environment:
       - NODE_ENV=production
-      # Limit Node.js memory to prevent OOM
-      - NODE_OPTIONS=--max-old-space-size=512
-    # Resource limits
+      # PERFORMANCE FIX: Increased memory for stable operation
+      # Next.js standalone needs more memory for SSR + serving static files
+      - NODE_OPTIONS=--max-old-space-size=1024
+    # Resource limits - increased for stable performance
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 1536M
         reservations:
-          memory: 256M
+          memory: 512M
     depends_on:
       - api
     healthcheck:
