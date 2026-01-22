@@ -2,9 +2,45 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { OnboardingDialog, InlineHelp } from '@/components/help';
+import { useHelpStore } from '@/stores/help-store';
+
+function OnboardingResetSection() {
+  const { resetAllOnboardings, seenOnboardings } = useHelpStore();
+  const hasSeenAny = Object.values(seenOnboardings).some(v => v === true);
+
+  if (!hasSeenAny) return null;
+
+  return (
+    <Card className="rounded-2xl border shadow-soft">
+      <CardHeader>
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <HelpCircle className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <CardTitle>Hilfe & Onboarding</CardTitle>
+            <CardDescription>
+              Setzen Sie die Hilfe-Popups zurück, um sie erneut anzuzeigen
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Button
+          onClick={() => resetAllOnboardings()}
+          variant="outline"
+          className="rounded-xl"
+        >
+          Alle Hilfe-Popups zurücksetzen
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 const settingsCards = [
   {
@@ -86,6 +122,9 @@ export default function SettingsPage() {
         </Link>
       ))}
       </div>
+
+      {/* Hilfe & Onboarding Section */}
+      <OnboardingResetSection />
     </div>
   );
 }
