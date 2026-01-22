@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@poa/database';
 
 // Connection pool configuration via DATABASE_URL query params:
@@ -6,8 +11,9 @@ import { PrismaClient } from '@poa/database';
 // &pool_timeout=20 - Max time to wait for connection (seconds)
 // &connect_timeout=10 - Max time for initial connection (seconds)
 
-// Keep-alive interval - more aggressive than default to prevent cold connections
-const KEEPALIVE_INTERVAL_MS = 10000; // 10 seconds (reduced from 15s for better warmth)
+// Keep-alive interval - balanced between preventing cold connections and reducing load
+// PERFORMANCE FIX: Increased from 10s to 30s to reduce database load
+const KEEPALIVE_INTERVAL_MS = 30000; // 30 seconds
 
 // Max consecutive failures before forcing reconnect
 const MAX_CONSECUTIVE_FAILURES = 3;
@@ -45,18 +51,23 @@ export class PrismaService
       try {
         const startTime = Date.now();
         await this.$connect();
-        this.logger.log(`Database connected in ${Date.now() - startTime}ms (attempt ${attempt})`);
+        this.logger.log(
+          `Database connected in ${Date.now() - startTime}ms (attempt ${attempt})`,
+        );
 
         // Warmup - establish multiple connections in the pool
         await this.warmupConnectionPool();
         return;
       } catch (error) {
-        this.logger.error(`Database connection attempt ${attempt}/${maxRetries} failed:`, error);
+        this.logger.error(
+          `Database connection attempt ${attempt}/${maxRetries} failed:`,
+          error,
+        );
         if (attempt === maxRetries) {
           throw error;
         }
         // Wait before retry (exponential backoff)
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       }
     }
   }
@@ -70,9 +81,9 @@ export class PrismaService
       const startTime = Date.now();
 
       // Phase 1: Basic connection warmup (5 parallel SELECT 1)
-      const basicWarmup = Array(5).fill(null).map(() =>
-        this.$queryRaw`SELECT 1`
-      );
+      const basicWarmup = Array(5)
+        .fill(null)
+        .map(() => this.$queryRaw`SELECT 1`);
       await Promise.all(basicWarmup);
 
       // Phase 2: Table-specific warmup to prepare query plans
@@ -80,26 +91,34 @@ export class PrismaService
       // Using LIMIT 0 or non-existent IDs to avoid returning data
       await Promise.all([
         // Warm up User table index (email lookup - used in login)
-        this.user.findFirst({
-          where: { email: 'warmup@nonexistent.local' },
-          select: { id: true },
-        }).catch(() => null),
+        this.user
+          .findFirst({
+            where: { email: 'warmup@nonexistent.local' },
+            select: { id: true },
+          })
+          .catch(() => null),
 
         // Warm up User table with company join (used in login/auth)
-        this.user.findFirst({
-          where: { id: '00000000-0000-0000-0000-000000000000' },
-          include: { company: true },
-        }).catch(() => null),
+        this.user
+          .findFirst({
+            where: { id: '00000000-0000-0000-0000-000000000000' },
+            include: { company: true },
+          })
+          .catch(() => null),
 
         // Warm up Company table
-        this.company.findFirst({
-          where: { id: '00000000-0000-0000-0000-000000000000' },
-        }).catch(() => null),
+        this.company
+          .findFirst({
+            where: { id: '00000000-0000-0000-0000-000000000000' },
+          })
+          .catch(() => null),
       ]);
 
       this.consecutiveFailures = 0;
       this.lastSuccessfulQuery = Date.now();
-      this.logger.log(`Database warmup completed in ${Date.now() - startTime}ms (connections + query plans)`);
+      this.logger.log(
+        `Database warmup completed in ${Date.now() - startTime}ms (connections + query plans)`,
+      );
     } catch (error) {
       this.logger.error('Database warmup failed:', error);
     }
@@ -117,7 +136,9 @@ export class PrismaService
       await this.performKeepAlive();
     }, KEEPALIVE_INTERVAL_MS);
 
-    this.logger.log(`Database keep-alive enabled (${KEEPALIVE_INTERVAL_MS / 1000}s interval)`);
+    this.logger.log(
+      `Database keep-alive enabled (${KEEPALIVE_INTERVAL_MS / 1000}s interval)`,
+    );
   }
 
   /**
@@ -144,7 +165,10 @@ export class PrismaService
       }
     } catch (error) {
       this.consecutiveFailures++;
-      this.logger.warn(`Keep-alive failed (${this.consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`, error);
+      this.logger.warn(
+        `Keep-alive failed (${this.consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`,
+        error,
+      );
 
       // Force reconnect after too many failures
       if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
@@ -162,14 +186,16 @@ export class PrismaService
     }
 
     this.isReconnecting = true;
-    this.logger.warn('Forcing database reconnection due to consecutive failures...');
+    this.logger.warn(
+      'Forcing database reconnection due to consecutive failures...',
+    );
 
     try {
       // Disconnect
       await this.$disconnect().catch(() => {});
 
       // Wait a moment for cleanup
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Reconnect
       await this.connectWithRetry(3);
@@ -186,7 +212,11 @@ export class PrismaService
    * Check if database is healthy
    * Returns latency in ms or -1 if unhealthy
    */
-  async healthCheck(): Promise<{ healthy: boolean; latency: number; lastSuccess: number }> {
+  async healthCheck(): Promise<{
+    healthy: boolean;
+    latency: number;
+    lastSuccess: number;
+  }> {
     try {
       const startTime = Date.now();
       await this.$queryRaw`SELECT 1`;
@@ -235,8 +265,10 @@ export class PrismaService
           errorMessage.includes('closed');
 
         if (isConnectionError && attempt < maxRetries) {
-          this.logger.warn(`Query failed with connection error, retrying (${attempt}/${maxRetries})...`);
-          await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+          this.logger.warn(
+            `Query failed with connection error, retrying (${attempt}/${maxRetries})...`,
+          );
+          await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
 
           // Try to reconnect if needed
           if (attempt === maxRetries - 1) {

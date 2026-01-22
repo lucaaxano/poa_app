@@ -89,10 +89,10 @@ let lastWarmupTime = 0;
 let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
-// Warmup configuration - reduced frequency to prevent slowdowns over time
-// PERFORMANCE FIX: Further reduced to prevent accumulation of background API calls
-const BASE_WARMUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const MIN_WARMUP_INTERVAL_MS = 3 * 60 * 1000; // Minimum 3 minutes between warmups
+// Warmup configuration - minimal frequency to prevent slowdowns over time
+// PERFORMANCE FIX: Increased intervals to reduce background API calls
+const BASE_WARMUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes (increased from 5)
+const MIN_WARMUP_INTERVAL_MS = 5 * 60 * 1000; // Minimum 5 minutes between warmups
 const MAX_PAUSE_DURATION_MS = 5 * 60 * 1000; // Max 5 minutes pause after failures
 const MAX_CONSECUTIVE_FAILURES = 3; // Pause after 3 failures
 

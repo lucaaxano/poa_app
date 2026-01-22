@@ -316,6 +316,8 @@ model Claim {
   @@index([vehicleId])
   @@index([status])
   @@index([accidentDate])
+  @@index([reporterUserId])
+  @@index([driverUserId])
   @@map("claims")
 }
 
