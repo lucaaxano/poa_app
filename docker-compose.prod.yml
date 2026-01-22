@@ -199,7 +199,7 @@ services:
   storage-setup:
     image: minio/mc
     container_name: poa-storage-setup
-    restart: "no"
+    restart: 'no'
     depends_on:
       - storage
     entrypoint: >
