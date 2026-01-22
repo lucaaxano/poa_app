@@ -74,11 +74,15 @@ export function LazyChart({
     const container = containerRef.current;
     if (!container) return;
 
-    // Check dimensions immediately
     const checkDimensions = () => {
       const { width, height } = container.getBoundingClientRect();
-      if (width > 0 && height > 0) {
-        setHasValidDimensions(true);
+      // Use minimum threshold to ensure chart has enough space
+      // and prevent edge cases with very small dimensions
+      if (width >= 50 && height >= 50) {
+        // Small delay ensures layout is fully stable before rendering
+        requestAnimationFrame(() => {
+          setHasValidDimensions(true);
+        });
         return true;
       }
       return false;

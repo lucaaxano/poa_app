@@ -44,6 +44,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi, type CompanyBroker, type Invitation } from '@/lib/api/auth';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/api/client';
+import { OnboardingDialog } from '@/components/help';
 
 export default function BrokerSettingsPage() {
   const [search, setSearch] = useState('');
@@ -130,6 +131,7 @@ export default function BrokerSettingsPage() {
 
   return (
     <div className="space-y-6">
+      <OnboardingDialog pageKey="broker-settings" />
       <Tabs defaultValue="brokers" className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="rounded-xl">

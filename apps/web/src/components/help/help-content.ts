@@ -2,7 +2,7 @@ import type { UserRole } from '@poa/shared';
 
 // Page keys for onboarding dialogs
 export type PageKey = 'dashboard' | 'claims' | 'vehicles' | 'reports' | 'settings'
-  | 'users' | 'company' | 'policies' | 'broker' | 'broker-requests';
+  | 'users' | 'company' | 'policies' | 'broker' | 'broker-requests' | 'broker-settings';
 
 // Help topic keys for inline help popovers
 export type HelpTopicKey =
@@ -128,6 +128,16 @@ export const onboardingContent: Record<PageKey, OnboardingContent> = {
       'Pruefen Sie neue Anfragen regelmaessig',
       'Akzeptieren Sie Anfragen, um Zugriff auf die Firma zu erhalten',
       'Abgelehnte Anfragen koennen nicht rueckgaengig gemacht werden',
+    ],
+  },
+  'broker-settings': {
+    title: 'Broker-Verwaltung',
+    description:
+      'Hier verwalten Sie die Broker, die Zugriff auf Ihre Firmendaten haben. Sie koennen neue Broker einladen oder bestehende Verbindungen entfernen.',
+    tips: [
+      'Laden Sie Broker per E-Mail-Adresse ein',
+      'Broker koennen Ihre Schadenfaelle einsehen und bearbeiten',
+      'Entfernen Sie Broker, wenn die Zusammenarbeit beendet ist',
     ],
   },
 };
