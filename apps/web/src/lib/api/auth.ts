@@ -12,6 +12,7 @@ export interface Company {
   numEmployees?: number | null;
   numVehicles?: number | null;
   settings?: Record<string, unknown> | null;
+  logoUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }

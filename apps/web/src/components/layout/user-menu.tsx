@@ -42,13 +42,27 @@ export const UserMenu = memo(function UserMenu() {
   const initials = getInitials(user?.firstName, user?.lastName);
   const fullName = user ? `${user.firstName} ${user.lastName}` : 'Benutzer';
 
+  // DEBUG: Remove after testing
+  console.log('UserMenu - company:', company);
+  console.log('UserMenu - logoUrl:', company?.logoUrl);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium">
-            {initials}
-          </div>
+          {company?.logoUrl ? (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-muted">
+              <img
+                src={company.logoUrl}
+                alt={company.name || 'Firmenlogo'}
+                className="h-full w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+              {initials}
+            </div>
+          )}
           <div className="hidden md:flex flex-col items-start">
             <span className="text-sm font-medium">{user?.firstName}</span>
           </div>

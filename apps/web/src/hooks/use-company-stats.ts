@@ -11,6 +11,7 @@ import {
   CategoryStatsItem,
   QuotaStats,
 } from '@/lib/api/companies';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Company } from '@poa/shared';
 
 // Query Keys
@@ -101,6 +102,9 @@ export function useUploadLogo() {
     mutationFn: (file: File) => companiesApi.uploadLogo(file),
     onSuccess: (updatedCompany) => {
       queryClient.setQueryData(companyKeys.current(), updatedCompany);
+      // Update Auth Store so UserMenu shows new logo
+      const { user, setUser } = useAuthStore.getState();
+      setUser(user, updatedCompany);
     },
   });
 }
@@ -112,6 +116,9 @@ export function useDeleteLogo() {
     mutationFn: () => companiesApi.deleteLogo(),
     onSuccess: (updatedCompany) => {
       queryClient.setQueryData(companyKeys.current(), updatedCompany);
+      // Update Auth Store so UserMenu removes logo
+      const { user, setUser } = useAuthStore.getState();
+      setUser(user, updatedCompany);
     },
   });
 }
