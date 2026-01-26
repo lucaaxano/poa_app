@@ -104,7 +104,7 @@ export function useUploadLogo() {
       queryClient.setQueryData(companyKeys.current(), updatedCompany);
       // Update Auth Store so UserMenu shows new logo
       const { user, setUser } = useAuthStore.getState();
-      setUser(user, updatedCompany);
+      setUser(user, updatedCompany as any);
     },
   });
 }
@@ -118,7 +118,7 @@ export function useDeleteLogo() {
       queryClient.setQueryData(companyKeys.current(), updatedCompany);
       // Update Auth Store so UserMenu removes logo
       const { user, setUser } = useAuthStore.getState();
-      setUser(user, updatedCompany);
+      setUser(user, updatedCompany as any);
     },
   });
 }
