@@ -142,28 +142,32 @@ services:
       - coolify
 
   # ===========================================
-  # MinIO Setup - Creates bucket on startup
+  # MinIO Setup - Creates bucket (run manually with --profile storage-setup)
+  # Usage: docker compose --profile storage-setup up storage-setup
   # ===========================================
   storage-setup:
     image: minio/mc
     container_name: poa-storage-setup
+    restart: "no"
     depends_on:
       - storage
     entrypoint: >
       /bin/sh -c "
       echo 'Waiting for MinIO to start...';
       sleep 15;
+      echo 'Configuring MinIO...';
       mc alias set myminio http://storage:9000 $${MINIO_ACCESS_KEY:-minioadmin} $${MINIO_SECRET_KEY:-minioadmin};
       mc mb myminio/poa-uploads --ignore-existing;
       mc anonymous set download myminio/poa-uploads;
-      echo 'MinIO bucket configured!';
-      exit 0;
+      echo 'MinIO bucket configured successfully!';
       "
     environment:
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
     networks:
       - poa-network
+    profiles:
+      - storage-setup
 
 volumes:
   postgres_data:
