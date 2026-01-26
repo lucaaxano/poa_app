@@ -42,10 +42,6 @@ export const UserMenu = memo(function UserMenu() {
   const initials = getInitials(user?.firstName, user?.lastName);
   const fullName = user ? `${user.firstName} ${user.lastName}` : 'Benutzer';
 
-  // DEBUG: Remove after testing
-  console.log('UserMenu - company:', company);
-  console.log('UserMenu - logoUrl:', company?.logoUrl);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
