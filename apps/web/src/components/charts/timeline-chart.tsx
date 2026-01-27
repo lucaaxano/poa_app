@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -14,40 +13,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStatsTimeline } from '@/hooks/use-company-stats';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Hook to ensure container has valid dimensions before rendering chart
-function useValidDimensions() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [hasValidDimensions, setHasValidDimensions] = useState(false);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const checkDimensions = () => {
-      const { width, height } = container.getBoundingClientRect();
-      if (width > 0 && height > 0) {
-        setHasValidDimensions(true);
-        return true;
-      }
-      return false;
-    };
-
-    if (checkDimensions()) return;
-
-    // Use ResizeObserver to wait for valid dimensions
-    const resizeObserver = new ResizeObserver(() => {
-      if (checkDimensions()) {
-        resizeObserver.disconnect();
-      }
-    });
-    resizeObserver.observe(container);
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  return { containerRef, hasValidDimensions };
-}
 
 interface TimelineChartProps {
   period?: 'week' | 'month';
@@ -100,7 +65,6 @@ export function TimelineChart({
   className,
 }: TimelineChartProps) {
   const { data, isLoading, error } = useStatsTimeline(period, range);
-  const { containerRef, hasValidDimensions } = useValidDimensions();
 
   if (isLoading) {
     return (
@@ -141,10 +105,7 @@ export function TimelineChart({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div ref={containerRef} className="h-[300px]">
-          {!hasValidDimensions ? (
-            <Skeleton className="h-full w-full" />
-          ) : (
+        <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
             <LineChart
               data={chartData}
@@ -223,7 +184,6 @@ export function TimelineChart({
               )}
             </LineChart>
           </ResponsiveContainer>
-          )}
         </div>
       </CardContent>
     </Card>
