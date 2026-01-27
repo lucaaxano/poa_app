@@ -281,4 +281,28 @@ export class EmailService implements OnModuleInit {
       },
     });
   }
+
+  async sendInvitationAcceptedNotification(
+    to: string,
+    adminName: string,
+    inviteeName: string,
+    inviteeEmail: string,
+    role: string,
+    companyName: string,
+    dashboardLink: string,
+  ): Promise<SendEmailResult> {
+    return this.sendEmail({
+      to,
+      subject: `Einladung angenommen: ${inviteeName} - POA`,
+      template: 'invitation-accepted',
+      context: {
+        adminName,
+        inviteeName,
+        inviteeEmail,
+        role: role === 'EMPLOYEE' ? 'Mitarbeiter' : 'Broker',
+        companyName,
+        dashboardLink,
+      },
+    });
+  }
 }

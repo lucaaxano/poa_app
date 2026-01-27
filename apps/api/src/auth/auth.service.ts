@@ -853,7 +853,7 @@ export class AuthService {
         acceptedAt: null,
         expiresAt: { gt: new Date() },
       },
-      include: { company: true },
+      include: { company: true, invitedBy: true },
     });
 
     // Verify the full token and handle legacy tokens
@@ -872,7 +872,7 @@ export class AuthService {
           acceptedAt: null,
           expiresAt: { gt: new Date() },
         },
-        include: { company: true },
+        include: { company: true, invitedBy: true },
         take: 10, // Reduced from 100 to prevent 504 timeouts with bcrypt loops
       });
 
@@ -924,6 +924,23 @@ export class AuthService {
 
       return user;
     });
+
+    // Notify the inviting admin (fire-and-forget)
+    if (validInvitation.invitedBy) {
+      const admin = validInvitation.invitedBy;
+      const dashboardLink = `${this.appUrl}/dashboard/users`;
+      this.emailService.sendInvitationAcceptedNotification(
+        admin.email,
+        admin.firstName || admin.email,
+        `${dto.firstName} ${dto.lastName}`,
+        validInvitation.email,
+        validInvitation.role,
+        validInvitation.company.name,
+        dashboardLink,
+      ).catch((error) => {
+        this.logger.error(`Failed to send invitation accepted notification to ${admin.email}: ${error.message}`);
+      });
+    }
 
     // Generate tokens
     const tokens = await this.generateTokens(result.id, result.role);
