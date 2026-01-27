@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuthStore } from '@/stores/auth-store';
 import { warmupApi } from '@/lib/api/client';
-import { claimsApi } from '@/lib/api/claims';
-import { claimKeys } from '@/hooks/use-claims';
 import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({
@@ -26,7 +23,6 @@ export default function DashboardLayout({
   const isLoading = useAuthStore((state) => state.isLoading);
   const userRole = useAuthStore((state) => state.user?.role);
 
-  const queryClient = useQueryClient();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -37,13 +33,8 @@ export default function DashboardLayout({
     if (isAuthenticated && userRole !== 'SUPERADMIN') {
       // Fire and forget - don't wait for warmup
       warmupApi().catch(() => {});
-      // Prefetch claims list so /claims page loads instantly
-      queryClient.prefetchQuery({
-        queryKey: claimKeys.list(),
-        queryFn: () => claimsApi.getAll(),
-      });
     }
-  }, [isAuthenticated, userRole, queryClient]);
+  }, [isAuthenticated, userRole]);
 
   // Redirect to login if not authenticated, or to admin if SUPERADMIN
   useEffect(() => {
