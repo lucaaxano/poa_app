@@ -41,26 +41,7 @@ function useValidDimensions() {
     });
     resizeObserver.observe(container);
 
-    // Retry after one frame — layout may not be computed yet after LazyChart transition
-    const frameId = requestAnimationFrame(() => {
-      if (checkDimensions()) {
-        resizeObserver.disconnect();
-      }
-    });
-
-    // Ultimate fallback: render chart after brief delay to prevent permanent skeleton
-    const timeoutId = setTimeout(() => {
-      if (!hasValidDimensions) {
-        setHasValidDimensions(true);
-        resizeObserver.disconnect();
-      }
-    }, 200);
-
-    return () => {
-      cancelAnimationFrame(frameId);
-      clearTimeout(timeoutId);
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
   }, []);
 
   return { containerRef, hasValidDimensions };
