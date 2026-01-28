@@ -57,8 +57,8 @@ import { OnboardingDialog } from '@/components/help';
 type PolicyFormData = {
   insurerId: string;
   policyNumber: string;
-  coverageType: 'FLEET' | 'SINGLE' | 'PARTIAL' | 'FULL';
-  pricingModel: 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET' | '';
+  coverageType: 'FLEET' | 'SINGLE_VEHICLE';
+  pricingModel: 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE' | '';
   annualPremium: string;
   deductible: string;
   quotaThreshold: string;
@@ -152,7 +152,7 @@ export default function PoliciesPage() {
 
     // Only include optional fields if they have values
     if (data.pricingModel) {
-      payload.pricingModel = data.pricingModel as 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET';
+      payload.pricingModel = data.pricingModel as 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE';
     }
     if (data.annualPremium && data.annualPremium !== '') {
       payload.annualPremium = parseFloat(data.annualPremium);
@@ -212,10 +212,8 @@ export default function PoliciesPage() {
 
   const getCoverageTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      FLEET: 'Flottenvertrag',
-      SINGLE: 'Einzelvertrag',
-      PARTIAL: 'Teilkasko',
-      FULL: 'Vollkasko',
+      FLEET: 'Flottenversicherung',
+      SINGLE_VEHICLE: 'Einzelfahrzeug',
     };
     return labels[type] || type;
   };
@@ -224,8 +222,8 @@ export default function PoliciesPage() {
     if (!model) return '-';
     const labels: Record<string, string> = {
       QUOTA: 'Quotenmodell',
-      PER_PIECE: 'Stueckpreismodell',
-      SMALL_FLEET: 'Kleinflotte',
+      FLAT_RATE: 'Pauschale',
+      PER_VEHICLE: 'Pro Fahrzeug',
     };
     return labels[model] || model;
   };
@@ -381,7 +379,7 @@ export default function PoliciesPage() {
                 <Label htmlFor="coverageType">Deckungstyp *</Label>
                 <Select
                   value={watchedCoverageType}
-                  onValueChange={(value: 'FLEET' | 'SINGLE' | 'PARTIAL' | 'FULL') =>
+                  onValueChange={(value: 'FLEET' | 'SINGLE_VEHICLE') =>
                     setValue('coverageType', value)
                   }
                 >
@@ -389,10 +387,8 @@ export default function PoliciesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="FLEET">Flottenvertrag</SelectItem>
-                    <SelectItem value="SINGLE">Einzelvertrag</SelectItem>
-                    <SelectItem value="PARTIAL">Teilkasko</SelectItem>
-                    <SelectItem value="FULL">Vollkasko</SelectItem>
+                    <SelectItem value="FLEET">Flottenversicherung</SelectItem>
+                    <SelectItem value="SINGLE_VEHICLE">Einzelfahrzeug</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -401,15 +397,15 @@ export default function PoliciesPage() {
                 <Label htmlFor="pricingModel">Preismodell</Label>
                 <Select
                   value={watch('pricingModel')}
-                  onValueChange={(value) => setValue('pricingModel', value as 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET' | '')}
+                  onValueChange={(value) => setValue('pricingModel', value as 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE' | '')}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Preismodell waehlen" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="QUOTA">Quotenmodell</SelectItem>
-                    <SelectItem value="PER_PIECE">Stueckpreismodell</SelectItem>
-                    <SelectItem value="SMALL_FLEET">Kleinflotte</SelectItem>
+                    <SelectItem value="FLAT_RATE">Pauschale</SelectItem>
+                    <SelectItem value="PER_VEHICLE">Pro Fahrzeug</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

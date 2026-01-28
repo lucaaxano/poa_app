@@ -11,8 +11,8 @@ export interface Policy {
   companyId: string;
   insurerId: string;
   policyNumber: string;
-  coverageType: 'FLEET' | 'SINGLE' | 'PARTIAL' | 'FULL';
-  pricingModel: 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET' | null;
+  coverageType: 'FLEET' | 'SINGLE_VEHICLE';
+  pricingModel: 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE' | null;
   annualPremium: number | null;
   deductible: number | null;
   quotaThreshold: number | null;
@@ -32,8 +32,8 @@ export interface Policy {
 export interface CreatePolicyData {
   insurerId: string;
   policyNumber: string;
-  coverageType?: 'FLEET' | 'SINGLE' | 'PARTIAL' | 'FULL';
-  pricingModel?: 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET';
+  coverageType?: 'FLEET' | 'SINGLE_VEHICLE';
+  pricingModel?: 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE';
   annualPremium?: number;
   deductible?: number;
   quotaThreshold?: number;
@@ -45,8 +45,8 @@ export interface CreatePolicyData {
 export interface UpdatePolicyData {
   insurerId?: string;
   policyNumber?: string;
-  coverageType?: 'FLEET' | 'SINGLE' | 'PARTIAL' | 'FULL';
-  pricingModel?: 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET';
+  coverageType?: 'FLEET' | 'SINGLE_VEHICLE';
+  pricingModel?: 'QUOTA' | 'FLAT_RATE' | 'PER_VEHICLE';
   annualPremium?: number;
   deductible?: number;
   quotaThreshold?: number;
