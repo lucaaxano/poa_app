@@ -21,7 +21,7 @@ export class PoliciesService {
 
   async findByCompanyId(companyId: string): Promise<PolicyWithInsurer[]> {
     return this.prisma.policy.findMany({
-      where: { companyId },
+      where: { companyId, isActive: true },
       include: {
         insurer: {
           select: {
