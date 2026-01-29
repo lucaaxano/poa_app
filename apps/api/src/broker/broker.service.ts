@@ -75,8 +75,8 @@ export class BrokerService {
       };
     }
 
-    // Aggregate counts
-    const [totalClaims, totalVehicles, totalUsers, claimsByStatus, claimsByCompany] =
+    // Aggregate counts - all queries run in parallel for performance
+    const [totalClaims, totalVehicles, totalUsers, claimsByStatus, claimsByCompany, pendingClaimsByCompany] =
       await Promise.all([
         // Total claims
         this.prisma.claim.count({
@@ -102,17 +102,16 @@ export class BrokerService {
           where: { companyId: { in: companyIds } },
           _count: { companyId: true },
         }),
+        // Pending claims count per company (moved into Promise.all for parallel execution)
+        this.prisma.claim.groupBy({
+          by: ['companyId'],
+          where: {
+            companyId: { in: companyIds },
+            status: { in: [ClaimStatus.SUBMITTED, ClaimStatus.APPROVED] },
+          },
+          _count: { companyId: true },
+        }),
       ]);
-
-    // Get pending claims count per company
-    const pendingClaimsByCompany = await this.prisma.claim.groupBy({
-      by: ['companyId'],
-      where: {
-        companyId: { in: companyIds },
-        status: { in: [ClaimStatus.SUBMITTED, ClaimStatus.APPROVED] },
-      },
-      _count: { companyId: true },
-    });
 
     // Transform claims by status to object
     const claimsByStatusObj: Record<string, number> = {};

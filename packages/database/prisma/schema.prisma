@@ -391,6 +391,7 @@ model BrokerCompanyLink {
   company       Company   @relation(fields: [companyId], references: [id])
 
   @@unique([brokerUserId, companyId])
+  @@index([brokerUserId])
   @@map("broker_company_links")
 }
 

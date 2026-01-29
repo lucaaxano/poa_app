@@ -187,15 +187,23 @@ export const startApiWarmup = (): void => {
   }, BASE_WARMUP_INTERVAL_MS);
 
   // Visibility handler - warmup when user returns to tab after long absence
-  // PERFORMANCE FIX: Increased threshold to reduce unnecessary API calls
+  // PERFORMANCE FIX: Non-blocking warmup with short timeout to prevent 504 errors
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       // Only warmup if authenticated and visible
       if (document.visibilityState === 'visible' && !isLoggingOut && getAccessToken()) {
         // Only warmup if tab was hidden for more than 5 minutes
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
-        if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold (was 30s)
-          warmupApi(true).catch(() => {});
+        if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold
+          // Non-blocking warmup with short timeout - don't block UI on slow response
+          axios.get(`${API_URL}/warmup`, { timeout: 3000 })
+            .then(() => {
+              lastWarmupTime = Date.now();
+              isApiWarmedUp = true;
+            })
+            .catch(() => {
+              // Silent failure - real API calls handle their own retry logic
+            });
         }
       }
     };
