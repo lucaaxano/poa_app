@@ -249,12 +249,12 @@ export const authApi = {
   },
 
   async getProfileFast(): Promise<ProfileResponse> {
-    // Fast-fail version - no retries, short timeout
+    // Fast-fail version - no retries, longer timeout for cold-start scenarios
     // Used for background verification after visibility change
     const token = getAccessToken();
     const response = await axios.get<ProfileResponse>(`${API_URL}/auth/me`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      timeout: 5000, // 5 second max
+      timeout: 8000, // 8 seconds - allows for cold-start DB warmup
     });
     return response.data;
   },

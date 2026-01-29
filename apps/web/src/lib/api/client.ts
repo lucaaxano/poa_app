@@ -551,9 +551,13 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       }
-      // After retries failed, don't logout - just report error
+      // After retries failed, provide user-friendly error message
       console.error('[API] Network error persists after retries');
-      return Promise.reject(error);
+      const userFriendlyError = new Error(
+        'Verbindung zum Server fehlgeschlagen. Bitte laden Sie die Seite neu.'
+      );
+      (userFriendlyError as Error & { isConnectionError: boolean }).isConnectionError = true;
+      return Promise.reject(userFriendlyError);
     }
 
     // Handle Axios timeout errors (ECONNABORTED)
