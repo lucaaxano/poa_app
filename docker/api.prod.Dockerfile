@@ -73,4 +73,4 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 # Run migrations and start the application
-CMD ["sh", "-c", "cd /app/packages/database && npx prisma migrate deploy && cd /app/apps/api && node dist/apps/api/src/main.js"]
+CMD ["sh", "-c", "cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && node dist/apps/api/src/main.js"]

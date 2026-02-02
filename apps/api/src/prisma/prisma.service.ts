@@ -40,7 +40,16 @@ export class PrismaService
   }
 
   async onModuleInit() {
-    await this.connectWithRetry();
+    try {
+      await this.connectWithRetry();
+    } catch (error) {
+      this.logger.error(
+        'CRITICAL: Database connection failed at startup. ' +
+        'App will start WITHOUT database connectivity. ' +
+        'Keep-alive will attempt reconnection.',
+        error,
+      );
+    }
     this.startKeepAlive();
   }
 

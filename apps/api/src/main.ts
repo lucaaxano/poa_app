@@ -5,6 +5,21 @@ import { AppModule } from './app.module';
 import { Request, Response, NextFunction } from 'express';
 import compression from 'compression';
 
+const crashLogger = new Logger('CrashPrevention');
+
+process.on('uncaughtException', (error: Error) => {
+  crashLogger.error(
+    `Uncaught exception (process NOT crashing): ${error.message}`,
+    error.stack,
+  );
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+  crashLogger.error(
+    `Unhandled promise rejection (process NOT crashing): ${reason}`,
+  );
+});
+
 // Global request timeout - respond BEFORE reverse proxy times out
 // Coolify/Caddy default is ~30s, so we use 25s to ensure we respond first
 const REQUEST_TIMEOUT_MS = 25000;
@@ -159,9 +174,19 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Handle SIGTERM/SIGINT for clean container shutdown
+  const SHUTDOWN_TIMEOUT_MS = 10000;
   const shutdown = async (signal: string) => {
     logger.log(`Received ${signal}, starting graceful shutdown...`);
-    await app.close();
+    const shutdownTimer = setTimeout(() => {
+      logger.error(`Graceful shutdown timed out after ${SHUTDOWN_TIMEOUT_MS}ms, forcing exit`);
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS);
+    shutdownTimer.unref();
+    try {
+      await app.close();
+    } catch (error) {
+      logger.error('Error during graceful shutdown:', error);
+    }
     process.exit(0);
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
@@ -171,4 +196,7 @@ async function bootstrap() {
   logger.log(`Health check: http://localhost:${port}/api/health`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('FATAL: Bootstrap failed:', error);
+  process.exit(1);
+});

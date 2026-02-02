@@ -85,13 +85,20 @@ services:
       - "caddy.reverse_proxy.transport.http.response_header_timeout=60s"
       - "caddy.reverse_proxy.transport.http.read_timeout=60s"
       - "caddy.reverse_proxy.transport.http.write_timeout=60s"
+      # CORS middleware - ensures CORS headers even on proxy error responses
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowheaders=Content-Type,Authorization,Accept,Origin,X-Requested-With"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://poa-platform.de,https://www.poa-platform.de"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=86400"
+      - "traefik.http.routers.poa-api.middlewares=api-cors"
     stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
-      interval: 45s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 2
+      start_period: 45s
     deploy:
       resources:
         limits:
