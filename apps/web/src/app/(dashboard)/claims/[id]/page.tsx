@@ -128,7 +128,9 @@ export default function ClaimDetailPage() {
   const canApprove = isAdmin && claim?.status === ClaimStatus.SUBMITTED;
   const canReject = isAdmin && claim?.status === ClaimStatus.SUBMITTED;
   const canSubmit = (isAdmin || isReporter) && claim?.status === ClaimStatus.DRAFT;
+  const hasPolicyWithInsurer = !!(claim?.policy && claim.policy.insurer);
   const canSend = isAdmin && claim?.status === ClaimStatus.APPROVED;
+  const canSendReady = canSend && hasPolicyWithInsurer;
   const canEdit = (isAdmin || isReporter) &&
     (claim?.status === ClaimStatus.DRAFT || claim?.status === ClaimStatus.REJECTED);
 
@@ -350,18 +352,25 @@ export default function ClaimDetailPage() {
             </Button>
           )}
           {canSend && (
-            <Button
-              onClick={handleSend}
-              disabled={sendMutation.isPending}
-              className="rounded-xl bg-purple-600 hover:bg-purple-700"
-            >
-              {sendMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="mr-2 h-4 w-4" />
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                onClick={handleSend}
+                disabled={sendMutation.isPending || !hasPolicyWithInsurer}
+                className="rounded-xl bg-purple-600 hover:bg-purple-700"
+              >
+                {sendMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                An Versicherung senden
+              </Button>
+              {!hasPolicyWithInsurer && (
+                <p className="text-xs text-destructive">
+                  Bitte zuerst eine Police zuweisen
+                </p>
               )}
-              An Versicherung senden
-            </Button>
+            </div>
           )}
         </div>
       </div>
