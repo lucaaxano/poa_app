@@ -109,7 +109,23 @@ export function CategoryPieChart({
                 paddingAngle={2}
                 dataKey="value"
                 nameKey="name"
-                label={({ payload }) => `${payload?.percentage || 0}%`}
+                label={({ cx: labelCx, cy: labelCy, midAngle, outerRadius: or, payload }) => {
+                  const RADIAN = Math.PI / 180;
+                  const radius = (or as number) + 18;
+                  const x = (labelCx as number) + radius * Math.cos(-midAngle * RADIAN);
+                  const y = (labelCy as number) + radius * Math.sin(-midAngle * RADIAN);
+                  return (
+                    <text
+                      x={x}
+                      y={y}
+                      textAnchor={x > (labelCx as number) ? 'start' : 'end'}
+                      dominantBaseline="central"
+                      className="fill-foreground text-xs"
+                    >
+                      {`${payload?.percentage || 0}%`}
+                    </text>
+                  );
+                }}
                 labelLine={false}
               >
                 {chartData.map((entry, index) => (
