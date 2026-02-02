@@ -97,22 +97,22 @@ export function CategoryPieChart({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[280px]">
+        <div className="h-[280px] overflow-visible">
           <ResponsiveContainer width="100%" height="100%" minWidth={100} minHeight={100}>
-            <PieChart>
+            <PieChart style={{ overflow: 'visible' }}>
               <Pie
                 data={chartData}
                 cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
+                cy="45%"
+                innerRadius={50}
+                outerRadius={75}
                 paddingAngle={2}
                 dataKey="value"
                 nameKey="name"
                 label={({ cx: labelCx, cy: labelCy, midAngle, outerRadius: or, payload }) => {
                   const RADIAN = Math.PI / 180;
                   const angle = midAngle ?? 0;
-                  const radius = (or as number) + 18;
+                  const radius = (or as number) + 14;
                   const x = (labelCx as number) + radius * Math.cos(-angle * RADIAN);
                   const y = (labelCy as number) + radius * Math.sin(-angle * RADIAN);
                   return (
