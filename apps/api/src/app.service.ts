@@ -78,10 +78,10 @@ export class AppService {
       // Primary DB connection check
       await this.prisma.$queryRaw`SELECT 1`;
 
-      // Warm up critical model query paths (fire-and-forget, non-blocking)
+      // Warm up critical model query paths
       // These queries use non-existent UUIDs so they return quickly but still
       // warm up the Prisma query engine and connection pool for these models
-      Promise.all([
+      await Promise.all([
         this.prisma.user.findFirst({
           where: { id: '00000000-0000-0000-0000-000000000000' },
           select: { id: true },

@@ -12,9 +12,9 @@ import { PrismaClient } from '@poa/database';
 // &connect_timeout=10 - Max time for initial connection (seconds)
 
 // Keep-alive interval - balance between connection freshness and server load
-// Reduced from 60s to 30s to prevent stale connections after inactivity
-// This helps avoid 504 timeouts on first request after idle period
-const KEEPALIVE_INTERVAL_MS = 30000; // 30 seconds
+// 45s interval coordinates with Docker healthcheck (also 45s) for ~1 ping every 22s
+// Stays within PostgreSQL tcp_keepalives_idle of 30s
+const KEEPALIVE_INTERVAL_MS = 45000; // 45 seconds
 
 // Max consecutive failures before forcing reconnect
 const MAX_CONSECUTIVE_FAILURES = 3;
@@ -74,46 +74,43 @@ export class PrismaService
   }
 
   /**
-   * Warmup the connection pool with parallel queries
-   * Includes table-specific queries to warm up query plans
+   * Warmup the connection pool with queries
+   * Phase 1: parallel connection warmup (reduced to 3 to limit pool usage)
+   * Phase 2: sequential table warmups (reuses already-opened connections)
    */
   private async warmupConnectionPool(): Promise<void> {
     try {
       const startTime = Date.now();
 
-      // Phase 1: Basic connection warmup (5 parallel SELECT 1)
-      const basicWarmup = Array(5)
+      // Phase 1: Basic connection warmup (3 parallel SELECT 1)
+      // Reduced from 5 to limit pool usage to ~15% instead of ~40%
+      const basicWarmup = Array(3)
         .fill(null)
         .map(() => this.$queryRaw`SELECT 1`);
       await Promise.all(basicWarmup);
 
       // Phase 2: Table-specific warmup to prepare query plans
-      // These queries warm up the most critical paths (login, auth check)
-      // Using LIMIT 0 or non-existent IDs to avoid returning data
-      await Promise.all([
-        // Warm up User table index (email lookup - used in login)
-        this.user
-          .findFirst({
-            where: { email: 'warmup@nonexistent.local' },
-            select: { id: true },
-          })
-          .catch(() => null),
+      // Run sequentially to reuse already-opened connections from Phase 1
+      // Using non-existent IDs to return quickly but still warm up query plans
+      await this.user
+        .findFirst({
+          where: { email: 'warmup@nonexistent.local' },
+          select: { id: true },
+        })
+        .catch(() => null);
 
-        // Warm up User table with company join (used in login/auth)
-        this.user
-          .findFirst({
-            where: { id: '00000000-0000-0000-0000-000000000000' },
-            include: { company: true },
-          })
-          .catch(() => null),
+      await this.user
+        .findFirst({
+          where: { id: '00000000-0000-0000-0000-000000000000' },
+          include: { company: true },
+        })
+        .catch(() => null);
 
-        // Warm up Company table
-        this.company
-          .findFirst({
-            where: { id: '00000000-0000-0000-0000-000000000000' },
-          })
-          .catch(() => null),
-      ]);
+      await this.company
+        .findFirst({
+          where: { id: '00000000-0000-0000-0000-000000000000' },
+        })
+        .catch(() => null);
 
       this.consecutiveFailures = 0;
       this.lastSuccessfulQuery = Date.now();
@@ -282,6 +279,34 @@ export class PrismaService
     }
 
     throw lastError;
+  }
+
+  /**
+   * Execute a database operation with a timeout.
+   * Prevents single slow queries from blocking the connection pool.
+   * Use for critical endpoints like dashboard aggregations and list queries.
+   */
+  async withTimeout<T>(
+    operation: () => Promise<T>,
+    timeoutMs = 10000,
+  ): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(
+          new Error(`Query timed out after ${timeoutMs}ms`),
+        );
+      }, timeoutMs);
+
+      operation()
+        .then((result) => {
+          clearTimeout(timer);
+          resolve(result);
+        })
+        .catch((error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+    });
   }
 
   async onModuleDestroy() {

@@ -89,6 +89,9 @@ let lastWarmupTime = 0;
 let consecutiveFailures = 0;
 let warmupPausedUntil = 0;
 
+// Tracks the currently running warmup so requests can wait for it
+let activeWarmupPromise: Promise<boolean> | null = null;
+
 // PERFORMANCE FIX: Drastically reduced warmup frequency
 // The API client has built-in retry logic, so warmup is mostly redundant
 // These settings minimize background API calls to reduce server load
@@ -187,7 +190,7 @@ export const startApiWarmup = (): void => {
   }, BASE_WARMUP_INTERVAL_MS);
 
   // Visibility handler - warmup when user returns to tab after long absence
-  // PERFORMANCE FIX: Non-blocking warmup with short timeout to prevent 504 errors
+  // Stores the promise so the request interceptor can wait for it
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       // Only warmup if authenticated and visible
@@ -195,14 +198,18 @@ export const startApiWarmup = (): void => {
         // Only warmup if tab was hidden for more than 5 minutes
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
         if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold
-          // Non-blocking warmup with short timeout - don't block UI on slow response
-          axios.get(`${API_URL}/warmup`, { timeout: 3000 })
+          // Store the warmup promise so the request interceptor can await it
+          activeWarmupPromise = axios.get(`${API_URL}/warmup`, { timeout: 3000 })
             .then(() => {
               lastWarmupTime = Date.now();
               isApiWarmedUp = true;
+              return true;
             })
             .catch(() => {
-              // Silent failure - real API calls handle their own retry logic
+              return false;
+            })
+            .finally(() => {
+              activeWarmupPromise = null;
             });
         }
       }
@@ -420,13 +427,22 @@ const performTokenRefresh = async (retryCount = 0): Promise<{ accessToken: strin
 
 // Request interceptor - add auth header, set dynamic timeout, track requests, and check token expiry
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     // Skip request if logging out - prevents timeout errors
     if (isLoggingOut) {
       const controller = new AbortController();
       controller.abort();
       config.signal = controller.signal;
       return config;
+    }
+
+    // If a visibility-change warmup is in progress, wait for it (max 3s)
+    // This prevents requests from failing after returning from an idle tab
+    if (activeWarmupPromise) {
+      await Promise.race([
+        activeWarmupPromise,
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
     }
 
     // Create AbortController for this request and register it

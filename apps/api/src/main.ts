@@ -3,6 +3,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { Request, Response, NextFunction } from 'express';
+import compression from 'compression';
 
 // Global request timeout - respond BEFORE reverse proxy times out
 // Coolify/Caddy default is ~30s, so we use 25s to ensure we respond first
@@ -74,6 +75,14 @@ async function bootstrap() {
   });
 
   // ===========================================
+  // Response Compression - reduces transfer size by 60-80%
+  // ===========================================
+  expressApp.use(compression({
+    threshold: 1024, // Only compress responses > 1KB
+    level: 6,        // Standard compression level
+  }));
+
+  // ===========================================
   // CRITICAL: Global Request Timeout Middleware
   // ===========================================
   // This ensures ALL requests have a timeout to prevent 504 Gateway Timeout
@@ -104,14 +113,12 @@ async function bootstrap() {
   // SLOW REQUEST LOGGING MIDDLEWARE
   // ===========================================
   // Log requests that take longer than 3 seconds to help diagnose timeout issues
-  const requestTimings = new Map<Response, number>();
-
+  // Uses res.locals instead of a Map to avoid memory leaks if 'finish' event doesn't fire
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
-    requestTimings.set(res, Date.now());
+    res.locals._startTime = Date.now();
 
     res.on('finish', () => {
-      const startTime = requestTimings.get(res);
-      requestTimings.delete(res);
+      const startTime = res.locals._startTime as number | undefined;
       if (startTime) {
         const duration = Date.now() - startTime;
         if (duration > 3000) {
@@ -135,37 +142,23 @@ async function bootstrap() {
     }),
   );
 
-  // Still enable NestJS CORS for proper integration
-  app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        return callback(null, true);
-      }
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      const isAllowed = allowedOrigins.some(allowed => {
-        const normalizedAllowed = allowed.replace(/\/$/, '');
-        return normalizedOrigin === normalizedAllowed;
-      });
-      if (isAllowed) {
-        return callback(null, origin);
-      }
-      logger.warn(`CORS blocked origin: ${origin}`);
-      return callback(null, false);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-    maxAge: 86400, // Cache preflight for 24 hours
-  });
-
   // Global prefix
   app.setGlobalPrefix('api');
 
   const port = configService.get('PORT') || 4000;
   await app.listen(port);
+
+  // Enable graceful shutdown hooks (triggers onModuleDestroy in PrismaService etc.)
+  app.enableShutdownHooks();
+
+  // Handle SIGTERM/SIGINT for clean container shutdown
+  const shutdown = async (signal: string) => {
+    logger.log(`Received ${signal}, starting graceful shutdown...`);
+    await app.close();
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 
   logger.log(`POA API is running on: http://localhost:${port}`);
   logger.log(`Health check: http://localhost:${port}/api/health`);

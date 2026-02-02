@@ -85,9 +85,10 @@ services:
       - "caddy.reverse_proxy.transport.http.response_header_timeout=60s"
       - "caddy.reverse_proxy.transport.http.read_timeout=60s"
       - "caddy.reverse_proxy.transport.http.write_timeout=60s"
+    stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
-      interval: 30s
+      interval: 45s
       timeout: 10s
       retries: 3
       start_period: 60s
@@ -149,6 +150,9 @@ services:
       # Prevent idle connections from being dropped
       - "-c"
       - "idle_in_transaction_session_timeout=60000"
+      # Hard upper bound for any single query - prevents runaway queries
+      - "-c"
+      - "statement_timeout=15000"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-poa_admin} -d ${DB_NAME:-poa_production}"]
       interval: 10s
