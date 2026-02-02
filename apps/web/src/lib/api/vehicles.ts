@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Vehicle, CreateVehicleInput, UpdateVehicleInput } from '@poa/shared';
+import type { Vehicle, CreateVehicleInput, UpdateVehicleInput, VehicleImportResult } from '@poa/shared';
 
 // Vehicles API functions
 export const vehiclesApi = {
@@ -36,6 +36,24 @@ export const vehiclesApi = {
 
   async activate(id: string): Promise<Vehicle> {
     const response = await apiClient.patch<Vehicle>(`/vehicles/${id}/activate`);
+    return response.data;
+  },
+
+  async downloadImportTemplate(): Promise<Blob> {
+    const response = await apiClient.get('/vehicles/import/template', {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  async importVehicles(file: File): Promise<VehicleImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<VehicleImportResult>(
+      '/vehicles/import',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
     return response.data;
   },
 };

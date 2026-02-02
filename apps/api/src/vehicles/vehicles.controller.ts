@@ -8,11 +8,21 @@ import {
   Body,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+  Res,
+  StreamableFile,
   Request,
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { VehiclesService } from './vehicles.service';
+import { VehiclesImportService } from './vehicles-import.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,6 +36,7 @@ import { UserRole } from '@poa/database';
 export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehiclesService,
+    private readonly vehiclesImportService: VehiclesImportService,
     private readonly brokerService: BrokerService,
   ) {}
 
@@ -61,6 +72,47 @@ export class VehiclesController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.vehiclesService.create(req.user.companyId!, createVehicleDto);
+  }
+
+  @Get('import/template')
+  @UseGuards(RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  async downloadImportTemplate(@Res({ passthrough: true }) res: Response) {
+    const buffer = await this.vehiclesImportService.generateTemplate();
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition':
+        'attachment; filename="fahrzeuge-import-vorlage.xlsx"',
+    });
+
+    return new StreamableFile(buffer);
+  }
+
+  @Post('import')
+  @UseGuards(RolesGuard)
+  @Roles('COMPANY_ADMIN', 'SUPERADMIN')
+  @UseInterceptors(FileInterceptor('file'))
+  async importVehicles(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({
+            fileType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.vehiclesImportService.parseAndValidate(
+      file.buffer,
+      req.user.companyId!,
+    );
   }
 
   // Specific routes MUST come before parameterized routes

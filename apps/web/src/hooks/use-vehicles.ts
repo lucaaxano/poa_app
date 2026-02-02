@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { vehiclesApi } from '@/lib/api/vehicles';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Vehicle, CreateVehicleInput, UpdateVehicleInput } from '@poa/shared';
+import type { Vehicle, CreateVehicleInput, UpdateVehicleInput, VehicleImportResult } from '@poa/shared';
 
 // Query Keys
 export const vehicleKeys = {
@@ -97,6 +97,17 @@ export function useActivateVehicle() {
     mutationFn: async (id: string) => {
       return vehiclesApi.activate(id);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: vehicleKeys.lists() });
+    },
+  });
+}
+
+export function useImportVehicles() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => vehiclesApi.importVehicles(file),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vehicleKeys.lists() });
     },

@@ -57,3 +57,18 @@ export interface VehicleWithStats extends Vehicle {
   claimsCount: number;
   totalClaimsCost: number;
 }
+
+export interface VehicleImportRowError {
+  row: number;
+  field: string;
+  value: string;
+  message: string;
+}
+
+export interface VehicleImportResult {
+  totalRows: number;
+  successCount: number;
+  errorCount: number;
+  errors: VehicleImportRowError[];
+  createdVehicles: { licensePlate: string; id: string }[];
+}

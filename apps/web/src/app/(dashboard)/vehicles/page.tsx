@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Plus, Search, Car, MoreHorizontal, Pencil, Archive, ArchiveRestore, Trash2, Loader2, Building2 } from 'lucide-react';
+import { Plus, Search, Car, MoreHorizontal, Pencil, Archive, ArchiveRestore, Trash2, Loader2, Building2, Upload } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,7 @@ import { VehicleType } from '@poa/shared';
 import type { Vehicle } from '@poa/shared';
 import { toast } from 'sonner';
 import { OnboardingDialog, InlineHelp } from '@/components/help';
+import { VehicleImportDialog } from '@/components/vehicles/vehicle-import-dialog';
 
 const vehicleTypeLabels: Record<VehicleType, string> = {
   [VehicleType.CAR]: 'PKW',
@@ -51,6 +52,7 @@ export default function VehiclesPage() {
   const [search, setSearch] = useState('');
   const [hideInactive, setHideInactive] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const { user, activeCompany } = useAuthStore();
   const isBroker = user?.role === 'BROKER';
@@ -156,12 +158,22 @@ export default function VehiclesPage() {
           </p>
         </div>
         {canManageVehicles && (
-          <Link href={'/vehicles/new' as Route} prefetch={false}>
-            <Button className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" />
-              Neues Fahrzeug
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setImportDialogOpen(true)}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Importieren
             </Button>
-          </Link>
+            <Link href={'/vehicles/new' as Route} prefetch={false}>
+              <Button className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                Neues Fahrzeug
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
@@ -354,6 +366,12 @@ export default function VehiclesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Import Dialog */}
+      <VehicleImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+      />
     </div>
   );
 }
