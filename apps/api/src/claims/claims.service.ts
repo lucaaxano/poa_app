@@ -302,7 +302,10 @@ export class ClaimsService {
 
     // Check if claim can be edited based on status
     const editableStatuses: ClaimStatus[] = [ClaimStatus.DRAFT, ClaimStatus.SUBMITTED, ClaimStatus.REJECTED];
-    if (!editableStatuses.includes(existingClaim.status as ClaimStatus)) {
+    const adminEditableStatuses: ClaimStatus[] = [...editableStatuses, ClaimStatus.APPROVED];
+    const isAdminRole = userRole === UserRole.COMPANY_ADMIN || userRole === UserRole.BROKER || userRole === UserRole.SUPERADMIN;
+    const allowedStatuses = isAdminRole ? adminEditableStatuses : editableStatuses;
+    if (!allowedStatuses.includes(existingClaim.status as ClaimStatus)) {
       throw new ForbiddenException(
         'Schaden kann in diesem Status nicht mehr bearbeitet werden',
       );

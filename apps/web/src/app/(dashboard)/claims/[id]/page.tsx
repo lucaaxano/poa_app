@@ -37,6 +37,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -54,7 +61,9 @@ import {
   useAddClaimComment,
   useUploadAttachment,
   useDeleteAttachment,
+  useUpdateClaim,
 } from '@/hooks/use-claims';
+import { usePolicies } from '@/hooks/use-policies';
 import { useAuthStore } from '@/stores/auth-store';
 import { ClaimStatus, DamageCategory, ClaimEventType, UserRole } from '@poa/shared';
 
@@ -113,8 +122,10 @@ export default function ClaimDetailPage() {
   const submitMutation = useSubmitClaim();
   const sendMutation = useSendClaim();
   const addCommentMutation = useAddClaimComment();
+  const updateMutation = useUpdateClaim();
   const uploadMutation = useUploadAttachment();
   const deleteMutation = useDeleteAttachment();
+  const { data: policies } = usePolicies();
 
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -163,6 +174,16 @@ export default function ClaimDetailPage() {
       toast.success('Schaden eingereicht');
     } catch (error) {
       console.error('Error submitting claim:', error);
+      toast.error(getErrorMessage(error));
+    }
+  };
+
+  const handleAssignPolicy = async (policyId: string) => {
+    try {
+      await updateMutation.mutateAsync({ id: claimId, data: { policyId } });
+      toast.success('Police zugewiesen');
+    } catch (error) {
+      console.error('Error assigning policy:', error);
       toast.error(getErrorMessage(error));
     }
   };
@@ -352,7 +373,24 @@ export default function ClaimDetailPage() {
             </Button>
           )}
           {canSend && (
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-2">
+              {!hasPolicyWithInsurer && (
+                <Select
+                  onValueChange={handleAssignPolicy}
+                  disabled={updateMutation.isPending}
+                >
+                  <SelectTrigger className="w-[250px] rounded-xl">
+                    <SelectValue placeholder="Police zuweisen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(policies?.filter((p) => p.isActive) ?? []).map((policy) => (
+                      <SelectItem key={policy.id} value={policy.id}>
+                        {policy.policyNumber} - {policy.insurer?.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Button
                 onClick={handleSend}
                 disabled={sendMutation.isPending || !hasPolicyWithInsurer}
@@ -365,11 +403,6 @@ export default function ClaimDetailPage() {
                 )}
                 An Versicherung senden
               </Button>
-              {!hasPolicyWithInsurer && (
-                <p className="text-xs text-destructive">
-                  Bitte zuerst eine Police zuweisen
-                </p>
-              )}
             </div>
           )}
         </div>
