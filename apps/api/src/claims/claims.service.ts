@@ -1190,6 +1190,7 @@ export class ClaimsService {
 
     // Only APPROVED claims can be sent
     if (claim.status !== ClaimStatus.APPROVED) {
+      this.logger.warn(`sendToInsurer failed for claim ${id}: status is ${claim.status}, expected APPROVED`);
       throw new BadRequestException(
         'Nur genehmigte Schaeden koennen an die Versicherung gesendet werden',
       );
@@ -1197,6 +1198,7 @@ export class ClaimsService {
 
     // Check if policy and insurer exist
     if (!claim.policy || !claim.policy.insurer) {
+      this.logger.warn(`sendToInsurer failed for claim ${id} (${claim.claimNumber}): no policy or insurer linked (policyId=${claim.policyId})`);
       throw new BadRequestException(
         'Der Schaden hat keine zugeordnete Versicherungspolice. Bitte zuerst eine Police zuweisen.',
       );
@@ -1204,6 +1206,7 @@ export class ClaimsService {
 
     const insurerEmail = claim.policy.insurer.claimsEmail;
     if (!insurerEmail) {
+      this.logger.warn(`sendToInsurer failed for claim ${id} (${claim.claimNumber}): insurer "${claim.policy.insurer.name}" (${claim.policy.insurer.id}) has no claimsEmail`);
       throw new BadRequestException(
         'Die Versicherung hat keine Schadens-E-Mail-Adresse hinterlegt.',
       );

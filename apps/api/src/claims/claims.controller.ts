@@ -337,8 +337,9 @@ export class ClaimsController {
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
   ): Promise<Claim> {
-    const { id: userId, companyId } = req.user;
-    return this.claimsService.submit(id, userId, companyId!);
+    const { id: userId, companyId, role } = req.user;
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.submit(id, userId, resolvedCompanyId);
   }
 
   /**
@@ -350,7 +351,8 @@ export class ClaimsController {
     @Request() req: AuthenticatedRequest,
   ): Promise<Claim> {
     const { id: userId, companyId, role } = req.user;
-    return this.claimsService.approve(id, userId, companyId!, role);
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.approve(id, userId, resolvedCompanyId, role);
   }
 
   /**
@@ -363,7 +365,8 @@ export class ClaimsController {
     @Request() req: AuthenticatedRequest,
   ): Promise<Claim> {
     const { id: userId, companyId, role } = req.user;
-    return this.claimsService.reject(id, userId, companyId!, role, dto.rejectionReason);
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.reject(id, userId, resolvedCompanyId, role, dto.rejectionReason);
   }
 
   /**
@@ -375,7 +378,8 @@ export class ClaimsController {
     @Request() req: AuthenticatedRequest,
   ): Promise<Claim> {
     const { id: userId, companyId, role } = req.user;
-    return this.claimsService.sendToInsurer(id, userId, companyId!, role);
+    const resolvedCompanyId = await this.getCompanyIdForClaim(id, userId, companyId, role);
+    return this.claimsService.sendToInsurer(id, userId, resolvedCompanyId, role);
   }
 
   /**

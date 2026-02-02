@@ -6,6 +6,8 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/api/client';
 import {
   ArrowLeft,
   CheckCircle,
@@ -133,8 +135,10 @@ export default function ClaimDetailPage() {
   const handleApprove = async () => {
     try {
       await approveMutation.mutateAsync(claimId);
+      toast.success('Schaden erfolgreich genehmigt');
     } catch (error) {
       console.error('Error approving claim:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -144,24 +148,30 @@ export default function ClaimDetailPage() {
       await rejectMutation.mutateAsync({ id: claimId, reason: rejectReason });
       setRejectDialogOpen(false);
       setRejectReason('');
+      toast.success('Schaden abgelehnt');
     } catch (error) {
       console.error('Error rejecting claim:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
   const handleSubmit = async () => {
     try {
       await submitMutation.mutateAsync(claimId);
+      toast.success('Schaden eingereicht');
     } catch (error) {
       console.error('Error submitting claim:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
   const handleSend = async () => {
     try {
       await sendMutation.mutateAsync(claimId);
+      toast.success('Schaden erfolgreich an Versicherung gesendet');
     } catch (error) {
       console.error('Error sending claim to insurer:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -170,8 +180,10 @@ export default function ClaimDetailPage() {
     try {
       await addCommentMutation.mutateAsync({ id: claimId, content: newComment });
       setNewComment('');
+      toast.success('Kommentar hinzugefuegt');
     } catch (error) {
       console.error('Error adding comment:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
@@ -181,8 +193,10 @@ export default function ClaimDetailPage() {
     for (const file of Array.from(files)) {
       try {
         await uploadMutation.mutateAsync({ id: claimId, file });
+        toast.success(`${file.name} hochgeladen`);
       } catch (error) {
         console.error('Error uploading file:', error);
+        toast.error(getErrorMessage(error));
       }
     }
   };
@@ -191,8 +205,10 @@ export default function ClaimDetailPage() {
     if (!confirm('Anhang wirklich loeschen?')) return;
     try {
       await deleteMutation.mutateAsync({ claimId, attachmentId });
+      toast.success('Anhang geloescht');
     } catch (error) {
       console.error('Error deleting attachment:', error);
+      toast.error(getErrorMessage(error));
     }
   };
 
