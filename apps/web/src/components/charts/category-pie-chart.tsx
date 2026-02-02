@@ -111,9 +111,10 @@ export function CategoryPieChart({
                 nameKey="name"
                 label={({ cx: labelCx, cy: labelCy, midAngle, outerRadius: or, payload }) => {
                   const RADIAN = Math.PI / 180;
+                  const angle = midAngle ?? 0;
                   const radius = (or as number) + 18;
-                  const x = (labelCx as number) + radius * Math.cos(-midAngle * RADIAN);
-                  const y = (labelCy as number) + radius * Math.sin(-midAngle * RADIAN);
+                  const x = (labelCx as number) + radius * Math.cos(-angle * RADIAN);
+                  const y = (labelCy as number) + radius * Math.sin(-angle * RADIAN);
                   return (
                     <text
                       x={x}
