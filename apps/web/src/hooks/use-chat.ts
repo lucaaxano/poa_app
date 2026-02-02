@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { chatApi, ChatMessage, ExtractedClaimData } from '@/lib/api/chat';
 import type { Claim } from '@poa/shared';
@@ -22,6 +22,15 @@ export function useChat() {
   const [isComplete, setIsComplete] = useState(false);
   const [extractedData, setExtractedData] =
     useState<Partial<ExtractedClaimData> | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  // Track whether the component is still mounted to prevent zombie state updates
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   /**
    * Mutation for sending chat messages
@@ -30,6 +39,9 @@ export function useChat() {
     mutationFn: (allMessages: ChatMessage[]) =>
       chatApi.sendMessage(allMessages),
     onSuccess: (response) => {
+      if (!isMountedRef.current) return;
+      setChatError(null);
+
       // Add assistant's response to messages
       setMessages((prev) => [
         ...prev,
@@ -48,16 +60,11 @@ export function useChat() {
       }
     },
     onError: (error) => {
-      // Add error message as assistant response
+      if (!isMountedRef.current) return;
       console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content:
-            'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
-        },
-      ]);
+      setChatError(
+        'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
+      );
     },
   });
 
@@ -79,6 +86,8 @@ export function useChat() {
    */
   const sendMessage = useCallback(
     (content: string) => {
+      setChatError(null);
+
       // Add user message to state
       const userMessage: ChatMessage = { role: 'user', content };
       const newMessages = [...messages, userMessage];
@@ -89,6 +98,15 @@ export function useChat() {
     },
     [messages, chatMutation]
   );
+
+  /**
+   * Retry sending the last message after an error
+   */
+  const retryLastMessage = useCallback(() => {
+    setChatError(null);
+    // Re-send current messages (last user message is already in state)
+    chatMutation.mutate(messages);
+  }, [messages, chatMutation]);
 
   /**
    * Submit the claim from the chat conversation
@@ -110,7 +128,9 @@ export function useChat() {
     setMessages([INITIAL_MESSAGE]);
     setIsComplete(false);
     setExtractedData(null);
-  }, []);
+    setChatError(null);
+    chatMutation.reset();
+  }, [chatMutation]);
 
   return {
     messages,
@@ -119,7 +139,9 @@ export function useChat() {
     isComplete,
     extractedData,
     error: chatMutation.error,
+    chatError,
     sendMessage,
+    retryLastMessage,
     submitClaim,
     resetChat,
   };

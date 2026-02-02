@@ -23,7 +23,9 @@ export function ChatContainer() {
     isSubmitting,
     isComplete,
     extractedData,
+    chatError,
     sendMessage,
+    retryLastMessage,
     submitClaim,
     resetChat,
   } = useChat();
@@ -95,6 +97,20 @@ export function ChatContainer() {
               <ChatMessageComponent key={index} message={message} />
             ))}
             {isLoading && <ChatTypingIndicator />}
+            {chatError && (
+              <div className="mx-4 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-sm">
+                <p className="text-destructive">{chatError}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={retryLastMessage}
+                  className="mt-2"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Erneut versuchen
+                </Button>
+              </div>
+            )}
             {extractedData && Object.keys(extractedData).length > 0 && (
               <ChatSummary data={extractedData} />
             )}

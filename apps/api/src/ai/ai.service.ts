@@ -12,7 +12,7 @@ import { ClaimDataValidationResult } from './dto/chat-complete.dto';
 import {
   buildClaimSystemPrompt,
   VehicleContext,
-  EXTRACTION_SYSTEM_PROMPT,
+  buildExtractionSystemPrompt,
 } from './prompts/claim-system-prompt';
 import { DamageCategory } from '@poa/database';
 
@@ -41,6 +41,7 @@ export class AiService {
 
     this.openai = new OpenAI({
       apiKey: apiKey || 'not-configured',
+      timeout: AI_CONFIG.openaiTimeoutMs,
     });
   }
 
@@ -129,20 +130,13 @@ export class AiService {
       // Check if the conversation is complete (summary has been provided)
       const isComplete = this.checkIfComplete(responseMessage);
 
-      // Try to extract partial data for preview
-      let extractedData: Partial<ExtractedClaimDataDto> | undefined;
-      if (messages.length >= 4) {
-        try {
-          extractedData = await this.extractPartialData(messages, vehicles);
-        } catch {
-          // Ignore extraction errors for partial data
-        }
-      }
+      // extractPartialData is NOT called here to avoid a second OpenAI round-trip
+      // per message (was causing timeouts). Full extraction happens in extractClaimData().
 
       return {
         message: responseMessage,
         isComplete,
-        extractedData,
+        extractedData: undefined,
         suggestedActions: isComplete
           ? ['Schaden melden', 'Korrektur vornehmen']
           : undefined,
@@ -207,7 +201,7 @@ export class AiService {
         messages: [
           {
             role: 'system',
-            content: `${EXTRACTION_SYSTEM_PROMPT}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}`,
+            content: `${buildExtractionSystemPrompt()}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}`,
           },
           { role: 'user', content: conversationText },
         ],
@@ -250,7 +244,7 @@ export class AiService {
         messages: [
           {
             role: 'system',
-            content: `${EXTRACTION_SYSTEM_PROMPT}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}\n\nWICHTIG: Setze vehicleId auf die korrekte ID basierend auf dem erwaehnte Kennzeichen.`,
+            content: `${buildExtractionSystemPrompt()}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}\n\nWICHTIG: Setze vehicleId auf die korrekte ID basierend auf dem erwaehnte Kennzeichen.`,
           },
           { role: 'user', content: conversationText },
         ],

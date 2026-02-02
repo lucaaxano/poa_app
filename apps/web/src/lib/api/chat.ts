@@ -52,9 +52,11 @@ export const chatApi = {
    * Send a chat message and get AI response
    */
   async sendMessage(messages: ChatMessage[]): Promise<ChatResponse> {
-    const response = await apiClient.post<ChatResponse>('/claims/chat', {
-      messages,
-    });
+    const response = await apiClient.post<ChatResponse>(
+      '/claims/chat',
+      { messages },
+      { timeout: 60000 },
+    );
     return response.data;
   },
 
@@ -65,10 +67,11 @@ export const chatApi = {
     messages: ChatMessage[],
     submitImmediately: boolean
   ): Promise<Claim> {
-    const response = await apiClient.post<Claim>('/claims/chat/complete', {
-      messages,
-      submitImmediately,
-    });
+    const response = await apiClient.post<Claim>(
+      '/claims/chat/complete',
+      { messages, submitImmediately },
+      { timeout: 60000 },
+    );
     return response.data;
   },
 };

@@ -116,9 +116,23 @@ WICHTIGE HINWEISE:
 }
 
 /**
- * System prompt for extracting structured data from conversation
+ * Build the system prompt for extracting structured data from conversation.
+ * Returns a fresh string each time so the current date is always up-to-date,
+ * which allows the AI to resolve relative dates like "gestern".
  */
-export const EXTRACTION_SYSTEM_PROMPT = `Du bist ein Datenextraktions-Assistent. Analysiere die Konversation und extrahiere strukturierte Schadendaten.
+export function buildExtractionSystemPrompt(): string {
+  const today = new Date();
+  const currentDate = today.toLocaleDateString('de-DE', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return `Du bist ein Datenextraktions-Assistent. Analysiere die Konversation und extrahiere strukturierte Schadendaten.
+
+AKTUELLES DATUM: ${currentDate}
+Verwende dieses Datum um relative Zeitangaben (z.B. "gestern", "letzte Woche", "vor 3 Tagen") in absolute Daten umzuwandeln.
 
 Extrahiere die folgenden Felder (falls vorhanden):
 - vehicleLicensePlate: Das Kennzeichen des betroffenen Fahrzeugs
@@ -136,3 +150,4 @@ Extrahiere die folgenden Felder (falls vorhanden):
 - estimatedCost: Geschaetzte Kosten als Zahl
 
 Antworte NUR mit einem validen JSON-Objekt, ohne zusaetzlichen Text.`;
+}

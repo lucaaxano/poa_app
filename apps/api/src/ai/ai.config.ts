@@ -11,6 +11,9 @@ export const AI_CONFIG = {
   // Max tokens per response
   maxTokens: 1000,
 
+  // OpenAI request timeout (safety net so calls don't hang forever)
+  openaiTimeoutMs: 20000,
+
   // Rate limiting
   rateLimitPerMinute: 10,
   rateLimitWindowMs: 60 * 1000, // 1 minute

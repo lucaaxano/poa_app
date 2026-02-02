@@ -86,16 +86,23 @@ async function bootstrap() {
   // CRITICAL: Global Request Timeout Middleware
   // ===========================================
   // This ensures ALL requests have a timeout to prevent 504 Gateway Timeout
+  // Chat endpoints need more time because of OpenAI API calls
+  const AI_TIMEOUT_MS = 55000;
+
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
     // Skip timeout for health checks (needed for Docker healthcheck)
     if (req.path === '/api/health' || req.path === '/api/health/deep') {
       return next();
     }
 
+    // Chat endpoints get a longer timeout due to OpenAI API latency
+    const isAiEndpoint = req.path.startsWith('/api/claims/chat');
+    const timeoutMs = isAiEndpoint ? AI_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+
     // Set response timeout
-    res.setTimeout(REQUEST_TIMEOUT_MS, () => {
+    res.setTimeout(timeoutMs, () => {
       if (!res.headersSent) {
-        logger.warn(`Request timeout after ${REQUEST_TIMEOUT_MS}ms: ${req.method} ${req.path}`);
+        logger.warn(`Request timeout after ${timeoutMs}ms: ${req.method} ${req.path}`);
         // CORS headers already set by first middleware
         res.status(503).json({
           statusCode: 503,
