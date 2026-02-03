@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { apiClient, setTokens, clearTokens, getAccessToken } from './client';
+import { apiClient, setTokens, clearTokens, getAccessToken, ensureApiReady } from './client';
 import type { User } from '@poa/shared';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -129,6 +129,10 @@ export const authApi = {
    * Login - may return either full auth response or 2FA required response
    */
   async login(data: LoginData): Promise<LoginResponse> {
+    // Pre-check: ensure API is reachable before attempting login
+    // This prevents CORS errors when backend is still starting after deployment
+    await ensureApiReady(3);
+
     const response = await apiClient.post<LoginResponse>('/auth/login', data);
     // Only set tokens if login is complete (no 2FA required)
     if (!requires2FA(response.data)) {

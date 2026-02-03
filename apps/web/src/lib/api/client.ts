@@ -286,7 +286,7 @@ export const ensureApiReady = async (maxAttempts = 2): Promise<boolean> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await axios.get(`${API_URL}/warmup`, {
-        timeout: 5000, // 5 second timeout (reduced from 10s)
+        timeout: 8000, // 8s timeout to allow for cold start DB warmup
       });
 
       if (response.data?.status === 'ok') {
@@ -302,9 +302,9 @@ export const ensureApiReady = async (maxAttempts = 2): Promise<boolean> => {
       }
     }
 
-    // Fixed 1 second delay between attempts (simplified from attempt * 1000)
+    // Increasing delay between attempts: 2s, 3s, 4s...
     if (attempt < maxAttempts) {
-      await sleep(1000);
+      await sleep(1000 + attempt * 1000);
     }
   }
 
@@ -577,12 +577,21 @@ apiClient.interceptors.response.use(
 
     // Handle network/CORS errors (often caused by proxy timeouts)
     if (isCorsOrNetworkError) {
+      // Auth endpoints get more retries with longer delays (cold start can take 10-30s)
+      const isAuthRequest = originalRequest.url?.includes('/auth/login') ||
+                            originalRequest.url?.includes('/auth/register') ||
+                            originalRequest.url?.includes('/auth/2fa');
+      const maxRetries = isAuthRequest ? 3 : 2;
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) { // Reduced from 3 to 2 retries for faster failure
-        originalRequest._retryCount = retryCount + 1;
-        const delay = 500 * Math.pow(2, retryCount); // 500ms, 1s (faster recovery)
 
-        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
+      if (retryCount < maxRetries) {
+        originalRequest._retryCount = retryCount + 1;
+        // Auth: 1s, 2s, 4s — Other: 500ms, 1s
+        const delay = isAuthRequest
+          ? 1000 * Math.pow(2, retryCount)
+          : 500 * Math.pow(2, retryCount);
+
+        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/${maxRetries}), retrying in ${delay}ms...`);
 
         // Skip warmupApi() before retry - it adds unnecessary delay
         await sleep(delay);
@@ -591,9 +600,10 @@ apiClient.interceptors.response.use(
       }
       // After retries failed, provide user-friendly error message
       console.error('[API] Network error persists after retries');
-      const userFriendlyError = new Error(
-        'Verbindung zum Server fehlgeschlagen. Bitte laden Sie die Seite neu.'
-      );
+      const errorMessage = isAuthRequest
+        ? 'Server ist nicht erreichbar. Bitte versuchen Sie es in einigen Sekunden erneut.'
+        : 'Verbindung zum Server fehlgeschlagen. Bitte laden Sie die Seite neu.';
+      const userFriendlyError = new Error(errorMessage);
       (userFriendlyError as Error & { isConnectionError: boolean }).isConnectionError = true;
       return Promise.reject(userFriendlyError);
     }

@@ -27,7 +27,7 @@ export default function LoginPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  // PERFORMANCE FIX: Removed isConnecting state - no longer blocking on warmup
+  const [isConnectionError, setIsConnectionError] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const {
@@ -59,9 +59,8 @@ export default function LoginPage() {
     try {
       setEmailNotVerified(false);
       setLoginError(null);
+      setIsConnectionError(false);
 
-      // PERFORMANCE FIX: No longer blocking on warmup
-      // The API client has retry logic built-in for handling cold starts
       const result = await login(data);
       if (!result.requires2FA) {
         toast.success('Erfolgreich angemeldet');
@@ -70,8 +69,12 @@ export default function LoginPage() {
       // If 2FA is required, the UI will switch to show the 2FA input
     } catch (error) {
       const errorMessage = getErrorMessage(error);
+      // Check if it's a connection/CORS error (server not reachable)
+      if ((error as Error & { isConnectionError?: boolean }).isConnectionError) {
+        setIsConnectionError(true);
+        setLoginError(errorMessage);
       // Check if it's an email verification error
-      if (errorMessage.includes('E-Mail-Adresse') && errorMessage.includes('bestätigen')) {
+      } else if (errorMessage.includes('E-Mail-Adresse') && errorMessage.includes('bestätigen')) {
         setEmailNotVerified(true);
         setUnverifiedEmail(data.email);
       } else {
@@ -239,8 +242,20 @@ export default function LoginPage() {
             </div>
           )}
 
+          {/* Connection Error Message - server not reachable */}
+          {isConnectionError && loginError && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                {loginError}
+              </p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                Der Server wird moeglicherweise gerade neu gestartet.
+              </p>
+            </div>
+          )}
+
           {/* Login Error Message */}
-          {loginError && !emailNotVerified && (
+          {loginError && !emailNotVerified && !isConnectionError && (
             <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
               <p className="text-sm font-medium text-red-800 dark:text-red-200">
                 {loginError}
