@@ -50,7 +50,7 @@ function VerifyEmailContent() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
               P
             </div>
@@ -76,7 +76,7 @@ function VerifyEmailContent() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
               P
             </div>
@@ -93,7 +93,7 @@ function VerifyEmailContent() {
             {error}
           </p>
           <div className="mt-8 space-y-3">
-            <Link href="/login" className="block">
+            <Link href="/login" prefetch={false} className="block">
               <Button className="h-12 w-full rounded-xl">
                 Zum Login
               </Button>
@@ -111,7 +111,7 @@ function VerifyEmailContent() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm text-center">
-        <Link href="/" className="mb-12 inline-flex items-center gap-3">
+        <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
             P
           </div>
@@ -128,7 +128,7 @@ function VerifyEmailContent() {
           Ihre E-Mail-Adresse wurde erfolgreich verifiziert. Sie können sich jetzt anmelden.
         </p>
 
-        <Link href="/login" className="mt-8 block">
+        <Link href="/login" prefetch={false} className="mt-8 block">
           <Button className="h-12 w-full rounded-xl text-base">
             Jetzt anmelden
           </Button>

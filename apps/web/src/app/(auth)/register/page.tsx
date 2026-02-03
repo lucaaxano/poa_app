@@ -68,7 +68,7 @@ export default function RegisterPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 inline-flex items-center justify-center">
+          <Link href="/" prefetch={false} className="mb-12 inline-flex items-center justify-center">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
@@ -89,7 +89,7 @@ export default function RegisterPage() {
           </p>
 
           <div className="mt-8 space-y-3">
-            <Link href="/login" className="block">
+            <Link href="/login" prefetch={false} className="block">
               <Button className="h-12 w-full rounded-xl">
                 Zum Login
               </Button>
@@ -109,7 +109,7 @@ export default function RegisterPage() {
       <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm">
           {/* Logo */}
-          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
@@ -256,7 +256,7 @@ export default function RegisterPage() {
           {/* Footer */}
           <p className="mt-8 text-center text-sm text-muted-foreground">
             Bereits registriert?{' '}
-            <Link href="/login" className="font-medium text-primary hover:underline">
+            <Link href="/login" prefetch={false} className="font-medium text-primary hover:underline">
               Anmelden
             </Link>
           </p>

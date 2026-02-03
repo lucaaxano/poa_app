@@ -173,7 +173,7 @@ export default function LoginPage() {
       <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
         <div className="mx-auto w-full max-w-sm">
           {/* Logo */}
-          <Link href="/" className="mb-12 inline-flex items-center gap-3">
+          <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
@@ -364,6 +364,7 @@ export default function LoginPage() {
                     </Label>
                     <Link
                       href="/forgot-password"
+                      prefetch={false}
                       className="text-sm text-primary hover:underline"
                     >
                       Passwort vergessen?
@@ -408,7 +409,7 @@ export default function LoginPage() {
               {/* Footer */}
               <p className="mt-8 text-center text-sm text-muted-foreground">
                 Noch kein Konto?{' '}
-                <Link href="/register" className="font-medium text-primary hover:underline">
+                <Link href="/register" prefetch={false} className="font-medium text-primary hover:underline">
                   Jetzt registrieren
                 </Link>
               </p>

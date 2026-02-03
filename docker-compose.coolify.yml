@@ -22,12 +22,18 @@ services:
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=512
+    # Proxy timeout labels - prevent 504 during cold starts
+    labels:
+      - "caddy.reverse_proxy.transport.http.dial_timeout=30s"
+      - "caddy.reverse_proxy.transport.http.response_header_timeout=60s"
+      - "caddy.reverse_proxy.transport.http.read_timeout=60s"
+      - "caddy.reverse_proxy.transport.http.write_timeout=60s"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
+      interval: 10s
       timeout: 10s
       retries: 3
-      start_period: 45s
+      start_period: 60s
     deploy:
       resources:
         limits:

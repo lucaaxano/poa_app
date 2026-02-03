@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <Link href="/" className="mb-12 inline-flex items-center gap-3">
+        <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
             P
           </div>
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
             <p className="mt-6 text-sm text-muted-foreground">
               Bitte pruefen Sie Ihren Posteingang und Spam-Ordner.
             </p>
-            <Link href="/login" className="mt-8 block">
+            <Link href="/login" prefetch={false} className="mt-8 block">
               <Button variant="outline" className="h-12 w-full rounded-xl">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Zurueck zum Login
@@ -120,6 +120,7 @@ export default function ForgotPasswordPage() {
             <div className="mt-8 text-center">
               <Link
                 href="/login"
+                prefetch={false}
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />

@@ -69,7 +69,7 @@ function AcceptInvitationForm() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <Link href="/" className="mb-12 flex justify-center">
+          <Link href="/" prefetch={false} className="mb-12 flex justify-center">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
@@ -87,7 +87,7 @@ function AcceptInvitationForm() {
           <p className="mt-3 text-muted-foreground">
             Der Einladungslink ist ungueltig oder abgelaufen. Bitte kontaktieren Sie Ihren Administrator fuer eine neue Einladung.
           </p>
-          <Link href="/login" className="mt-8 block">
+          <Link href="/login" prefetch={false} className="mt-8 block">
             <Button variant="outline" className="h-12 w-full rounded-xl">
               Zum Login
             </Button>
@@ -122,7 +122,7 @@ function AcceptInvitationForm() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           {/* Logo */}
-          <Link href="/" className="mb-6 flex justify-center">
+          <Link href="/" prefetch={false} className="mb-6 flex justify-center">
             <Image
               src="/logo-full.png"
               alt="POA - Point of Accident"
