@@ -1,20 +1,31 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { PageLoadingIndicator } from '@/components/ui/page-loading-indicator';
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const viewport: Viewport = {
+  themeColor: '#1a1a2e',
+};
+
 export const metadata: Metadata = {
   title: 'POA - Point of Accident',
   description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
-    apple: '/apple-touch-icon.png',
+    apple: '/icons/icon-192.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'POA',
   },
   openGraph: {
     title: 'POA - Point of Accident',
@@ -32,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className={inter.className}>
+        <ServiceWorkerRegister />
         <PageLoadingIndicator />
         <QueryProvider>
           <AuthProvider>

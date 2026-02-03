@@ -1,0 +1,22 @@
+# Signing keys - NEVER commit these
+*.jks
+*.keystore
+
+# Build outputs
+app-debug.apk
+app-release-signed.apk
+app-release-signed.aab
+app-release-unsigned-aligned.apk
+
+# Bubblewrap generated Android project
+build/
+.gradle/
+app/
+gradle/
+gradlew
+gradlew.bat
+*.iml
+local.properties
+settings.gradle
+build.gradle
+gradle.properties

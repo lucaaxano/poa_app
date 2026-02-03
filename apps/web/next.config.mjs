@@ -47,6 +47,15 @@ const nextConfig = {
       },
     ];
   },
+  // Rewrite to serve .well-known files (needed for Digital Asset Links / TWA)
+  async rewrites() {
+    return [
+      {
+        source: '/.well-known/:path*',
+        destination: '/.well-known/:path*',
+      },
+    ];
+  },
   // PERFORMANCE FIX: Reduce JS bundle size
   compiler: {
     // Remove console.log in production
