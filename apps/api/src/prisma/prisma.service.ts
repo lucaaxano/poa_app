@@ -91,9 +91,9 @@ export class PrismaService
     try {
       const startTime = Date.now();
 
-      // Phase 1: Basic connection warmup (3 parallel SELECT 1)
-      // Reduced from 5 to limit pool usage to ~15% instead of ~40%
-      const basicWarmup = Array(3)
+      // Phase 1: Basic connection warmup (5 parallel SELECT 1)
+      // Opens 5 connections (~25% of pool) to reduce first-request latency
+      const basicWarmup = Array(5)
         .fill(null)
         .map(() => this.$queryRaw`SELECT 1`);
       await Promise.all(basicWarmup);

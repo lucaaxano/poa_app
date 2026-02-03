@@ -105,6 +105,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
           <Link
             href="/dashboard"
             prefetch={false}
+            scroll={false}
             className={cn(
               'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
               collapsed && 'justify-center px-2'
@@ -123,6 +124,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
               key={item.href}
               href={item.href}
               prefetch={false}
+              scroll={false}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                 item.isActive

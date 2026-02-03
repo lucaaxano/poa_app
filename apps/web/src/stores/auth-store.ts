@@ -310,7 +310,7 @@ export const useAuthStore = create<AuthState>()(
                 company: response.company,
               });
             }
-          }).catch((error) => {
+          }).catch(async (error) => {
             // Only clear auth on definitive auth errors (401/403)
             // Network errors or server errors should NOT logout the user
             const status = error?.response?.status;
@@ -323,8 +323,20 @@ export const useAuthStore = create<AuthState>()(
                 linkedCompanies: null,
                 activeCompany: null,
               });
+              return;
             }
-            // For other errors (network, 5xx), keep user logged in with cached data
+            // For server/network errors: retry once after 2s, then silently give up
+            // User stays logged in with cached data either way
+            await new Promise(r => setTimeout(r, 2000));
+            try {
+              const response = await authApi.getProfileFast();
+              const current = get();
+              if (current.user?.id === response.user.id) {
+                set({ user: response.user, company: response.company });
+              }
+            } catch {
+              // Silent failure - user stays logged in with cached data
+            }
           });
           return;
         }

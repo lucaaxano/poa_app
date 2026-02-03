@@ -193,9 +193,31 @@ export const startApiWarmup = (): void => {
   // Stores the promise so the request interceptor can wait for it
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
-      // Only warmup if authenticated and visible
+      // Only act if authenticated and visible
       if (document.visibilityState === 'visible' && !isLoggingOut && getAccessToken()) {
-        // Only warmup if tab was hidden for more than 5 minutes
+        // Check if access token is near expiry or already expired
+        // If so, proactively refresh BEFORE any /auth/me call to prevent 401
+        const token = getAccessToken();
+        if (token) {
+          const payload = parseJwt(token);
+          if (payload?.exp) {
+            const expiresIn = payload.exp * 1000 - Date.now();
+            if (expiresIn < REFRESH_BUFFER_MS) {
+              // Token expires within 2 min or already expired → proactive refresh
+              activeWarmupPromise = performTokenRefresh()
+                .then(() => {
+                  lastWarmupTime = Date.now();
+                  isApiWarmedUp = true;
+                  return true;
+                })
+                .catch(() => false)
+                .finally(() => { activeWarmupPromise = null; });
+              return; // Skip warmup - refresh already warms the connection
+            }
+          }
+        }
+
+        // Token still valid - only warmup if tab was hidden for more than 5 minutes
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
         if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold
           // Store the warmup promise so the request interceptor can await it
@@ -681,21 +703,20 @@ apiClient.interceptors.response.use(
         const axiosRefreshError = refreshError as AxiosError;
         const refreshStatus = axiosRefreshError.response?.status;
 
-        processQueue(refreshError, null);
-        clearTokens();
-
-        // Determine the reason for session expiry
+        // Only logout on definitive auth failures (401/403 from refresh endpoint)
+        // For server errors (5xx) or network errors: keep tokens, stay logged in with cached data
         if (refreshStatus === 401 || refreshStatus === 403) {
+          processQueue(refreshError, null);
+          clearTokens();
           notifySessionExpired('auth_failed');
-        } else if (refreshStatus && refreshStatus >= 500) {
-          notifySessionExpired('server_error');
-        } else if (!axiosRefreshError.response) {
-          notifySessionExpired('network_error');
-        } else {
-          notifySessionExpired('auth_failed');
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
 
-        window.location.href = '/login';
+        // Server error or network error: DON'T logout
+        // Keep tokens, user stays logged in with cached data
+        // The request will fail but the user won't be kicked out
+        processQueue(refreshError, null);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
