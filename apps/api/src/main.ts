@@ -21,7 +21,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 });
 
 // Global request timeout - respond BEFORE reverse proxy times out
-// Coolify/Caddy default is ~30s, so we use 25s to ensure we respond first
+// Traefik entrypoint timeout should be higher (configured via Coolify)
 const REQUEST_TIMEOUT_MS = 25000;
 
 async function bootstrap() {

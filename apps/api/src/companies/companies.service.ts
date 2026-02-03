@@ -62,7 +62,31 @@ export interface QuotaStats {
 
 @Injectable()
 export class CompaniesService {
+  private cache = new Map<string, { data: unknown; expiry: number }>();
+  private static readonly CACHE_TTL_MS = 60000; // 60 seconds
+
   constructor(private prisma: PrismaService) {}
+
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (entry && Date.now() < entry.expiry) {
+      return entry.data as T;
+    }
+    this.cache.delete(key);
+    return null;
+  }
+
+  private setCache(key: string, data: unknown): void {
+    this.cache.set(key, {
+      data,
+      expiry: Date.now() + CompaniesService.CACHE_TTL_MS,
+    });
+    // Cleanup: max 100 entries
+    if (this.cache.size > 100) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+  }
 
   async findById(id: string): Promise<Company> {
     const company = await this.prisma.company.findUnique({
@@ -103,6 +127,10 @@ export class CompaniesService {
   }
 
   async getStats(companyId: string): Promise<CompanyStats> {
+    const cacheKey = `stats:${companyId}`;
+    const cached = this.getCached<CompanyStats>(cacheKey);
+    if (cached) return cached;
+
     const [claimsCount, vehiclesCount, usersCount, claimsByStatus] =
       await Promise.all([
         this.prisma.claim.count({ where: { companyId } }),
@@ -115,7 +143,7 @@ export class CompaniesService {
         }),
       ]);
 
-    return {
+    const result: CompanyStats = {
       totalClaims: claimsCount,
       totalVehicles: vehiclesCount,
       totalUsers: usersCount,
@@ -127,6 +155,9 @@ export class CompaniesService {
         {} as Record<string, number>,
       ),
     };
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   async getStatsTimeline(
@@ -134,6 +165,10 @@ export class CompaniesService {
     period: 'week' | 'month' = 'month',
     range: number = 12,
   ): Promise<TimelineStats> {
+    const cacheKey = `timeline:${companyId}:${period}:${range}`;
+    const cached = this.getCached<TimelineStats>(cacheKey);
+    if (cached) return cached;
+
     const now = new Date();
     const startDate = new Date();
 
@@ -204,11 +239,14 @@ export class CompaniesService {
       }
     }
 
-    return {
+    const result: TimelineStats = {
       data: Array.from(dataMap.values()).sort((a, b) =>
         a.period.localeCompare(b.period),
       ),
     };
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   private getWeekNumber(date: Date): number {
@@ -225,6 +263,10 @@ export class CompaniesService {
     companyId: string,
     limit: number = 10,
   ): Promise<VehicleStatsItem[]> {
+    const cacheKey = `by-vehicle:${companyId}:${limit}`;
+    const cached = this.getCached<VehicleStatsItem[]>(cacheKey);
+    if (cached) return cached;
+
     const vehicleStats = await this.prisma.claim.groupBy({
       by: ['vehicleId'],
       where: { companyId },
@@ -255,7 +297,7 @@ export class CompaniesService {
 
     const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
 
-    return vehicleStats.map((stat) => {
+    const result = vehicleStats.map((stat) => {
       const vehicle = vehicleMap.get(stat.vehicleId);
       return {
         vehicleId: stat.vehicleId,
@@ -266,12 +308,19 @@ export class CompaniesService {
         totalCost: Number(stat._sum.finalCost || stat._sum.estimatedCost || 0),
       };
     });
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   async getStatsByDriver(
     companyId: string,
     limit: number = 10,
   ): Promise<DriverStatsItem[]> {
+    const cacheKey = `by-driver:${companyId}:${limit}`;
+    const cached = this.getCached<DriverStatsItem[]>(cacheKey);
+    if (cached) return cached;
+
     const driverStats = await this.prisma.claim.groupBy({
       by: ['driverUserId'],
       where: {
@@ -306,7 +355,7 @@ export class CompaniesService {
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    return driverStats.map((stat) => {
+    const result = driverStats.map((stat) => {
       const user = stat.driverUserId ? userMap.get(stat.driverUserId) : null;
       return {
         userId: stat.driverUserId || '',
@@ -316,9 +365,16 @@ export class CompaniesService {
         totalCost: Number(stat._sum.finalCost || stat._sum.estimatedCost || 0),
       };
     });
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   async getStatsByCategory(companyId: string): Promise<CategoryStatsItem[]> {
+    const cacheKey = `by-category:${companyId}`;
+    const cached = this.getCached<CategoryStatsItem[]>(cacheKey);
+    if (cached) return cached;
+
     const categoryStats = await this.prisma.claim.groupBy({
       by: ['damageCategory'],
       where: { companyId },
@@ -334,7 +390,7 @@ export class CompaniesService {
       0,
     );
 
-    return categoryStats
+    const result = categoryStats
       .map((stat) => ({
         category: stat.damageCategory,
         claimCount: stat._count,
@@ -345,10 +401,16 @@ export class CompaniesService {
             : 0,
       }))
       .sort((a, b) => b.claimCount - a.claimCount);
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   async getQuotaStats(companyId: string, year?: number): Promise<QuotaStats> {
     const targetYear = year || new Date().getFullYear();
+    const cacheKey = `quota:${companyId}:${targetYear}`;
+    const cached = this.getCached<QuotaStats>(cacheKey);
+    if (cached) return cached;
     const startDate = new Date(targetYear, 0, 1);
     const endDate = new Date(targetYear, 11, 31);
 
@@ -424,7 +486,7 @@ export class CompaniesService {
       }
     }
 
-    return {
+    const result: QuotaStats = {
       totalPremium,
       totalClaimCost,
       quotaRatio,
@@ -434,5 +496,8 @@ export class CompaniesService {
         : false,
       monthlyData: Array.from(monthlyMap.values()),
     };
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 }

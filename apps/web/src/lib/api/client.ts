@@ -575,94 +575,36 @@ apiClient.interceptors.response.use(
       error.message?.includes('CORS')
     );
 
-    // Handle network/CORS errors (often caused by proxy timeouts)
-    if (isCorsOrNetworkError) {
-      // Auth endpoints get more retries with longer delays (cold start can take 10-30s)
-      const isAuthRequest = originalRequest.url?.includes('/auth/login') ||
-                            originalRequest.url?.includes('/auth/register') ||
-                            originalRequest.url?.includes('/auth/2fa');
-      const maxRetries = isAuthRequest ? 3 : 2;
+    // Unified retry handler: network errors, timeouts, and 502-504 errors
+    // Max 1 retry with flat 1s delay to prevent retry amplification
+    const status = error.response?.status;
+
+    const isRetryableError = !error.response
+      ? (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED')
+      : (status !== undefined && status >= 502 && status <= 504);
+
+    if (isRetryableError && !isLoggingOut) {
       const retryCount = originalRequest._retryCount || 0;
-
-      if (retryCount < maxRetries) {
-        originalRequest._retryCount = retryCount + 1;
-        // Auth: 1s, 2s, 4s — Other: 500ms, 1s
-        const delay = isAuthRequest
-          ? 1000 * Math.pow(2, retryCount)
-          : 500 * Math.pow(2, retryCount);
-
-        console.warn(`[API] Network/CORS error (attempt ${retryCount + 1}/${maxRetries}), retrying in ${delay}ms...`);
-
-        // Skip warmupApi() before retry - it adds unnecessary delay
-        await sleep(delay);
-
+      if (retryCount < 1) {
+        originalRequest._retryCount = 1;
+        console.warn(`[API] Retryable error (${error.code || status}), retrying in 1s...`);
+        await sleep(1000);
         return apiClient(originalRequest);
       }
-      // After retries failed, provide user-friendly error message
-      console.error('[API] Network error persists after retries');
-      const errorMessage = isAuthRequest
-        ? 'Server ist nicht erreichbar. Bitte versuchen Sie es in einigen Sekunden erneut.'
-        : 'Verbindung zum Server fehlgeschlagen. Bitte laden Sie die Seite neu.';
-      const userFriendlyError = new Error(errorMessage);
+    }
+
+    // After retry exhausted: provide user-friendly error for network errors
+    if (isCorsOrNetworkError) {
+      console.error('[API] Network error persists after retry');
+      const userFriendlyError = new Error(
+        'Verbindung zum Server fehlgeschlagen. Bitte laden Sie die Seite neu.'
+      );
       (userFriendlyError as Error & { isConnectionError: boolean }).isConnectionError = true;
       return Promise.reject(userFriendlyError);
     }
 
-    // Handle Axios timeout errors (ECONNABORTED)
-    // These occur when the request exceeds the configured timeout
-    if (error.code === 'ECONNABORTED' && error.message?.includes('timeout')) {
-      const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) {
-        originalRequest._retryCount = retryCount + 1;
-        // Longer delay for timeout errors - server might be under load
-        const delay = 1000 * (retryCount + 1); // 1s, 2s
-
-        console.warn(`[API] Request timeout (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
-
-        await sleep(delay);
-        return apiClient(originalRequest);
-      }
-      console.error('[API] Request timeout persists after retries');
-      return Promise.reject(error);
-    }
-
-    // Handle 5xx errors separately - don't treat as auth errors
-    const status = error.response?.status;
-
-    // Special handling for 504 Gateway Timeout - use faster retry
-    // 504 often means the backend was temporarily slow but is now ready
-    if (status === 504) {
-      const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) {
-        originalRequest._retryCount = retryCount + 1;
-        // Faster retry for 504 - backend is likely ready now
-        const delay = 300 * (retryCount + 1); // 300ms, 600ms
-
-        console.warn(`[API] Gateway timeout 504 (attempt ${retryCount + 1}/2), quick retry in ${delay}ms...`);
-
-        await sleep(delay);
-        return apiClient(originalRequest);
-      }
-      // After retries, don't freeze - just report error
-      console.error('[API] Gateway timeout persists after retries');
-      return Promise.reject(error);
-    }
-
+    // Notify about persistent server errors but don't logout
     if (status && status >= 500) {
-      // For other server errors, we can retry the original request
-      const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) { // Reduced from 3 to 2 retries
-        originalRequest._retryCount = retryCount + 1;
-        const delay = 500 * Math.pow(2, retryCount); // 500ms, 1s (faster recovery)
-
-        console.warn(`[API] Server error ${status} (attempt ${retryCount + 1}/2), retrying in ${delay}ms...`);
-
-        // Skip warmupApi() before retry - it adds unnecessary delay
-        await sleep(delay);
-
-        return apiClient(originalRequest);
-      }
-      // After retries, notify about server error but don't logout
       notifySessionExpired('server_error');
       return Promise.reject(error);
     }
