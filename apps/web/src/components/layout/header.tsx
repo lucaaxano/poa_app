@@ -23,7 +23,7 @@ export const Header = memo(function Header({ onMenuClick, showMenuButton = false
   const isBroker = userRole === 'BROKER';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6 pt-[env(safe-area-inset-top)]">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-white px-4 sm:px-6 pt-[env(safe-area-inset-top)] overflow-hidden max-w-[100vw]">
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <Button
