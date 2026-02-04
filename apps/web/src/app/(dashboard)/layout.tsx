@@ -112,7 +112,7 @@ export default function DashboardLayout({
           hideMenuOnMobile
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
-        <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
+        <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8 overflow-hidden">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

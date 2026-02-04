@@ -184,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
         {/* For Broker: Show Companies count when viewing all */}
         {isBroker && !activeCompany && (
           <StatCard
@@ -252,7 +252,7 @@ export default function DashboardPage() {
           </LazyChart>
 
           {/* Charts Row */}
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
             {/* Category Pie Chart */}
             <LazyChart fallbackTitle="Schäden nach Kategorie" fallbackHeight="h-[250px]">
               <CategoryPieChart
@@ -272,7 +272,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Quota Section */}
-          <div className="grid gap-6 lg:grid-cols-4">
+          <div className="grid gap-6 lg:grid-cols-4 [&>*]:min-w-0">
             <LazyChart fallbackTitle="Schadenquote" fallbackHeight="h-[200px]">
               <QuotaGauge
                 title="Schadenquote"
@@ -318,9 +318,9 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5 [&>*]:min-w-0">
         {/* Quick Actions */}
-        <Card className="rounded-2xl border shadow-soft lg:col-span-2">
+        <Card className="rounded-2xl border shadow-soft lg:col-span-2 overflow-hidden">
           <CardHeader>
             <div className="flex items-center gap-1">
               <CardTitle>Schnellzugriff</CardTitle>
@@ -372,7 +372,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent Claims */}
-        <Card className="rounded-2xl border shadow-soft lg:col-span-3">
+        <Card className="rounded-2xl border shadow-soft lg:col-span-3 overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <div className="min-w-0">
               <CardTitle>Letzte Schaeden</CardTitle>
