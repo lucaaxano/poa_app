@@ -225,84 +225,127 @@ export default function ClaimsPage() {
           {isLoading ? (
             <TableSkeleton columns={isBroker ? 9 : 8} rows={6} />
           ) : filteredClaims && filteredClaims.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Schadennummer</TableHead>
-                    {/* Company column for broker */}
-                    {isBroker && <TableHead>Firma</TableHead>}
-                    <TableHead>Fahrzeug</TableHead>
-                    <TableHead>Kategorie</TableHead>
-                    <TableHead>Unfalldatum</TableHead>
-                    <TableHead>Gesch. Kosten</TableHead>
-                    <TableHead>Melder</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClaims.map((claim: any) => (
-                    <TableRow key={claim.id}>
-                      <TableCell>
-                        <Link
-                          href={`/claims/${claim.id}` as Route}
-                          prefetch={false}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          {claim.claimNumber}
-                        </Link>
-                      </TableCell>
-                      {/* Company cell for broker */}
-                      {isBroker && (
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span>{claim.company?.name || '-'}</span>
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        {claim.vehicle?.licensePlate || claim.vehicle}
-                        {claim.vehicle?.brand && (
-                          <span className="text-muted-foreground text-sm ml-2">
-                            ({claim.vehicle.brand} {claim.vehicle.model})
-                          </span>
+            <>
+              {/* Mobile Card Layout */}
+              <div className="space-y-3 md:hidden">
+                {filteredClaims.map((claim: any) => (
+                  <Link
+                    key={claim.id}
+                    href={`/claims/${claim.id}` as Route}
+                    prefetch={false}
+                    className="block rounded-xl border p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-primary">{claim.claimNumber}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          {claim.vehicle?.licensePlate || claim.vehicle}
+                          {claim.vehicle?.brand && (
+                            <span> - {claim.vehicle.brand} {claim.vehicle.model}</span>
+                          )}
+                        </p>
+                        {isBroker && claim.company?.name && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Building2 className="h-3 w-3" />
+                            {claim.company.name}
+                          </p>
                         )}
-                      </TableCell>
-                      <TableCell>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</TableCell>
-                      <TableCell>{formatDate(claim.accidentDate)}</TableCell>
-                      <TableCell>{formatCurrency(claim.estimatedCost)}</TableCell>
-                      <TableCell>
-                        {claim.reporter?.firstName} {claim.reporter?.lastName}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
-                          {statusLabels[claim.status as ClaimStatus]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Aktionen">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/claims/${claim.id}` as Route} prefetch={false}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Details anzeigen
-                              </Link>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                      </div>
+                      <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
+                        {statusLabels[claim.status as ClaimStatus]}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <span>{formatDate(claim.accidentDate)}</span>
+                      <span>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</span>
+                      {claim.estimatedCost !== null && (
+                        <span>{formatCurrency(claim.estimatedCost)}</span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Desktop Table Layout */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Schadennummer</TableHead>
+                      {/* Company column for broker */}
+                      {isBroker && <TableHead>Firma</TableHead>}
+                      <TableHead>Fahrzeug</TableHead>
+                      <TableHead>Kategorie</TableHead>
+                      <TableHead>Unfalldatum</TableHead>
+                      <TableHead>Gesch. Kosten</TableHead>
+                      <TableHead>Melder</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredClaims.map((claim: any) => (
+                      <TableRow key={claim.id}>
+                        <TableCell>
+                          <Link
+                            href={`/claims/${claim.id}` as Route}
+                            prefetch={false}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {claim.claimNumber}
+                          </Link>
+                        </TableCell>
+                        {/* Company cell for broker */}
+                        {isBroker && (
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span>{claim.company?.name || '-'}</span>
+                            </div>
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          {claim.vehicle?.licensePlate || claim.vehicle}
+                          {claim.vehicle?.brand && (
+                            <span className="text-muted-foreground text-sm ml-2">
+                              ({claim.vehicle.brand} {claim.vehicle.model})
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</TableCell>
+                        <TableCell>{formatDate(claim.accidentDate)}</TableCell>
+                        <TableCell>{formatCurrency(claim.estimatedCost)}</TableCell>
+                        <TableCell>
+                          {claim.reporter?.firstName} {claim.reporter?.lastName}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
+                            {statusLabels[claim.status as ClaimStatus]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="Aktionen">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/claims/${claim.id}` as Route} prefetch={false}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Details anzeigen
+                                </Link>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">

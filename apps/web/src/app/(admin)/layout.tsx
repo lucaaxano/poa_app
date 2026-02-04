@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { Header } from '@/components/layout/header';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,6 +15,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   // PERFORMANCE FIX: Use granular selectors to prevent unnecessary re-renders
   // Each selector only triggers re-render when that specific value changes
@@ -25,6 +26,11 @@ export default function AdminLayout({
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Auto-close mobile sidebar on navigation
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname]);
 
   // PERFORMANCE FIX: Non-blocking API warmup - fire and forget
   useEffect(() => {
@@ -105,7 +111,7 @@ export default function AdminLayout({
           showMenuButton
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 pb-[env(safe-area-inset-bottom)]">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

@@ -184,7 +184,7 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
         {/* PERFORMANCE FIX: prefetch={false} prevents Next.js from prefetching all visible links */}
         {/* This was causing 504 errors when scrolling - all links triggered server requests */}
         <nav
-          className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-4 scrollbar-thin will-change-scroll"
+          className="flex-1 overflow-y-auto overflow-x-hidden space-y-1.5 px-3 py-4 scrollbar-thin will-change-scroll"
           style={{ contain: 'layout paint' }}
         >
           {navItemsWithStatus.map((item) => (
@@ -194,7 +194,7 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
               prefetch={false}
               scroll={false}
               className={cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
                 item.isActive
                   ? 'bg-primary text-primary-foreground shadow-soft'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',

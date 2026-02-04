@@ -107,7 +107,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
             prefetch={false}
             scroll={false}
             className={cn(
-              'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
+              'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
               collapsed && 'justify-center px-2'
             )}
             title={collapsed ? 'Zurueck zum Dashboard' : undefined}
@@ -118,7 +118,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
         </div>
 
         {/* Navigation - Optimized for smooth scrolling */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1 px-3 py-2 scrollbar-thin">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden space-y-1.5 px-3 py-2 scrollbar-thin">
           {navItemsWithStatus.map((item) => (
             <Link
               key={item.href}
@@ -126,7 +126,7 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
               prefetch={false}
               scroll={false}
               className={cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
                 item.isActive
                   ? 'bg-red-600 text-white shadow-soft'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
