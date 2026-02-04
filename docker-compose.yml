@@ -16,13 +16,28 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.poa-platform.de/api}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://poa-platform.de}
     container_name: poa-web
-    restart: unless-stopped
+    restart: always
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=1024
+    labels: []   # No proxy labels needed - Traefik is configured via Coolify
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 768M
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - poa-network
       - coolify
@@ -35,14 +50,15 @@ services:
       context: .
       dockerfile: docker/api.prod.Dockerfile
     container_name: poa-api
-    restart: unless-stopped
+    restart: always
     ports:
       - "4000:4000"
     environment:
       - NODE_ENV=production
       - PORT=4000
-      # Optimized connection pool: 20 connections, 20s pool timeout, 10s connect timeout
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=20&pool_timeout=20&connect_timeout=10
+      - NODE_OPTIONS=--max-old-space-size=1536
+      # Connection pool: 40 connections, 30s pool timeout, keepalive enabled
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=10&keepAlive=true&keepAliveInitialDelayMillis=10000
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
@@ -62,21 +78,38 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-    # Traefik/Caddy labels for Coolify - increase proxy timeout to 60 seconds
     labels:
-      - "traefik.http.middlewares.api-timeout.buffering.maxRequestBodyBytes=10485760"
-      - "traefik.http.middlewares.api-timeout.buffering.maxResponseBodyBytes=10485760"
-      - "traefik.http.services.api.loadbalancer.server.port=4000"
-      - "caddy.reverse_proxy.transport.http.dial_timeout=30s"
-      - "caddy.reverse_proxy.transport.http.response_header_timeout=60s"
-      - "caddy.reverse_proxy.transport.http.read_timeout=60s"
-      - "caddy.reverse_proxy.transport.http.write_timeout=60s"
+      # Traefik service configuration
+      - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
+      - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
+      # Traefik health check (in addition to Docker health check)
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=15s"
+      # Buffering middleware
+      - "traefik.http.middlewares.poa-api-buffering.buffering.maxRequestBodyBytes=10485760"
+      - "traefik.http.middlewares.poa-api-buffering.buffering.maxResponseBodyBytes=10485760"
+      # CORS middleware - ensures CORS headers even on proxy error responses (502/503/504)
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowheaders=Content-Type,Authorization,Accept,Origin,X-Requested-With"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://poa-platform.de,https://www.poa-platform.de"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
+      - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=86400"
+      # Middleware chain on router
+      - "traefik.http.routers.poa-api.middlewares=api-cors,poa-api-buffering"
+    stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
-      interval: 15s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+        reservations:
+          memory: 1024M
     depends_on:
       db:
         condition: service_healthy
@@ -92,7 +125,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: poa-db
-    restart: unless-stopped
+    restart: always
     environment:
       - POSTGRES_USER=${DB_USER:-poa_admin}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -105,19 +138,46 @@ services:
       - "-c"
       - "max_connections=100"
       - "-c"
-      - "shared_buffers=128MB"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "log_statement=none"
+      - "-c"
+      - "log_min_duration_statement=1000"
+      # TCP Keepalive settings - detect dead connections faster
       - "-c"
       - "tcp_keepalives_idle=30"
       - "-c"
       - "tcp_keepalives_interval=10"
       - "-c"
       - "tcp_keepalives_count=3"
+      # Prevent idle connections from being dropped
+      - "-c"
+      - "idle_in_transaction_session_timeout=60000"
+      # Hard upper bound for any single query - prevents runaway queries
+      - "-c"
+      - "statement_timeout=15000"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-poa_admin} -d ${DB_NAME:-poa_production}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
     networks:
       - poa-network
 
@@ -135,6 +195,8 @@ services:
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
       - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    labels:
+      - "traefik.http.services.storage.loadbalancer.server.port=9000"
     volumes:
       - minio_data:/data
     networks:

@@ -1,5 +1,9 @@
+# DEPRECATED - Diese Datei wird von Coolify NICHT verwendet.
+# Coolify verwendet docker-compose.yml. Alle Änderungen müssen dort gemacht werden.
+# Diese Datei bleibt nur als Referenz erhalten.
+#
 # POA - Point of Accident
-# Docker Compose for Coolify v4 Deployment
+# Docker Compose for Coolify v4 Deployment (DEPRECATED)
 #
 # Diese Datei ist speziell für Coolify v4 optimiert.
 # Coolify übernimmt SSL/TLS und Reverse Proxy automatisch.
