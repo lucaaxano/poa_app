@@ -115,8 +115,11 @@ export default function DashboardLayout({
         <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
-        <BottomNav />
       </div>
+
+      {/* Bottom Navigation — rendered outside the main content wrapper
+          so no ancestor transform/transition can break position:fixed */}
+      <BottomNav />
     </div>
   );
 }
