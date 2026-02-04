@@ -10,10 +10,10 @@ import { cn } from '@/lib/utils';
 // PERFORMANCE FIX: Define icons as constants outside the component
 // This prevents React from creating new icon instances on every render
 const NAV_ICONS = {
-  dashboard: <LayoutDashboard className="h-5 w-5" />,
-  claims: <FileWarning className="h-5 w-5" />,
-  chat: <MessageCircle className="h-5 w-5" />,
-  profile: <User className="h-5 w-5" />,
+  dashboard: <LayoutDashboard className="h-6 w-6" />,
+  claims: <FileWarning className="h-6 w-6" />,
+  chat: <MessageCircle className="h-6 w-6" />,
+  profile: <User className="h-6 w-6" />,
 } as const;
 
 const NAV_ITEMS = [
@@ -36,7 +36,7 @@ export const BottomNav = memo(function BottomNav() {
   }, [pathname]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg shadow-[0_-1px_3px_rgba(0,0,0,0.08)] pb-[env(safe-area-inset-bottom)] md:hidden">
       <div className="flex h-16 items-center justify-around">
         {NAV_ITEMS.map((item, index) => (
           <Link
@@ -44,10 +44,10 @@ export const BottomNav = memo(function BottomNav() {
             href={item.href}
             prefetch={false}
             className={cn(
-              'flex flex-1 flex-col items-center gap-1 py-2 text-xs font-medium transition-colors',
+              'flex flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 pb-1 text-[11px] tracking-tight transition-colors',
               index === activeIndex
-                ? 'text-primary'
-                : 'text-muted-foreground'
+                ? 'text-primary font-semibold'
+                : 'text-muted-foreground/70'
             )}
           >
             {item.icon}

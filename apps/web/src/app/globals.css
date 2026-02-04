@@ -138,13 +138,6 @@
     backface-visibility: hidden;
   }
 
-  /* Optimize fixed/sticky elements for better scroll performance */
-  .fixed,
-  .sticky {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-  }
-
   /* IMPORTANT: Ensure sidebar navigation can scroll even when dialogs are open */
   /* Radix UI adds overflow:hidden to body when modal is open, this overrides it for the sidebar */
   aside nav {
