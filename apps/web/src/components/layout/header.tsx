@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { Menu, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import { UserMenu } from './user-menu';
 import { CompanySwitcher } from '@/components/broker/company-switcher';
 import { NotificationDropdown } from '@/components/notifications';
@@ -12,10 +13,11 @@ import { useAuthStore } from '@/stores/auth-store';
 interface HeaderProps {
   onMenuClick?: () => void;
   showMenuButton?: boolean;
+  hideMenuOnMobile?: boolean;
 }
 
 // PERFORMANCE FIX: Memoized component with granular selector
-export const Header = memo(function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
+export const Header = memo(function Header({ onMenuClick, showMenuButton = false, hideMenuOnMobile = false }: HeaderProps) {
   // PERFORMANCE FIX: Use granular selector to only subscribe to user.role changes
   const userRole = useAuthStore((state) => state.user?.role);
   const isBroker = userRole === 'BROKER';
@@ -28,7 +30,7 @@ export const Header = memo(function Header({ onMenuClick, showMenuButton = false
             variant="ghost"
             size="icon"
             onClick={onMenuClick}
-            className="lg:hidden rounded-xl"
+            className={cn('lg:hidden rounded-xl', hideMenuOnMobile && 'hidden md:inline-flex')}
           >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Menu oeffnen</span>

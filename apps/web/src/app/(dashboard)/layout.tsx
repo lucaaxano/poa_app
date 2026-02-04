@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
+import { BottomNav } from '@/components/layout/bottom-nav';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuthStore } from '@/stores/auth-store';
 import { warmupApi } from '@/lib/api/client';
@@ -108,11 +109,13 @@ export default function DashboardLayout({
       >
         <Header
           showMenuButton
+          hideMenuOnMobile
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
-        <main className="p-4 sm:p-6 lg:p-8 pb-[env(safe-area-inset-bottom)]">
+        <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
+        <BottomNav />
       </div>
     </div>
   );
