@@ -163,7 +163,7 @@ export default function DashboardPage() {
   const isClaimsLoading = isBroker ? isLoadingBrokerClaims : isLoadingClaims;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 w-full min-w-0">
       {/* Onboarding Dialog */}
       <OnboardingDialog pageKey="dashboard" />
 
@@ -373,8 +373,8 @@ export default function DashboardPage() {
 
         {/* Recent Claims */}
         <Card className="rounded-2xl border shadow-soft lg:col-span-3">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <div className="min-w-0">
               <CardTitle>Letzte Schaeden</CardTitle>
               <CardDescription>
                 {isBroker && activeCompany
@@ -385,7 +385,7 @@ export default function DashboardPage() {
               </CardDescription>
             </div>
             <Link href={'/claims' as Route} prefetch={false}>
-              <Button variant="ghost" size="sm" className="text-primary">
+              <Button variant="ghost" size="sm" className="text-primary shrink-0">
                 Alle anzeigen
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
@@ -405,17 +405,17 @@ export default function DashboardPage() {
                     prefetch={false}
                     className="block"
                   >
-                    <div className="flex items-center justify-between rounded-xl border p-4 transition-all hover:border-primary/20 hover:shadow-soft">
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                    <div className="flex items-center justify-between gap-2 rounded-xl border p-4 transition-all hover:border-primary/20 hover:shadow-soft">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                           <FileWarning className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{claim.claimNumber}</span>
+                            <span className="font-medium truncate">{claim.claimNumber}</span>
                             <StatusBadge status={claim.status} />
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground truncate">
                             {/* Show company name for broker */}
                             {isBroker && claim.company && (
                               <>
@@ -431,7 +431,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                      <ArrowRight className="h-5 w-5 shrink-0 text-muted-foreground" />
                     </div>
                   </Link>
                 ))}
