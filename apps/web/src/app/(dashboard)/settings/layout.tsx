@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import type { Route } from 'next';
 import { Building2, Users, FileText, Settings, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth-store';
+import { UserRole } from '@poa/shared';
 
 const settingsNavItems = [
   {
@@ -12,18 +14,21 @@ const settingsNavItems = [
     href: '/settings/company',
     icon: Building2,
     description: 'Firmendaten verwalten',
+    adminOnly: true,
   },
   {
     title: 'Benutzer',
     href: '/settings/users',
     icon: Users,
     description: 'Mitarbeiter und Einladungen',
+    adminOnly: true,
   },
   {
     title: 'Versicherungen',
     href: '/settings/policies',
     icon: FileText,
     description: 'Policen und Versicherer',
+    adminOnly: true,
   },
   {
     title: 'Sicherheit',
@@ -39,6 +44,9 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const userRole = useAuthStore((state) => state.user?.role);
+  const isAdmin = userRole === UserRole.COMPANY_ADMIN || userRole === UserRole.SUPERADMIN;
+  const visibleNavItems = settingsNavItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <div className="space-y-6">
@@ -49,13 +57,13 @@ export default function SettingsLayout({
           Einstellungen
         </h1>
         <p className="text-muted-foreground mt-1">
-          Verwalten Sie Ihre Firmeneinstellungen und Benutzer
+          {isAdmin ? 'Verwalten Sie Ihre Firmeneinstellungen und Benutzer' : 'Verwalten Sie Ihre Konto-Einstellungen'}
         </p>
       </div>
 
       {/* Navigation Tabs */}
       <nav className="flex border-b">
-        {settingsNavItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link

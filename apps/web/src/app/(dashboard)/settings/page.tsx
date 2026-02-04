@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { OnboardingDialog, InlineHelp } from '@/components/help';
 import { useHelpStore } from '@/stores/help-store';
+import { useAuthStore } from '@/stores/auth-store';
+import { UserRole } from '@poa/shared';
 
 function OnboardingResetSection() {
   const { resetAllOnboardings, seenOnboardings } = useHelpStore();
@@ -48,24 +50,28 @@ const settingsCards = [
     href: '/settings/company',
     icon: Building2,
     description: 'Verwalten Sie Ihre Firmendaten, Adresse und Kontaktinformationen.',
+    adminOnly: true,
   },
   {
     title: 'Benutzer',
     href: '/settings/users',
     icon: Users,
     description: 'Verwalten Sie Mitarbeiter, Rollen und laden Sie neue Benutzer ein.',
+    adminOnly: true,
   },
   {
     title: 'Broker',
     href: '/settings/broker',
     icon: Briefcase,
     description: 'Verwalten Sie Ihre Broker-Verbindungen und laden Sie neue Broker ein.',
+    adminOnly: true,
   },
   {
     title: 'Versicherungen',
     href: '/settings/policies',
     icon: FileText,
     description: 'Verwalten Sie Ihre Versicherungspolicen und Versicherer.',
+    adminOnly: true,
   },
   {
     title: 'Benachrichtigungen',
@@ -84,10 +90,15 @@ const settingsCards = [
     href: '/settings/billing',
     icon: CreditCard,
     description: 'Verwalten Sie Ihr Abonnement und sehen Sie Ihre Rechnungen ein.',
+    adminOnly: true,
   },
 ];
 
 export default function SettingsPage() {
+  const userRole = useAuthStore((state) => state.user?.role);
+  const isAdmin = userRole === UserRole.COMPANY_ADMIN || userRole === UserRole.SUPERADMIN;
+  const visibleCards = settingsCards.filter((card) => !card.adminOnly || isAdmin);
+
   return (
     <div className="space-y-6">
       {/* Onboarding Dialog */}
@@ -100,12 +111,12 @@ export default function SettingsPage() {
           <InlineHelp topicKey="settings-profile" />
         </div>
         <p className="text-muted-foreground">
-          Verwalten Sie Ihre Plattform-Einstellungen
+          {isAdmin ? 'Verwalten Sie Ihre Plattform-Einstellungen' : 'Verwalten Sie Ihre Konto-Einstellungen'}
         </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {settingsCards.map((card) => (
+        {visibleCards.map((card) => (
         <Link key={card.href} href={card.href as Route}>
           <Card className="rounded-2xl border shadow-soft hover:shadow-md transition-shadow cursor-pointer h-full">
             <CardHeader>
