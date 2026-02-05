@@ -63,7 +63,7 @@ export interface QuotaStats {
 @Injectable()
 export class CompaniesService {
   private cache = new Map<string, { data: unknown; expiry: number }>();
-  private static readonly CACHE_TTL_MS = 60000; // 60 seconds
+  private static readonly CACHE_TTL_MS = 120000; // 2 minutes
 
   constructor(private prisma: PrismaService) {}
 

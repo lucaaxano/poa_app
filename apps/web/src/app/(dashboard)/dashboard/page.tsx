@@ -239,9 +239,9 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Charts Section - Only for Admins and Brokers */}
+      {/* Charts Section - Only for Admins (not Brokers - they don't have a single companyId) */}
       {/* PERFORMANCE FIX: Charts wrapped in LazyChart for deferred loading */}
-      {(isAdmin || isBroker) && !activeCompany && (
+      {isAdmin && (
         <div className="space-y-6">
           {/* Timeline Chart - Full Width */}
           <LazyChart fallbackTitle="Schadenentwicklung" fallbackHeight="h-[300px]">

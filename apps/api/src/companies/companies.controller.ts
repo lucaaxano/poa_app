@@ -11,7 +11,9 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import { UserRole } from '@poa/database';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   CompaniesService,
@@ -38,14 +40,32 @@ export class CompaniesController {
     private readonly storageService: StorageService,
   ) {}
 
+  /**
+   * Helper method to ensure companyId is present.
+   * Brokers should use /api/broker/* endpoints instead.
+   */
+  private getCompanyIdOrFail(companyId: string | null, role: UserRole): string {
+    if (!companyId) {
+      if (role === UserRole.BROKER) {
+        throw new ForbiddenException(
+          'Broker sollten /api/broker/* Endpoints verwenden',
+        );
+      }
+      throw new BadRequestException('Keine Firma zugeordnet');
+    }
+    return companyId;
+  }
+
   @Get('current')
   async getCurrent(@Request() req: AuthenticatedRequest): Promise<Company> {
-    return this.companiesService.findById(req.user.companyId!);
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+    return this.companiesService.findById(companyId);
   }
 
   @Get('current/stats')
   async getStats(@Request() req: AuthenticatedRequest): Promise<CompanyStats> {
-    return this.companiesService.getStats(req.user.companyId!);
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+    return this.companiesService.getStats(companyId);
   }
 
   @Get('current/stats/timeline')
@@ -54,8 +74,9 @@ export class CompaniesController {
     @Query('period') period?: 'week' | 'month',
     @Query('range') range?: string,
   ): Promise<TimelineStats> {
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
     return this.companiesService.getStatsTimeline(
-      req.user.companyId!,
+      companyId,
       period || 'month',
       range ? parseInt(range, 10) : 12,
     );
@@ -66,8 +87,9 @@ export class CompaniesController {
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit?: string,
   ): Promise<VehicleStatsItem[]> {
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
     return this.companiesService.getStatsByVehicle(
-      req.user.companyId!,
+      companyId,
       limit ? parseInt(limit, 10) : 10,
     );
   }
@@ -77,8 +99,9 @@ export class CompaniesController {
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit?: string,
   ): Promise<DriverStatsItem[]> {
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
     return this.companiesService.getStatsByDriver(
-      req.user.companyId!,
+      companyId,
       limit ? parseInt(limit, 10) : 10,
     );
   }
@@ -87,7 +110,8 @@ export class CompaniesController {
   async getStatsByCategory(
     @Request() req: AuthenticatedRequest,
   ): Promise<CategoryStatsItem[]> {
-    return this.companiesService.getStatsByCategory(req.user.companyId!);
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+    return this.companiesService.getStatsByCategory(companyId);
   }
 
   @Get('current/stats/quota')
@@ -95,8 +119,9 @@ export class CompaniesController {
     @Request() req: AuthenticatedRequest,
     @Query('year') year?: string,
   ): Promise<QuotaStats> {
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
     return this.companiesService.getQuotaStats(
-      req.user.companyId!,
+      companyId,
       year ? parseInt(year, 10) : undefined,
     );
   }
@@ -108,7 +133,8 @@ export class CompaniesController {
     @Body() updateCompanyDto: UpdateCompanyDto,
     @Request() req: AuthenticatedRequest,
   ): Promise<Company> {
-    return this.companiesService.update(req.user.companyId!, updateCompanyDto);
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+    return this.companiesService.update(companyId, updateCompanyDto);
   }
 
   @Post('current/logo')
@@ -119,6 +145,8 @@ export class CompaniesController {
     @UploadedFile() file: Express.Multer.File,
     @Request() req: AuthenticatedRequest,
   ): Promise<Company> {
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+
     if (!file) {
       throw new BadRequestException('Keine Datei hochgeladen');
     }
@@ -136,7 +164,7 @@ export class CompaniesController {
     }
 
     // Get current company to delete old logo if exists
-    const company = await this.companiesService.findById(req.user.companyId!);
+    const company = await this.companiesService.findById(companyId);
     if (company.logoUrl) {
       try {
         await this.storageService.deleteFile(company.logoUrl);
@@ -147,14 +175,15 @@ export class CompaniesController {
 
     // Upload new logo
     const uploaded = await this.storageService.uploadFile(file, 'logos');
-    return this.companiesService.updateLogo(req.user.companyId!, uploaded.url);
+    return this.companiesService.updateLogo(companyId, uploaded.url);
   }
 
   @Delete('current/logo')
   @UseGuards(RolesGuard)
   @Roles('COMPANY_ADMIN', 'SUPERADMIN')
   async deleteLogo(@Request() req: AuthenticatedRequest): Promise<Company> {
-    const company = await this.companiesService.findById(req.user.companyId!);
+    const companyId = this.getCompanyIdOrFail(req.user.companyId, req.user.role);
+    const company = await this.companiesService.findById(companyId);
     if (company.logoUrl) {
       try {
         await this.storageService.deleteFile(company.logoUrl);
@@ -162,6 +191,6 @@ export class CompaniesController {
         // Ignore errors when deleting logo
       }
     }
-    return this.companiesService.updateLogo(req.user.companyId!, null);
+    return this.companiesService.updateLogo(companyId, null);
   }
 }

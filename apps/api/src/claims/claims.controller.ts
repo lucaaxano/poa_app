@@ -74,7 +74,8 @@ export class ClaimsController {
 
   /**
    * GET /claims - List all claims for the company
-   * Admins see all, Employees see only their own
+   * Admins see all company claims, Employees see only their own,
+   * Brokers should use /api/broker/claims instead
    */
   @Get()
   async findAll(
@@ -88,8 +89,29 @@ export class ClaimsController {
       return this.claimsService.findByUserId(userId, companyId!, filters);
     }
 
-    // Admins and Brokers see all company claims
-    return this.claimsService.findByCompanyId(companyId!, filters);
+    // Brokers: Use broker service to get claims from linked companies
+    if (role === UserRole.BROKER) {
+      const result = await this.brokerService.getClaims(userId, {
+        status: filters.status,
+        search: filters.search,
+        page: filters.page || 1,
+        limit: filters.pageSize || 20,
+      });
+      // Transform to match expected response format
+      return {
+        data: result.data as any,
+        total: result.meta.total,
+        page: result.meta.page,
+        pageSize: result.meta.limit,
+        totalPages: result.meta.totalPages,
+      };
+    }
+
+    // Admins see all company claims
+    if (!companyId) {
+      throw new BadRequestException('Keine Firma zugeordnet');
+    }
+    return this.claimsService.findByCompanyId(companyId, filters);
   }
 
   /**

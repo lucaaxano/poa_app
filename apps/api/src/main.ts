@@ -22,7 +22,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 
 // Global request timeout - respond BEFORE reverse proxy times out
 // Traefik entrypoint timeout should be higher (configured via Coolify)
-const REQUEST_TIMEOUT_MS = 25000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
