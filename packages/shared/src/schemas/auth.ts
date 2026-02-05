@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Login Schema
 export const loginSchema = z.object({
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
   password: z.string().min(1, 'Passwort ist erforderlich'),
 });
 
@@ -22,13 +22,13 @@ export const registerSchema = z.object({
     .string()
     .min(2, 'Nachname muss mindestens 2 Zeichen haben')
     .max(100, 'Nachname darf maximal 100 Zeichen haben'),
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
   password: z
     .string()
     .min(8, 'Passwort muss mindestens 8 Zeichen haben')
     .regex(
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+      'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
     ),
   numVehicles: z.number().int().positive().optional(),
 });
@@ -37,7 +37,7 @@ export type RegisterSchema = z.infer<typeof registerSchema>;
 
 // Password Reset Request Schema
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
 });
 
 export type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
@@ -51,12 +51,12 @@ export const resetPasswordSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen haben')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+        'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
       ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwoerter stimmen nicht ueberein',
+    message: 'Passwörter stimmen nicht überein',
     path: ['confirmPassword'],
   });
 
@@ -71,12 +71,12 @@ export const changePasswordSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen haben')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+        'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
       ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwoerter stimmen nicht ueberein',
+    message: 'Passwörter stimmen nicht überein',
     path: ['confirmPassword'],
   });
 
@@ -84,9 +84,9 @@ export type ChangePasswordSchema = z.infer<typeof changePasswordSchema>;
 
 // Invite User Schema
 export const inviteUserSchema = z.object({
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
   role: z.enum(['EMPLOYEE', 'BROKER'], {
-    errorMap: () => ({ message: 'Ungueltige Rolle' }),
+    errorMap: () => ({ message: 'Ungültige Rolle' }),
   }),
 });
 
@@ -109,12 +109,12 @@ export const acceptInvitationSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen haben')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+        'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
       ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwoerter stimmen nicht ueberein',
+    message: 'Passwörter stimmen nicht überein',
     path: ['confirmPassword'],
   });
 

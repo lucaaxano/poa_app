@@ -1,6 +1,6 @@
 /**
  * Auth Navigator
- * Stack Navigator fuer unauthentifizierte Screens
+ * Stack Navigator für unauthentifizierte Screens
  */
 
 import React from 'react';

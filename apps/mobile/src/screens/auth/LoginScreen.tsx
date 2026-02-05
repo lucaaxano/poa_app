@@ -71,7 +71,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
             <View style={styles.logoContainer}>
               <Text style={styles.logoText}>POA</Text>
             </View>
-            <Text style={styles.title}>Willkommen zurueck</Text>
+            <Text style={styles.title}>Willkommen zurück</Text>
             <Text style={styles.subtitle}>
               Melden Sie sich an, um fortzufahren
             </Text>

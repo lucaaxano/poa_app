@@ -315,7 +315,7 @@ export class AuthService {
     this.logger.log(`[LOGIN] DB query took ${Date.now() - dbStartTime}ms`);
 
     if (!user) {
-      throw new UnauthorizedException('Ungueltige Anmeldedaten');
+      throw new UnauthorizedException('Ungültige Anmeldedaten');
     }
 
     if (!user.isActive) {
@@ -327,7 +327,7 @@ export class AuthService {
     this.logger.log(`[LOGIN] bcrypt.compare took ${Date.now() - bcryptStartTime}ms`);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Ungueltige Anmeldedaten');
+      throw new UnauthorizedException('Ungültige Anmeldedaten');
     }
 
     // Check if email is verified
@@ -1017,7 +1017,7 @@ export class AuthService {
       data: { passwordHash: newPasswordHash },
     });
 
-    return { message: 'Passwort wurde erfolgreich geaendert' };
+    return { message: 'Passwort wurde erfolgreich geändert' };
   }
 
   // ============================================

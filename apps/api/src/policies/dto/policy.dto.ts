@@ -20,11 +20,11 @@ export class CreatePolicyDto {
   policyNumber: string;
 
   @IsOptional()
-  @IsEnum(CoverageType, { message: 'Ungueltiger Deckungstyp' })
+  @IsEnum(CoverageType, { message: 'Ungültiger Deckungstyp' })
   coverageType?: CoverageType;
 
   @IsOptional()
-  @IsEnum(PricingModel, { message: 'Ungueltiges Preismodell' })
+  @IsEnum(PricingModel, { message: 'Ungültiges Preismodell' })
   pricingModel?: PricingModel;
 
   @IsOptional()
@@ -54,7 +54,7 @@ export class CreatePolicyDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000, { message: 'Notizen duerfen maximal 1000 Zeichen haben' })
+  @MaxLength(1000, { message: 'Notizen dürfen maximal 1000 Zeichen haben' })
   notes?: string;
 }
 
@@ -69,11 +69,11 @@ export class UpdatePolicyDto {
   policyNumber?: string;
 
   @IsOptional()
-  @IsEnum(CoverageType, { message: 'Ungueltiger Deckungstyp' })
+  @IsEnum(CoverageType, { message: 'Ungültiger Deckungstyp' })
   coverageType?: CoverageType;
 
   @IsOptional()
-  @IsEnum(PricingModel, { message: 'Ungueltiges Preismodell' })
+  @IsEnum(PricingModel, { message: 'Ungültiges Preismodell' })
   pricingModel?: PricingModel;
 
   @IsOptional()
@@ -104,7 +104,7 @@ export class UpdatePolicyDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(1000, { message: 'Notizen duerfen maximal 1000 Zeichen haben' })
+  @MaxLength(1000, { message: 'Notizen dürfen maximal 1000 Zeichen haben' })
   notes?: string;
 
   @IsOptional()

@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: 'POA - Point of Accident',
-  description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
+  description: 'KFZ-Schadenmanagement-System für Firmenflotten',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.png',
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'POA - Point of Accident',
-    description: 'KFZ-Schadenmanagement-System fuer Firmenflotten',
+    description: 'KFZ-Schadenmanagement-System für Firmenflotten',
     siteName: 'POA',
     type: 'website',
   },

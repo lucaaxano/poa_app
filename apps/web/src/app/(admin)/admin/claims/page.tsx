@@ -48,9 +48,9 @@ export default function AdminClaimsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Schaeden</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Schäden</h1>
         <p className="text-muted-foreground">
-          Alle Schaeden im System einsehen
+          Alle Schäden im System einsehen
         </p>
       </div>
 
@@ -105,7 +105,7 @@ export default function AdminClaimsPage() {
                 <SelectItem value="SUBMITTED">Eingereicht</SelectItem>
                 <SelectItem value="APPROVED">Genehmigt</SelectItem>
                 <SelectItem value="SENT">Gesendet</SelectItem>
-                <SelectItem value="ACKNOWLEDGED">Bestaetigt</SelectItem>
+                <SelectItem value="ACKNOWLEDGED">Bestätigt</SelectItem>
                 <SelectItem value="CLOSED">Geschlossen</SelectItem>
                 <SelectItem value="REJECTED">Abgelehnt</SelectItem>
               </SelectContent>
@@ -119,13 +119,13 @@ export default function AdminClaimsPage() {
         <CardHeader>
           <CardTitle>Schadenliste</CardTitle>
           <CardDescription>
-            {data?.total ?? 0} Schaeden gefunden
+            {data?.total ?? 0} Schäden gefunden
           </CardDescription>
         </CardHeader>
         <CardContent>
           {error ? (
             <div className="text-center py-8 text-destructive">
-              Fehler beim Laden der Schaeden
+              Fehler beim Laden der Schäden
             </div>
           ) : (
             <>
@@ -159,7 +159,7 @@ export default function AdminClaimsPage() {
                   ) : data?.data.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        Keine Schaeden gefunden
+                        Keine Schäden gefunden
                       </TableCell>
                     </TableRow>
                   ) : (

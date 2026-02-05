@@ -29,9 +29,9 @@ export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>;
 
 // Update User Role Schema (Admin only)
 export const updateUserRoleSchema = z.object({
-  userId: z.string().uuid('Ungueltige Benutzer-ID'),
+  userId: z.string().uuid('Ungültige Benutzer-ID'),
   role: z.enum([UserRole.EMPLOYEE, UserRole.COMPANY_ADMIN], {
-    errorMap: () => ({ message: 'Ungueltige Rolle' }),
+    errorMap: () => ({ message: 'Ungültige Rolle' }),
   }),
 });
 

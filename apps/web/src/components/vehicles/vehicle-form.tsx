@@ -116,7 +116,7 @@ export function VehicleForm({ vehicle, onSubmit, isLoading }: VehicleFormProps) 
                 onValueChange={(value) => setValue('vehicleType', value as VehicleType)}
               >
                 <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Fahrzeugtyp waehlen" />
+                  <SelectValue placeholder="Fahrzeugtyp wählen" />
                 </SelectTrigger>
                 <SelectContent>
                   {vehicleTypeOptions.map((option) => (
@@ -169,7 +169,7 @@ export function VehicleForm({ vehicle, onSubmit, isLoading }: VehicleFormProps) 
               <Input
                 id="color"
                 {...register('color')}
-                placeholder="z.B. Weiss"
+                placeholder="z.B. Weiß"
                 className="rounded-xl"
               />
             </div>
@@ -207,7 +207,7 @@ export function VehicleForm({ vehicle, onSubmit, isLoading }: VehicleFormProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hsn">HSN (Herstellerschluessel)</Label>
+              <Label htmlFor="hsn">HSN (Herstellerschlüssel)</Label>
               <Input
                 id="hsn"
                 {...register('hsn')}
@@ -217,7 +217,7 @@ export function VehicleForm({ vehicle, onSubmit, isLoading }: VehicleFormProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tsn">TSN (Typschluessel)</Label>
+              <Label htmlFor="tsn">TSN (Typschlüssel)</Label>
               <Input
                 id="tsn"
                 {...register('tsn')}

@@ -28,7 +28,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileMain'>)
   const handleLogout = () => {
     Alert.alert(
       'Abmelden',
-      'Moechten Sie sich wirklich abmelden?',
+      'Möchten Sie sich wirklich abmelden?',
       [
         { text: 'Abbrechen', style: 'cancel' },
         {
@@ -45,7 +45,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps<'ProfileMain'>)
   const menuItems: MenuItem[] = [
     {
       icon: 'key-outline',
-      label: 'Passwort aendern',
+      label: 'Passwort ändern',
       onPress: () => navigation.navigate('ChangePassword'),
       showArrow: true,
     },

@@ -140,13 +140,13 @@ export class UsersService {
 
     // Prevent changing SUPERADMIN role
     if (user.role === 'SUPERADMIN') {
-      throw new ForbiddenException('Die Rolle eines Superadmins kann nicht geaendert werden');
+      throw new ForbiddenException('Die Rolle eines Superadmins kann nicht geändert werden');
     }
 
     // Only allow certain role changes
     const allowedRoles: UserRole[] = ['EMPLOYEE', 'COMPANY_ADMIN'];
     if (!allowedRoles.includes(role)) {
-      throw new ForbiddenException('Diese Rollenaenderung ist nicht erlaubt');
+      throw new ForbiddenException('Diese Rollenänderung ist nicht erlaubt');
     }
 
     return this.prisma.user.update({
@@ -222,7 +222,7 @@ export class UsersService {
 
     // Prevent deleting SUPERADMIN
     if (user.role === 'SUPERADMIN') {
-      throw new ForbiddenException('Ein Superadmin kann nicht geloescht werden');
+      throw new ForbiddenException('Ein Superadmin kann nicht gelöscht werden');
     }
 
     // Check if user has claims as reporter or driver
@@ -237,7 +237,7 @@ export class UsersService {
 
     if (claimsCount > 0) {
       throw new ForbiddenException(
-        `Der Benutzer kann nicht geloescht werden, da ${claimsCount} Schaden/Schaeden zugeordnet sind. Bitte deaktivieren Sie den Benutzer stattdessen.`,
+        `Der Benutzer kann nicht gelöscht werden, da ${claimsCount} Schaden/Schäden zugeordnet sind. Bitte deaktivieren Sie den Benutzer stattdessen.`,
       );
     }
 

@@ -70,13 +70,13 @@ export default function VehiclesPage() {
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
           <Building2 className="h-8 w-8 text-muted-foreground" />
         </div>
-        <h3 className="font-medium">Keine Firma ausgewaehlt</h3>
+        <h3 className="font-medium">Keine Firma ausgewählt</h3>
         <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-          Bitte waehlen Sie zuerst eine Firma aus, um deren Fahrzeuge anzuzeigen.
+          Bitte wählen Sie zuerst eine Firma aus, um deren Fahrzeuge anzuzeigen.
         </p>
         <Link href={'/broker/companies' as Route} prefetch={false} className="mt-6">
           <Button className="rounded-xl">
-            Firma auswaehlen
+            Firma auswählen
           </Button>
         </Link>
       </div>
@@ -122,10 +122,10 @@ export default function VehiclesPage() {
     if (!vehicleToDelete) return;
     try {
       await deleteVehicle.mutateAsync(vehicleToDelete.id);
-      toast.success('Fahrzeug erfolgreich geloescht');
+      toast.success('Fahrzeug erfolgreich gelöscht');
       setVehicleToDelete(null);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Fehler beim Loeschen des Fahrzeugs';
+      const message = error instanceof Error ? error.message : 'Fehler beim Löschen des Fahrzeugs';
       toast.error(message);
       setVehicleToDelete(null);
     }
@@ -301,7 +301,7 @@ export default function VehiclesPage() {
                                 onSelect={() => setVehicleToDelete(vehicle)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Loeschen
+                                Löschen
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -343,13 +343,13 @@ export default function VehiclesPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Fahrzeug loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Fahrzeug löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie das Fahrzeug &quot;{vehicleToDelete?.licensePlate}&quot; wirklich
-              loeschen? Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Möchten Sie das Fahrzeug &quot;{vehicleToDelete?.licensePlate}&quot; wirklich
+              löschen? Diese Aktion kann nicht rückgängig gemacht werden.
               <br /><br />
-              <strong>Hinweis:</strong> Fahrzeuge mit zugeordneten Schaeden koennen nicht
-              geloescht werden. In diesem Fall deaktivieren Sie das Fahrzeug stattdessen.
+              <strong>Hinweis:</strong> Fahrzeuge mit zugeordneten Schäden können nicht
+              gelöscht werden. In diesem Fall deaktivieren Sie das Fahrzeug stattdessen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -361,7 +361,7 @@ export default function VehiclesPage() {
               {deleteVehicle.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Loeschen
+              Löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -940,9 +940,9 @@ async function main() {
   console.log('    - Transporter: 28');
   console.log('    - LKW: 14');
   console.log('    - Motorrad: 3');
-  console.log(`  Schaeden: ${demoClaims.length}`);
+  console.log(`  Schäden: ${demoClaims.length}`);
   console.log('');
-  console.log('Login-Daten (Passwort fuer alle: Demo123!):');
+  console.log('Login-Daten (Passwort für alle: Demo123!):');
   console.log('  Admin:    admin@demo-transport.de');
   console.log('  Fahrer 1: fahrer1@demo-transport.de');
   console.log('  Fahrer 2: fahrer2@demo-transport.de');

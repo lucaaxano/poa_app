@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -9,10 +9,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, fontSize, fontWeight, borderRadius, shadow } from '../../constants/theme';
-import { useVehicles } from '../../hooks/useVehicles';
+import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../constants/theme';
+import { useVehicles, Vehicle } from '../../hooks/useVehicles';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { EmptyState } from '../common/EmptyState';
+import { LineSeparator } from '../common/ListSeparators';
+import { createGetItemLayout, LIST_ITEM_HEIGHTS } from '../../constants/listItemHeights';
 
 interface VehicleSelectorProps {
   label: string;
@@ -22,6 +24,56 @@ interface VehicleSelectorProps {
   required?: boolean;
   disabled?: boolean;
 }
+
+// Memoized Vehicle Item Component
+interface VehicleItemProps {
+  item: Vehicle;
+  isSelected: boolean;
+  onSelect: (vehicleId: string) => void;
+}
+
+const VehicleItem = memo(function VehicleItem({ item, isSelected, onSelect }: VehicleItemProps) {
+  const handlePress = useCallback(() => {
+    onSelect(item.id);
+  }, [item.id, onSelect]);
+
+  return (
+    <TouchableOpacity
+      style={[styles.vehicleItem, isSelected && styles.vehicleItemSelected]}
+      onPress={handlePress}
+    >
+      <Ionicons
+        name="car"
+        size={24}
+        color={isSelected ? colors.primary[600] : colors.gray[500]}
+        style={styles.itemIcon}
+      />
+      <View style={styles.itemInfo}>
+        <Text style={[styles.itemLicensePlate, isSelected && styles.itemTextSelected]}>
+          {item.licensePlate}
+        </Text>
+        {item.brand && item.model && (
+          <Text style={styles.itemModel}>
+            {item.brand} {item.model}
+          </Text>
+        )}
+        {item.vin && (
+          <Text style={styles.itemVin}>VIN: {item.vin}</Text>
+        )}
+      </View>
+      {isSelected && (
+        <Ionicons name="checkmark" size={24} color={colors.primary[600]} />
+      )}
+    </TouchableOpacity>
+  );
+});
+
+// FlatList optimization
+const keyExtractor = (item: Vehicle) => item.id;
+const getItemLayout = createGetItemLayout<Vehicle>(
+  LIST_ITEM_HEIGHTS.vehicleItem,
+  LIST_ITEM_HEIGHTS.vehicleSeparator
+);
 
 export function VehicleSelector({
   label,
@@ -37,10 +89,28 @@ export function VehicleSelector({
 
   const selectedVehicle = vehicles.find((v) => v.id === value);
 
-  const handleSelect = (vehicleId: string) => {
+  const handleOpen = useCallback(() => {
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  }, [disabled]);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  const handleSelect = useCallback((vehicleId: string) => {
     onValueChange(vehicleId);
     setIsOpen(false);
-  };
+  }, [onValueChange]);
+
+  const renderVehicleItem = useCallback(({ item }: { item: Vehicle }) => (
+    <VehicleItem
+      item={item}
+      isSelected={item.id === value}
+      onSelect={handleSelect}
+    />
+  ), [value, handleSelect]);
 
   return (
     <View style={styles.container}>
@@ -55,7 +125,7 @@ export function VehicleSelector({
           error && styles.selectButtonError,
           disabled && styles.selectButtonDisabled,
         ]}
-        onPress={() => !disabled && setIsOpen(true)}
+        onPress={handleOpen}
         disabled={disabled}
       >
         {selectedVehicle ? (
@@ -85,17 +155,17 @@ export function VehicleSelector({
         visible={isOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsOpen(false)}
+        onRequestClose={handleClose}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setIsOpen(false)}
+          onPress={handleClose}
         >
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + spacing.md }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Fahrzeug auswählen</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
+              <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
@@ -119,45 +189,14 @@ export function VehicleSelector({
             ) : (
               <FlatList
                 data={vehicles}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.vehicleItem,
-                      item.id === value && styles.vehicleItemSelected,
-                    ]}
-                    onPress={() => handleSelect(item.id)}
-                  >
-                    <Ionicons
-                      name="car"
-                      size={24}
-                      color={item.id === value ? colors.primary[600] : colors.gray[500]}
-                      style={styles.itemIcon}
-                    />
-                    <View style={styles.itemInfo}>
-                      <Text
-                        style={[
-                          styles.itemLicensePlate,
-                          item.id === value && styles.itemTextSelected,
-                        ]}
-                      >
-                        {item.licensePlate}
-                      </Text>
-                      {item.brand && item.model && (
-                        <Text style={styles.itemModel}>
-                          {item.brand} {item.model}
-                        </Text>
-                      )}
-                      {item.vin && (
-                        <Text style={styles.itemVin}>VIN: {item.vin}</Text>
-                      )}
-                    </View>
-                    {item.id === value && (
-                      <Ionicons name="checkmark" size={24} color={colors.primary[600]} />
-                    )}
-                  </TouchableOpacity>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
+                keyExtractor={keyExtractor}
+                renderItem={renderVehicleItem}
+                ItemSeparatorComponent={LineSeparator}
+                getItemLayout={getItemLayout}
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                initialNumToRender={10}
+                windowSize={5}
               />
             )}
           </View>
@@ -290,9 +329,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
     marginTop: 2,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border.light,
   },
 });

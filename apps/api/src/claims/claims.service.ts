@@ -316,7 +316,7 @@ export class ClaimsService {
       userRole === UserRole.EMPLOYEE &&
       existingClaim.reporterUserId !== userId
     ) {
-      throw new ForbiddenException('Sie koennen nur eigene Schaeden bearbeiten');
+      throw new ForbiddenException('Sie können nur eigene Schäden bearbeiten');
     }
 
     if (
@@ -324,7 +324,7 @@ export class ClaimsService {
       existingClaim.status !== ClaimStatus.DRAFT
     ) {
       throw new ForbiddenException(
-        'Sie koennen nur Entwuerfe bearbeiten',
+        'Sie können nur Entwürfe bearbeiten',
       );
     }
 
@@ -356,7 +356,7 @@ export class ClaimsService {
       userRole === UserRole.EMPLOYEE
     ) {
       throw new ForbiddenException(
-        'Nur Administratoren koennen finale Kosten und Versicherer-Schadennummer setzen',
+        'Nur Administratoren können finale Kosten und Versicherer-Schadennummer setzen',
       );
     }
 
@@ -448,12 +448,12 @@ export class ClaimsService {
 
     // Only DRAFT claims can be deleted
     if (claim.status !== ClaimStatus.DRAFT) {
-      throw new ForbiddenException('Nur Entwuerfe koennen geloescht werden');
+      throw new ForbiddenException('Nur Entwürfe können gelöscht werden');
     }
 
     // Employees can only delete their own drafts
     if (userRole === UserRole.EMPLOYEE && claim.reporterUserId !== userId) {
-      throw new ForbiddenException('Sie koennen nur eigene Entwuerfe loeschen');
+      throw new ForbiddenException('Sie können nur eigene Entwürfe löschen');
     }
 
     // Delete claim (cascades to attachments, events, comments)
@@ -864,7 +864,7 @@ export class ClaimsService {
     // Only DRAFT or REJECTED claims can be submitted
     if (claim.status !== ClaimStatus.DRAFT && claim.status !== ClaimStatus.REJECTED) {
       throw new BadRequestException(
-        'Nur Entwuerfe oder abgelehnte Schaeden koennen eingereicht werden',
+        'Nur Entwürfe oder abgelehnte Schäden können eingereicht werden',
       );
     }
 
@@ -955,7 +955,7 @@ export class ClaimsService {
   ): Promise<Claim> {
     // Only admins and brokers can approve
     if (userRole !== UserRole.COMPANY_ADMIN && userRole !== UserRole.BROKER && userRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException('Nur Administratoren koennen Schaeden genehmigen');
+      throw new ForbiddenException('Nur Administratoren können Schäden genehmigen');
     }
 
     const claim = await this.prisma.claim.findFirst({
@@ -980,7 +980,7 @@ export class ClaimsService {
     // Only SUBMITTED claims can be approved
     if (claim.status !== ClaimStatus.SUBMITTED) {
       throw new BadRequestException(
-        'Nur eingereichte Schaeden koennen genehmigt werden',
+        'Nur eingereichte Schäden können genehmigt werden',
       );
     }
 
@@ -1054,7 +1054,7 @@ export class ClaimsService {
   ): Promise<Claim> {
     // Only admins and brokers can reject
     if (userRole !== UserRole.COMPANY_ADMIN && userRole !== UserRole.BROKER && userRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException('Nur Administratoren koennen Schaeden ablehnen');
+      throw new ForbiddenException('Nur Administratoren können Schäden ablehnen');
     }
 
     const claim = await this.prisma.claim.findFirst({
@@ -1079,7 +1079,7 @@ export class ClaimsService {
     // Only SUBMITTED claims can be rejected
     if (claim.status !== ClaimStatus.SUBMITTED) {
       throw new BadRequestException(
-        'Nur eingereichte Schaeden koennen abgelehnt werden',
+        'Nur eingereichte Schäden können abgelehnt werden',
       );
     }
 
@@ -1156,7 +1156,7 @@ export class ClaimsService {
   ): Promise<Claim> {
     // Only admins and brokers can send to insurer
     if (userRole !== UserRole.COMPANY_ADMIN && userRole !== UserRole.BROKER && userRole !== UserRole.SUPERADMIN) {
-      throw new ForbiddenException('Nur Administratoren koennen Schaeden an Versicherungen senden');
+      throw new ForbiddenException('Nur Administratoren können Schäden an Versicherungen senden');
     }
 
     // Load claim with all relations needed for the email
@@ -1195,7 +1195,7 @@ export class ClaimsService {
     if (claim.status !== ClaimStatus.APPROVED) {
       this.logger.warn(`sendToInsurer failed for claim ${id}: status is ${claim.status}, expected APPROVED`);
       throw new BadRequestException(
-        'Nur genehmigte Schaeden koennen an die Versicherung gesendet werden',
+        'Nur genehmigte Schäden können an die Versicherung gesendet werden',
       );
     }
 
@@ -1477,7 +1477,7 @@ export class ClaimsService {
       recipientIds,
       NotificationType.NEW_COMMENT,
       'Neuer Kommentar',
-      `${commenterName} hat einen Kommentar zu Schaden ${claim.claimNumber} hinzugefuegt.`,
+      `${commenterName} hat einen Kommentar zu Schaden ${claim.claimNumber} hinzugefügt.`,
       { claimId, claimNumber: claim.claimNumber },
     );
 
@@ -1591,7 +1591,7 @@ export class ClaimsService {
       attachment.claim.reporterUserId === userId;
 
     if (!canDelete) {
-      throw new ForbiddenException('Sie haben keine Berechtigung, diesen Anhang zu loeschen');
+      throw new ForbiddenException('Sie haben keine Berechtigung, diesen Anhang zu löschen');
     }
 
     // Delete from storage

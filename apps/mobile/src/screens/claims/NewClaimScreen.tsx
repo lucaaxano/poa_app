@@ -1,9 +1,10 @@
 /**
  * New Claim Screen
  * Formular zur Schadensmeldung - Mit Store für Daten-Persistenz
+ * Performance optimized with memoization
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -22,10 +23,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { colors, spacing, fontSize, borderRadius, fontWeight } from '@/constants/theme';
-import { useClaimDraftStore, ClaimDraftVehicle } from '@/stores';
+import {
+  useClaimDraftVehicle,
+  useClaimDraftDate,
+  useClaimDraftTime,
+  useClaimDraftLocation,
+  useClaimDraftGpsCoords,
+  useClaimDraftCategory,
+  useClaimDraftDescription,
+  useClaimDraftActions,
+  ClaimDraftVehicle,
+} from '@/stores';
+import { LineSeparator } from '@/components/common/ListSeparators';
+import { createGetItemLayout, LIST_ITEM_HEIGHTS } from '@/constants/listItemHeights';
 import type { ClaimsScreenProps } from '@/navigation/types';
 
-// Demo-Fahrzeuge
+// Demo-Fahrzeuge - defined outside component
 const DEMO_VEHICLES: ClaimDraftVehicle[] = [
   { id: '1', licensePlate: 'B-AB 1234', brand: 'Mercedes-Benz', model: 'Actros' },
   { id: '2', licensePlate: 'B-CD 5678', brand: 'MAN', model: 'TGX' },
@@ -34,7 +47,7 @@ const DEMO_VEHICLES: ClaimDraftVehicle[] = [
   { id: '5', licensePlate: 'HH-IJ 7890', brand: 'DAF', model: 'XF' },
 ];
 
-// Schadenskategorien
+// Schadenskategorien - defined outside component
 const DAMAGE_CATEGORIES = [
   { value: 'LIABILITY', label: 'Haftpflicht', icon: 'shield-outline' },
   { value: 'COMPREHENSIVE', label: 'Vollkasko', icon: 'car-outline' },
@@ -44,16 +57,69 @@ const DAMAGE_CATEGORIES = [
   { value: 'OTHER', label: 'Sonstiges', icon: 'ellipsis-horizontal-outline' },
 ];
 
+// Date/Time picker arrays - OUTSIDE component (created only once)
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
+const MONTHS = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+];
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
+
+// Memoized Vehicle Item Component
+interface VehicleItemProps {
+  item: ClaimDraftVehicle;
+  isSelected: boolean;
+  onSelect: (vehicle: ClaimDraftVehicle) => void;
+}
+
+const VehicleItem = memo(function VehicleItem({ item, isSelected, onSelect }: VehicleItemProps) {
+  const handlePress = useCallback(() => {
+    onSelect(item);
+  }, [item, onSelect]);
+
+  return (
+    <TouchableOpacity
+      style={[styles.vehicleItem, isSelected && styles.vehicleItemSelected]}
+      onPress={handlePress}
+    >
+      <Ionicons
+        name="car"
+        size={24}
+        color={isSelected ? colors.primary[600] : colors.gray[400]}
+      />
+      <View style={styles.vehicleInfo}>
+        <Text style={[styles.vehiclePlate, isSelected && styles.vehiclePlateSelected]}>
+          {item.licensePlate}
+        </Text>
+        <Text style={styles.vehicleModel}>{item.brand} {item.model}</Text>
+      </View>
+      {isSelected && (
+        <Ionicons name="checkmark-circle" size={24} color={colors.primary[600]} />
+      )}
+    </TouchableOpacity>
+  );
+});
+
+// FlatList optimization for vehicles
+const vehicleKeyExtractor = (item: ClaimDraftVehicle) => item.id;
+const getVehicleItemLayout = createGetItemLayout<ClaimDraftVehicle>(
+  LIST_ITEM_HEIGHTS.vehicleItem,
+  LIST_ITEM_HEIGHTS.vehicleSeparator
+);
+
 export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
-  // Store State
+  // Granular Store Selectors - prevent cascading re-renders
+  const selectedVehicle = useClaimDraftVehicle();
+  const storedAccidentDate = useClaimDraftDate();
+  const storedAccidentTime = useClaimDraftTime();
+  const location = useClaimDraftLocation();
+  const gpsCoords = useClaimDraftGpsCoords();
+  const category = useClaimDraftCategory();
+  const description = useClaimDraftDescription();
   const {
-    vehicle: selectedVehicle,
-    accidentDate: storedAccidentDate,
-    accidentTime: storedAccidentTime,
-    location,
-    gpsCoords,
-    category,
-    description,
     setVehicle,
     setAccidentDate,
     setAccidentTime,
@@ -62,11 +128,17 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
     setCategory,
     setDescription,
     isStep1Valid,
-  } = useClaimDraftStore();
+  } = useClaimDraftActions();
 
   // Parse dates from store
-  const accidentDate = storedAccidentDate ? new Date(storedAccidentDate) : null;
-  const accidentTime = storedAccidentTime ? new Date(storedAccidentTime) : null;
+  const accidentDate = useMemo(
+    () => (storedAccidentDate ? new Date(storedAccidentDate) : null),
+    [storedAccidentDate]
+  );
+  const accidentTime = useMemo(
+    () => (storedAccidentTime ? new Date(storedAccidentTime) : null),
+    [storedAccidentTime]
+  );
 
   // Modal State
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -77,7 +149,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
   // Date Picker State
-  const [tempYear, setTempYear] = useState(new Date().getFullYear());
+  const [tempYear, setTempYear] = useState(CURRENT_YEAR);
   const [tempMonth, setTempMonth] = useState(new Date().getMonth());
   const [tempDay, setTempDay] = useState(new Date().getDate());
 
@@ -85,42 +157,66 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
   const [tempHour, setTempHour] = useState(12);
   const [tempMinute, setTempMinute] = useState(0);
 
-  // Format Date
-  const formatDate = (date: Date | null): string => {
-    if (!date) return 'Datum auswählen';
-    return date.toLocaleDateString('de-DE', {
+  // Memoized Format Functions
+  const formattedDate = useMemo(() => {
+    if (!accidentDate) return 'Datum auswählen';
+    return accidentDate.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
-  };
+  }, [accidentDate]);
 
-  // Format Time
-  const formatTime = (date: Date | null): string => {
-    if (!date) return 'Uhrzeit auswählen';
-    return date.toLocaleTimeString('de-DE', {
+  const formattedTime = useMemo(() => {
+    if (!accidentTime) return 'Uhrzeit auswählen';
+    return accidentTime.toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, [accidentTime]);
 
-  // Handle Date Selection
-  const handleDateConfirm = () => {
+  // Memoized Handlers - Vehicle Modal
+  const handleVehicleModalOpen = useCallback(() => setShowVehicleModal(true), []);
+  const handleVehicleModalClose = useCallback(() => setShowVehicleModal(false), []);
+  const handleVehicleSelect = useCallback((vehicle: ClaimDraftVehicle) => {
+    setVehicle(vehicle);
+    setShowVehicleModal(false);
+  }, [setVehicle]);
+
+  // Memoized Handlers - Date Modal
+  const handleDateModalOpen = useCallback(() => {
+    if (accidentDate) {
+      setTempYear(accidentDate.getFullYear());
+      setTempMonth(accidentDate.getMonth());
+      setTempDay(accidentDate.getDate());
+    }
+    setShowDateModal(true);
+  }, [accidentDate]);
+  const handleDateModalClose = useCallback(() => setShowDateModal(false), []);
+  const handleDateConfirm = useCallback(() => {
     const date = new Date(tempYear, tempMonth, tempDay);
     setAccidentDate(date);
     setShowDateModal(false);
-  };
+  }, [tempYear, tempMonth, tempDay, setAccidentDate]);
 
-  // Handle Time Selection
-  const handleTimeConfirm = () => {
+  // Memoized Handlers - Time Modal
+  const handleTimeModalOpen = useCallback(() => {
+    if (accidentTime) {
+      setTempHour(accidentTime.getHours());
+      setTempMinute(Math.floor(accidentTime.getMinutes() / 5) * 5);
+    }
+    setShowTimeModal(true);
+  }, [accidentTime]);
+  const handleTimeModalClose = useCallback(() => setShowTimeModal(false), []);
+  const handleTimeConfirm = useCallback(() => {
     const time = new Date();
     time.setHours(tempHour, tempMinute, 0, 0);
     setAccidentTime(time);
     setShowTimeModal(false);
-  };
+  }, [tempHour, tempMinute, setAccidentTime]);
 
   // Handle GPS Location
-  const handleGetLocation = async () => {
+  const handleGetLocation = useCallback(async () => {
     try {
       setIsLoadingLocation(true);
 
@@ -156,15 +252,15 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
       } catch {
         setLocation(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Fehler', 'Standort konnte nicht ermittelt werden.');
     } finally {
       setIsLoadingLocation(false);
     }
-  };
+  }, [setGpsCoords, setLocation]);
 
   // Handle Continue to Photos
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     if (!isStep1Valid()) {
       if (!selectedVehicle) {
         Alert.alert('Fehler', 'Bitte wählen Sie ein Fahrzeug aus.');
@@ -180,28 +276,31 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
       }
     }
 
-    // Navigate to photos screen - data is already in store
     navigation.navigate('ClaimPhotos', {});
-  };
+  }, [isStep1Valid, selectedVehicle, accidentDate, category, navigation]);
 
   // Handle Save Draft
-  const handleSaveDraft = () => {
+  const handleSaveDraft = useCallback(() => {
     Alert.alert(
       'Entwurf gespeichert',
       'Ihre Schadensmeldung wurde als Entwurf gespeichert. Sie können sie später fortsetzen.',
       [{ text: 'OK', onPress: () => navigation.goBack() }]
     );
-  };
+  }, [navigation]);
 
-  // Generate arrays for pickers
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-  const months = [
-    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-  ];
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-  const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
+  // Handle Category Selection
+  const handleCategorySelect = useCallback((value: string) => {
+    setCategory(value);
+  }, [setCategory]);
+
+  // Render vehicle item for FlatList
+  const renderVehicleItem = useCallback(({ item }: { item: ClaimDraftVehicle }) => (
+    <VehicleItem
+      item={item}
+      isSelected={selectedVehicle?.id === item.id}
+      onSelect={handleVehicleSelect}
+    />
+  ), [selectedVehicle?.id, handleVehicleSelect]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -237,7 +336,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
             <Text style={styles.sectionTitle}>Fahrzeug *</Text>
             <TouchableOpacity
               style={[styles.selectButton, selectedVehicle && styles.selectButtonFilled]}
-              onPress={() => setShowVehicleModal(true)}
+              onPress={handleVehicleModalOpen}
             >
               <Ionicons
                 name="car-outline"
@@ -266,14 +365,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
             <View style={styles.row}>
               <TouchableOpacity
                 style={[styles.selectButton, styles.halfWidth, accidentDate && styles.selectButtonFilled]}
-                onPress={() => {
-                  if (accidentDate) {
-                    setTempYear(accidentDate.getFullYear());
-                    setTempMonth(accidentDate.getMonth());
-                    setTempDay(accidentDate.getDate());
-                  }
-                  setShowDateModal(true);
-                }}
+                onPress={handleDateModalOpen}
               >
                 <Ionicons
                   name="calendar-outline"
@@ -281,18 +373,12 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                   color={accidentDate ? colors.primary[600] : colors.text.secondary}
                 />
                 <Text style={[styles.selectButtonText, accidentDate && styles.selectButtonTextFilled]}>
-                  {formatDate(accidentDate)}
+                  {formattedDate}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.selectButton, styles.halfWidth, accidentTime && styles.selectButtonFilled]}
-                onPress={() => {
-                  if (accidentTime) {
-                    setTempHour(accidentTime.getHours());
-                    setTempMinute(Math.floor(accidentTime.getMinutes() / 5) * 5);
-                  }
-                  setShowTimeModal(true);
-                }}
+                onPress={handleTimeModalOpen}
               >
                 <Ionicons
                   name="time-outline"
@@ -300,7 +386,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                   color={accidentTime ? colors.primary[600] : colors.text.secondary}
                 />
                 <Text style={[styles.selectButtonText, accidentTime && styles.selectButtonTextFilled]}>
-                  {formatTime(accidentTime)}
+                  {formattedTime}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -351,7 +437,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                     styles.categoryButton,
                     category === cat.value && styles.categoryButtonActive,
                   ]}
-                  onPress={() => setCategory(cat.value)}
+                  onPress={() => handleCategorySelect(cat.value)}
                 >
                   <Ionicons
                     name={cat.icon as any}
@@ -410,50 +496,26 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
         visible={showVehicleModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowVehicleModal(false)}
+        onRequestClose={handleVehicleModalClose}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Fahrzeug auswählen</Text>
-              <TouchableOpacity onPress={() => setShowVehicleModal(false)}>
+              <TouchableOpacity onPress={handleVehicleModalClose}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
             <FlatList
               data={DEMO_VEHICLES}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.vehicleItem,
-                    selectedVehicle?.id === item.id && styles.vehicleItemSelected,
-                  ]}
-                  onPress={() => {
-                    setVehicle(item);
-                    setShowVehicleModal(false);
-                  }}
-                >
-                  <Ionicons
-                    name="car"
-                    size={24}
-                    color={selectedVehicle?.id === item.id ? colors.primary[600] : colors.gray[400]}
-                  />
-                  <View style={styles.vehicleInfo}>
-                    <Text style={[
-                      styles.vehiclePlate,
-                      selectedVehicle?.id === item.id && styles.vehiclePlateSelected,
-                    ]}>
-                      {item.licensePlate}
-                    </Text>
-                    <Text style={styles.vehicleModel}>{item.brand} {item.model}</Text>
-                  </View>
-                  {selectedVehicle?.id === item.id && (
-                    <Ionicons name="checkmark-circle" size={24} color={colors.primary[600]} />
-                  )}
-                </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              keyExtractor={vehicleKeyExtractor}
+              renderItem={renderVehicleItem}
+              ItemSeparatorComponent={LineSeparator}
+              getItemLayout={getVehicleItemLayout}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              initialNumToRender={10}
+              windowSize={5}
             />
           </View>
         </View>
@@ -464,12 +526,12 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
         visible={showDateModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowDateModal(false)}
+        onRequestClose={handleDateModalClose}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowDateModal(false)}>
+              <TouchableOpacity onPress={handleDateModalClose}>
                 <Text style={styles.modalCancel}>Abbrechen</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>Datum wählen</Text>
@@ -479,7 +541,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
             </View>
             <View style={styles.pickerContainer}>
               <ScrollView style={styles.pickerColumn} showsVerticalScrollIndicator={false}>
-                {days.map((day) => (
+                {DAYS.map((day) => (
                   <TouchableOpacity
                     key={day}
                     style={[styles.pickerItem, tempDay === day && styles.pickerItemSelected]}
@@ -492,7 +554,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                 ))}
               </ScrollView>
               <ScrollView style={styles.pickerColumn} showsVerticalScrollIndicator={false}>
-                {months.map((month, index) => (
+                {MONTHS.map((month, index) => (
                   <TouchableOpacity
                     key={month}
                     style={[styles.pickerItem, tempMonth === index && styles.pickerItemSelected]}
@@ -505,7 +567,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                 ))}
               </ScrollView>
               <ScrollView style={styles.pickerColumn} showsVerticalScrollIndicator={false}>
-                {years.map((year) => (
+                {YEARS.map((year) => (
                   <TouchableOpacity
                     key={year}
                     style={[styles.pickerItem, tempYear === year && styles.pickerItemSelected]}
@@ -527,12 +589,12 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
         visible={showTimeModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowTimeModal(false)}
+        onRequestClose={handleTimeModalClose}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => setShowTimeModal(false)}>
+              <TouchableOpacity onPress={handleTimeModalClose}>
                 <Text style={styles.modalCancel}>Abbrechen</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>Uhrzeit wählen</Text>
@@ -542,7 +604,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
             </View>
             <View style={styles.pickerContainer}>
               <ScrollView style={styles.pickerColumnWide} showsVerticalScrollIndicator={false}>
-                {hours.map((hour) => (
+                {HOURS.map((hour) => (
                   <TouchableOpacity
                     key={hour}
                     style={[styles.pickerItem, tempHour === hour && styles.pickerItemSelected]}
@@ -555,7 +617,7 @@ export function NewClaimScreen({ navigation }: ClaimsScreenProps<'NewClaim'>) {
                 ))}
               </ScrollView>
               <ScrollView style={styles.pickerColumnWide} showsVerticalScrollIndicator={false}>
-                {minutes.map((minute) => (
+                {MINUTES.map((minute) => (
                   <TouchableOpacity
                     key={minute}
                     style={[styles.pickerItem, tempMinute === minute && styles.pickerItemSelected]}

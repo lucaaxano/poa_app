@@ -78,7 +78,7 @@ export function ClaimDetailScreen({ route, navigation }: ClaimsScreenProps<'Clai
         {/* Kommentar Button */}
         <TouchableOpacity style={styles.commentButton}>
           <Ionicons name="chatbubble-outline" size={20} color={colors.primary[600]} />
-          <Text style={styles.commentButtonText}>Kommentar hinzufuegen</Text>
+          <Text style={styles.commentButtonText}>Kommentar hinzufügen</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

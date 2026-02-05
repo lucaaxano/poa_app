@@ -55,7 +55,7 @@ const navItems: NavItem[] = [
     icon: SIDEBAR_ICONS.dashboard,
   },
   {
-    title: 'Schaeden',
+    title: 'Schäden',
     href: '/claims' as Route,
     icon: SIDEBAR_ICONS.claims,
   },

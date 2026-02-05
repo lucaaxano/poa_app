@@ -48,7 +48,7 @@ export const UserMenu = memo(function UserMenu() {
         <Button
           variant="ghost"
           className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted"
-          aria-label={`Benutzermenu fuer ${fullName}`}
+          aria-label={`Benutzermenü für ${fullName}`}
         >
           {company?.logoUrl ? (
             <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-muted">

@@ -85,10 +85,10 @@ export default function AdminInsurersPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Versicherer geloescht/deaktiviert');
+      toast.success('Versicherer gelöscht/deaktiviert');
       setDeletingInsurer(null);
     } catch {
-      toast.error('Fehler beim Loeschen des Versicherers');
+      toast.error('Fehler beim Löschen des Versicherers');
     }
   };
 
@@ -106,7 +106,7 @@ export default function AdminInsurersPage() {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Versicherer hinzufuegen
+              Versicherer hinzufügen
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -304,9 +304,9 @@ export default function AdminInsurersPage() {
       <Dialog open={!!deletingInsurer} onOpenChange={() => setDeletingInsurer(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Versicherer loeschen</DialogTitle>
+            <DialogTitle>Versicherer löschen</DialogTitle>
             <DialogDescription>
-              Moechten Sie den Versicherer &quot;{deletingInsurer?.name}&quot; wirklich loeschen?
+              Möchten Sie den Versicherer &quot;{deletingInsurer?.name}&quot; wirklich löschen?
               Wenn der Versicherer in Policen verwendet wird, wird er stattdessen deaktiviert.
             </DialogDescription>
           </DialogHeader>
@@ -319,7 +319,7 @@ export default function AdminInsurersPage() {
               onClick={() => deletingInsurer && handleDelete(deletingInsurer.id)}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Wird geloescht...' : 'Loeschen'}
+              {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -361,12 +361,12 @@ function InsurerForm({
     <form onSubmit={handleSubmit}>
       <DialogHeader>
         <DialogTitle>
-          {insurer ? 'Versicherer bearbeiten' : 'Versicherer hinzufuegen'}
+          {insurer ? 'Versicherer bearbeiten' : 'Versicherer hinzufügen'}
         </DialogTitle>
         <DialogDescription>
           {insurer
             ? 'Bearbeiten Sie die Daten des Versicherers.'
-            : 'Fuegen Sie einen neuen Versicherer zur Datenbank hinzu.'}
+            : 'Fügen Sie einen neuen Versicherer zur Datenbank hinzu.'}
         </DialogDescription>
       </DialogHeader>
       <div className="space-y-4 py-4">

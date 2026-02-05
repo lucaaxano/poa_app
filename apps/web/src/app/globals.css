@@ -168,6 +168,50 @@
     backface-visibility: hidden;
   }
 
+  /* PERFORMANCE FIX: CSS containment for list containers */
+  /* Isolates paint/layout calculations during scroll */
+  .contain-layout {
+    contain: layout;
+  }
+
+  .contain-paint {
+    contain: paint;
+  }
+
+  .contain-strict {
+    contain: strict;
+  }
+
+  /* Content visibility for off-screen content (auto-skip rendering) */
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100px; /* Estimated height for off-screen items */
+  }
+
+  /* Optimize table body for large lists */
+  tbody {
+    contain: layout style;
+  }
+
+  /* Optimize list items for scroll performance */
+  [role="listitem"],
+  [data-list-item] {
+    contain: layout style;
+  }
+
+  /* PERFORMANCE FIX: Reduce repaints during scroll */
+  .scroll-container {
+    contain: layout paint;
+    isolation: isolate;
+  }
+
+  /* PERFORMANCE FIX: Optimize card lists during scroll */
+  .space-y-2 > *,
+  .space-y-3 > *,
+  .space-y-4 > * {
+    contain: layout style;
+  }
+
   /* IMPORTANT: Ensure sidebar navigation can scroll even when dialogs are open */
   /* Radix UI adds overflow:hidden to body when modal is open, this overrides it for the sidebar */
   aside nav {
@@ -179,5 +223,42 @@
   /* Prevent body scroll lock from affecting fixed sidebars */
   body[data-scroll-locked] aside {
     pointer-events: auto;
+  }
+}
+
+/* PERFORMANCE FIX: Optimize transitions for GPU acceleration */
+@layer utilities {
+  /* Use transform and opacity for transitions (GPU accelerated) */
+  .transition-gpu {
+    transition-property: transform, opacity;
+    will-change: transform, opacity;
+  }
+
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* PERFORMANCE FIX: Optimized hover states - only transition colors, not layouts */
+  .hover-optimized {
+    transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+
+  /* PERFORMANCE FIX: Virtual scroll container styles */
+  .virtual-list {
+    contain: strict;
+    will-change: transform;
+  }
+
+  .virtual-list-item {
+    contain: layout style paint;
+    will-change: transform;
   }
 }

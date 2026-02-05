@@ -224,7 +224,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Willkommen zurueck
+                  Willkommen zurück
                 </h1>
                 <p className="mt-2 text-muted-foreground">
                   Melden Sie sich an, um auf Ihr POA-Konto zuzugreifen
@@ -267,7 +267,7 @@ export default function LoginPage() {
                 {loginError}
               </p>
               <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                Der Server wird moeglicherweise gerade neu gestartet.
+                Der Server wird möglicherweise gerade neu gestartet.
               </p>
             </div>
           )}
@@ -447,7 +447,7 @@ export default function LoginPage() {
             Schadenmanagement einfach gemacht
           </h2>
           <p className="mt-4 text-lg text-white/80">
-            Verwalten Sie alle KFZ-Schaeden Ihrer Flotte an einem Ort. Schnell, effizient und uebersichtlich.
+            Verwalten Sie alle KFZ-Schäden Ihrer Flotte an einem Ort. Schnell, effizient und übersichtlich.
           </p>
 
           <div className="mt-12 space-y-6">
@@ -458,7 +458,7 @@ export default function LoginPage() {
               <div>
                 <h3 className="font-semibold">Flottenmanagement</h3>
                 <p className="mt-1 text-sm text-white/70">
-                  Alle Fahrzeuge und Schaeden im Ueberblick
+                  Alle Fahrzeuge und Schäden im Überblick
                 </p>
               </div>
             </div>

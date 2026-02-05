@@ -1,16 +1,16 @@
 /**
  * Claim Photos Screen
  * Fotos zur Schadensmeldung hinzufügen - Mit funktionsfähigem Upload
+ * Performance optimized with granular selectors
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Alert,
   Modal,
   Dimensions,
@@ -20,22 +20,31 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, fontSize, borderRadius, fontWeight } from '@/constants/theme';
-import { useClaimDraftStore } from '@/stores';
+import {
+  useClaimDraftPhotos,
+  useClaimDraftVehicle,
+  useClaimDraftCategory,
+  useClaimDraftActions,
+} from '@/stores';
+import { OptimizedImage } from '@/components/common/OptimizedImage';
 import type { ClaimsScreenProps } from '@/navigation/types';
 
 const { width: screenWidth } = Dimensions.get('window');
 const photoSize = (screenWidth - spacing.md * 2 - spacing.sm * 2) / 3;
 
 export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos'>) {
-  // Store State
-  const { photos, addPhoto, removePhoto, vehicle, category } = useClaimDraftStore();
+  // Granular Store Selectors - prevent cascading re-renders
+  const photos = useClaimDraftPhotos();
+  const vehicle = useClaimDraftVehicle();
+  const category = useClaimDraftCategory();
+  const { addPhoto, removePhoto } = useClaimDraftActions();
 
   // Local State
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // Request Camera Permission
-  const requestCameraPermission = async (): Promise<boolean> => {
+  const requestCameraPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'web') {
       return true;
     }
@@ -49,10 +58,10 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
       return false;
     }
     return true;
-  };
+  }, []);
 
   // Request Gallery Permission
-  const requestGalleryPermission = async (): Promise<boolean> => {
+  const requestGalleryPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'web') {
       return true;
     }
@@ -66,10 +75,10 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
       return false;
     }
     return true;
-  };
+  }, []);
 
   // Take Photo with Camera
-  const handleTakePhoto = async () => {
+  const handleTakePhoto = useCallback(async () => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
 
@@ -88,15 +97,15 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
           type: 'camera',
         });
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Fehler', 'Foto konnte nicht aufgenommen werden.');
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [requestCameraPermission, addPhoto]);
 
   // Pick Photo from Gallery
-  const handlePickPhoto = async () => {
+  const handlePickPhoto = useCallback(async () => {
     const hasPermission = await requestGalleryPermission();
     if (!hasPermission) return;
 
@@ -117,15 +126,15 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
           });
         });
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Fehler', 'Fotos konnten nicht ausgewählt werden.');
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [requestGalleryPermission, photos.length, addPhoto]);
 
   // Delete Photo
-  const handleDeletePhoto = (id: string) => {
+  const handleDeletePhoto = useCallback((id: string) => {
     Alert.alert(
       'Foto löschen',
       'Möchten Sie dieses Foto wirklich löschen?',
@@ -134,17 +143,26 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
         { text: 'Löschen', style: 'destructive', onPress: () => removePhoto(id) },
       ]
     );
-  };
+  }, [removePhoto]);
 
   // Continue to Summary
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     navigation.navigate('ClaimSummary', {});
-  };
+  }, [navigation]);
 
   // Go Back
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
+
+  // Close modal
+  const handleCloseModal = useCallback(() => {
+    setSelectedPhoto(null);
+  }, []);
+
+  // Check if can add more photos
+  const canAddMore = photos.length < 10;
+  const isActionDisabled = !canAddMore || isUploading;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -204,9 +222,9 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
         {/* Photo Actions */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.actionButton, (photos.length >= 10 || isUploading) && styles.actionButtonDisabled]}
+            style={[styles.actionButton, isActionDisabled && styles.actionButtonDisabled]}
             onPress={handleTakePhoto}
-            disabled={photos.length >= 10 || isUploading}
+            disabled={isActionDisabled}
           >
             <View style={styles.actionIconContainer}>
               <Ionicons name="camera" size={32} color={colors.primary[600]} />
@@ -215,9 +233,9 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionButton, (photos.length >= 10 || isUploading) && styles.actionButtonDisabled]}
+            style={[styles.actionButton, isActionDisabled && styles.actionButtonDisabled]}
             onPress={handlePickPhoto}
-            disabled={photos.length >= 10 || isUploading}
+            disabled={isActionDisabled}
           >
             <View style={styles.actionIconContainer}>
               <Ionicons name="images" size={32} color={colors.primary[600]} />
@@ -240,7 +258,7 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
                   onPress={() => setSelectedPhoto(photo.uri)}
                   activeOpacity={0.9}
                 >
-                  <Image source={{ uri: photo.uri }} style={styles.photo} />
+                  <OptimizedImage uri={photo.uri} style={styles.photo} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.deleteButton}
@@ -289,18 +307,18 @@ export function ClaimPhotosScreen({ navigation }: ClaimsScreenProps<'ClaimPhotos
         visible={!!selectedPhoto}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedPhoto(null)}
+        onRequestClose={handleCloseModal}
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity
             style={styles.modalClose}
-            onPress={() => setSelectedPhoto(null)}
+            onPress={handleCloseModal}
           >
             <Ionicons name="close" size={32} color={colors.white} />
           </TouchableOpacity>
           {selectedPhoto && (
-            <Image
-              source={{ uri: selectedPhoto }}
+            <OptimizedImage
+              uri={selectedPhoto}
               style={styles.modalImage}
               resizeMode="contain"
             />

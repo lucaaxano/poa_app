@@ -1,9 +1,10 @@
 /**
  * Change Password Screen
- * Passwort aendern
+ * Passwort ändern
+ * Performance optimized with useMemo for password requirements
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -30,27 +31,45 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const passwordRequirements = [
+  // Memoized password requirements - only recalculates when newPassword changes
+  const passwordRequirements = useMemo(() => [
     { label: 'Mindestens 8 Zeichen', met: newPassword.length >= 8 },
-    { label: 'Mindestens ein Grossbuchstabe', met: /[A-Z]/.test(newPassword) },
+    { label: 'Mindestens ein Großbuchstabe', met: /[A-Z]/.test(newPassword) },
     { label: 'Mindestens ein Kleinbuchstabe', met: /[a-z]/.test(newPassword) },
     { label: 'Mindestens eine Zahl', met: /\d/.test(newPassword) },
-  ];
+  ], [newPassword]);
 
-  const handleSubmit = async () => {
+  const allRequirementsMet = useMemo(
+    () => passwordRequirements.every((req) => req.met),
+    [passwordRequirements]
+  );
+
+  const passwordsMatch = useMemo(
+    () => newPassword === confirmPassword,
+    [newPassword, confirmPassword]
+  );
+
+  const toggleCurrentPassword = useCallback(() => {
+    setShowCurrentPassword((prev) => !prev);
+  }, []);
+
+  const toggleNewPassword = useCallback(() => {
+    setShowNewPassword((prev) => !prev);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Fehler', 'Bitte fuellen Sie alle Felder aus.');
+      Alert.alert('Fehler', 'Bitte füllen Sie alle Felder aus.');
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Fehler', 'Die neuen Passwoerter stimmen nicht ueberein.');
+    if (!passwordsMatch) {
+      Alert.alert('Fehler', 'Die neuen Passwörter stimmen nicht überein.');
       return;
     }
 
-    const allRequirementsMet = passwordRequirements.every((req) => req.met);
     if (!allRequirementsMet) {
-      Alert.alert('Fehler', 'Das neue Passwort erfuellt nicht alle Anforderungen.');
+      Alert.alert('Fehler', 'Das neue Passwort erfüllt nicht alle Anforderungen.');
       return;
     }
 
@@ -62,7 +81,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
       });
       Alert.alert(
         'Erfolg',
-        'Ihr Passwort wurde erfolgreich geaendert.',
+        'Ihr Passwort wurde erfolgreich geändert.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
@@ -70,7 +89,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPassword, newPassword, confirmPassword, passwordsMatch, allRequirementsMet, navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -100,7 +119,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
               />
               <TouchableOpacity
                 style={styles.showPasswordButton}
-                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                onPress={toggleCurrentPassword}
               >
                 <Ionicons
                   name={showCurrentPassword ? 'eye-off' : 'eye'}
@@ -129,7 +148,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
               />
               <TouchableOpacity
                 style={styles.showPasswordButton}
-                onPress={() => setShowNewPassword(!showNewPassword)}
+                onPress={toggleNewPassword}
               >
                 <Ionicons
                   name={showNewPassword ? 'eye-off' : 'eye'}
@@ -163,7 +182,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
 
           {/* Confirm Password */}
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Passwort bestaetigen</Text>
+            <Text style={styles.label}>Passwort bestätigen</Text>
             <TextInput
               style={styles.input}
               value={confirmPassword}
@@ -176,9 +195,9 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
               autoCorrect={false}
               editable={!isLoading}
             />
-            {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+            {confirmPassword.length > 0 && !passwordsMatch && (
               <Text style={styles.mismatchError}>
-                Passwoerter stimmen nicht ueberein
+                Passwörter stimmen nicht überein
               </Text>
             )}
           </View>
@@ -192,7 +211,7 @@ export function ChangePasswordScreen({ navigation }: ProfileScreenProps<'ChangeP
             {isLoading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.submitButtonText}>Passwort aendern</Text>
+              <Text style={styles.submitButtonText}>Passwort ändern</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

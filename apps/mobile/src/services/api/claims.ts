@@ -115,7 +115,7 @@ export interface PaginatedResponse<T> {
 }
 
 /**
- * Alle Schaeden abrufen (fuer Employee: nur eigene)
+ * Alle Schäden abrufen (für Employee: nur eigene)
  */
 export const getAll = async (filters?: ClaimFilters): Promise<PaginatedResponse<ClaimListItem>> => {
   const params = new URLSearchParams();
@@ -138,7 +138,7 @@ export const getAll = async (filters?: ClaimFilters): Promise<PaginatedResponse<
 };
 
 /**
- * Letzte Schaeden abrufen
+ * Letzte Schäden abrufen
  */
 export const getRecent = async (limit = 5): Promise<ClaimListItem[]> => {
   const response = await getAll({ limit, page: 1 });
@@ -170,7 +170,7 @@ export const submit = async (id: string): Promise<ClaimDetail> => {
 };
 
 /**
- * Kommentar hinzufuegen
+ * Kommentar hinzufügen
  */
 export const addComment = async (claimId: string, content: string): Promise<void> => {
   await apiClient.post(`/claims/${claimId}/comments`, { content });
@@ -211,7 +211,7 @@ export const uploadAttachment = async (
 };
 
 /**
- * Attachment loeschen
+ * Attachment löschen
  */
 export const deleteAttachment = async (claimId: string, attachmentId: string): Promise<void> => {
   await apiClient.delete(`/claims/${claimId}/attachments/${attachmentId}`);

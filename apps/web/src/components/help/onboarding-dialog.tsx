@@ -89,7 +89,7 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
     setIsOpen(false);
   };
 
-  // "Spaeter erinnern" - Same as understood, just close
+  // "Später erinnern" - Same as understood, just close
   const handleRemindLater = () => {
     setIsOpen(false);
   };
@@ -148,7 +148,7 @@ export function OnboardingDialog({ pageKey, className }: OnboardingDialogProps) 
             onClick={handleRemindLater}
             className="w-full rounded-xl"
           >
-            Spaeter erinnern
+            Später erinnern
           </Button>
           {/* Tertiary action: Never show again */}
           <Button

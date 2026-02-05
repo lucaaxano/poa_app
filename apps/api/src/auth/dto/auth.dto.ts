@@ -2,7 +2,7 @@ import { IsEmail, IsString, MinLength, IsOptional, IsNumber, IsEnum } from 'clas
 import { UserRole } from '@poa/database';
 
 export class LoginDto {
-  @IsEmail({}, { message: 'Ungueltige E-Mail-Adresse' })
+  @IsEmail({}, { message: 'Ungültige E-Mail-Adresse' })
   email: string;
 
   @IsString()
@@ -23,7 +23,7 @@ export class RegisterDto {
   @MinLength(2, { message: 'Nachname muss mindestens 2 Zeichen haben' })
   lastName: string;
 
-  @IsEmail({}, { message: 'Ungueltige E-Mail-Adresse' })
+  @IsEmail({}, { message: 'Ungültige E-Mail-Adresse' })
   email: string;
 
   @IsString()
@@ -42,7 +42,7 @@ export class RefreshTokenDto {
 }
 
 export class ForgotPasswordDto {
-  @IsEmail({}, { message: 'Ungueltige E-Mail-Adresse' })
+  @IsEmail({}, { message: 'Ungültige E-Mail-Adresse' })
   email: string;
 }
 
@@ -75,10 +75,10 @@ export class AcceptInvitationDto {
 }
 
 export class InviteUserDto {
-  @IsEmail({}, { message: 'Ungueltige E-Mail-Adresse' })
+  @IsEmail({}, { message: 'Ungültige E-Mail-Adresse' })
   email: string;
 
-  @IsEnum(['EMPLOYEE', 'COMPANY_ADMIN', 'BROKER'], { message: 'Ungueltige Rolle' })
+  @IsEnum(['EMPLOYEE', 'COMPANY_ADMIN', 'BROKER'], { message: 'Ungültige Rolle' })
   role: 'EMPLOYEE' | 'COMPANY_ADMIN' | 'BROKER';
 }
 

@@ -137,7 +137,7 @@ export class VehiclesService {
 
     if (claimsCount > 0) {
       throw new ConflictException(
-        `Das Fahrzeug ${vehicle.licensePlate} kann nicht geloescht werden, da ${claimsCount} Schaden/Schaeden zugeordnet sind. Bitte deaktivieren Sie es stattdessen.`,
+        `Das Fahrzeug ${vehicle.licensePlate} kann nicht gelöscht werden, da ${claimsCount} Schaden/Schäden zugeordnet sind. Bitte deaktivieren Sie es stattdessen.`,
       );
     }
 

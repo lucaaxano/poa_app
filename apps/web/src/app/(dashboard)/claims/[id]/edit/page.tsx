@@ -191,7 +191,7 @@ export default function EditClaimPage() {
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-red-600 mb-4">Schaden nicht gefunden</p>
         <Link href={'/claims' as Route}>
-          <Button>Zurueck zur Liste</Button>
+          <Button>Zurück zur Liste</Button>
         </Link>
       </div>
     );
@@ -204,7 +204,7 @@ export default function EditClaimPage() {
           Dieser Schaden kann nicht mehr bearbeitet werden (Status: {claim.status})
         </p>
         <Link href={`/claims/${claimId}` as Route}>
-          <Button>Zurueck zur Detailansicht</Button>
+          <Button>Zurück zur Detailansicht</Button>
         </Link>
       </div>
     );
@@ -250,7 +250,7 @@ export default function EditClaimPage() {
                   onValueChange={(value) => setValue('vehicleId', value, { shouldDirty: true })}
                 >
                   <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Fahrzeug waehlen..." />
+                    <SelectValue placeholder="Fahrzeug wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     {activeVehicles.map((vehicle) => (
@@ -315,7 +315,7 @@ export default function EditClaimPage() {
                   onValueChange={(value) => setValue('policyId', value === '_none' ? undefined : value, { shouldDirty: true })}
                 >
                   <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Vertrag waehlen..." />
+                    <SelectValue placeholder="Vertrag wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">Kein Vertrag</SelectItem>
@@ -384,7 +384,7 @@ export default function EditClaimPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estimatedCost">Geschaetzte Kosten (EUR)</Label>
+                <Label htmlFor="estimatedCost">Geschätzte Kosten (EUR)</Label>
                 <Input
                   id="estimatedCost"
                   type="number"
@@ -423,12 +423,12 @@ export default function EditClaimPage() {
           </CardContent>
         </Card>
 
-        {/* Zusaetzliche Informationen */}
+        {/* Zusätzliche Informationen */}
         <Card className="rounded-2xl border shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Zusaetzliche Informationen
+              Zusätzliche Informationen
             </CardTitle>
             <CardDescription>
               Polizei, Personenschaden und Unfallgegner
@@ -545,7 +545,7 @@ export default function EditClaimPage() {
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Aenderungen speichern
+            Änderungen speichern
           </Button>
         </div>
       </form>

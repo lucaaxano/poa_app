@@ -224,7 +224,7 @@ export default function PoliciesPage() {
     if (!model) return '-';
     const labels: Record<string, string> = {
       QUOTA: 'Quotenmodell',
-      PER_PIECE: 'Stueckpreismodell',
+      PER_PIECE: 'Stückpreismodell',
       SMALL_FLEET: 'Kleinflotte',
     };
     return labels[model] || model;
@@ -263,8 +263,8 @@ export default function PoliciesPage() {
                 <TableHead>Versicherer</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead>Preismodell</TableHead>
-                <TableHead>Jahrespraemie</TableHead>
-                <TableHead>Gueltig ab</TableHead>
+                <TableHead>Jahresprämie</TableHead>
+                <TableHead>Gültig ab</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
@@ -348,7 +348,7 @@ export default function PoliciesPage() {
                   onValueChange={(value) => setValue('insurerId', value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Versicherer waehlen" />
+                    <SelectValue placeholder="Versicherer wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {insurers?.map((insurer) => (
@@ -404,18 +404,18 @@ export default function PoliciesPage() {
                   onValueChange={(value) => setValue('pricingModel', value as 'QUOTA' | 'PER_PIECE' | 'SMALL_FLEET' | '')}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Preismodell waehlen" />
+                    <SelectValue placeholder="Preismodell wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="QUOTA">Quotenmodell</SelectItem>
-                    <SelectItem value="PER_PIECE">Stueckpreismodell</SelectItem>
+                    <SelectItem value="PER_PIECE">Stückpreismodell</SelectItem>
                     <SelectItem value="SMALL_FLEET">Kleinflotte</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="annualPremium">Jahrespraemie (EUR)</Label>
+                <Label htmlFor="annualPremium">Jahresprämie (EUR)</Label>
                 <Input
                   id="annualPremium"
                   type="number"
@@ -451,7 +451,7 @@ export default function PoliciesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="validFrom">Gueltig ab *</Label>
+                <Label htmlFor="validFrom">Gültig ab *</Label>
                 <Input
                   id="validFrom"
                   type="date"
@@ -465,7 +465,7 @@ export default function PoliciesPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="validTo">Gueltig bis</Label>
+                <Label htmlFor="validTo">Gültig bis</Label>
                 <Input id="validTo" type="date" {...register('validTo')} />
               </div>
             </div>
@@ -507,8 +507,8 @@ export default function PoliciesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Police deaktivieren?</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechten Sie die Police &quot;{deletingPolicy?.policyNumber}&quot; wirklich
-              deaktivieren? Die Police kann spaeter wieder aktiviert werden.
+              Möchten Sie die Police &quot;{deletingPolicy?.policyNumber}&quot; wirklich
+              deaktivieren? Die Police kann später wieder aktiviert werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

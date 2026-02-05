@@ -14,7 +14,7 @@ import type { DigestMode } from '@/lib/api/users';
 
 const emailNotificationLabels = {
   newClaim: {
-    title: 'Neue Schaeden',
+    title: 'Neue Schäden',
     description: 'Benachrichtigung wenn ein neuer Schaden eingereicht wird',
   },
   claimApproved: {
@@ -41,8 +41,8 @@ const digestModeLabels: Record<DigestMode, { title: string; description: string 
     description: 'E-Mails werden sofort gesendet, wenn etwas passiert',
   },
   daily: {
-    title: 'Taegliche Zusammenfassung',
-    description: 'Alle Benachrichtigungen werden einmal taeglich zusammengefasst (in Entwicklung)',
+    title: 'Tägliche Zusammenfassung',
+    description: 'Alle Benachrichtigungen werden einmal täglich zusammengefasst (in Entwicklung)',
   },
   none: {
     title: 'Keine E-Mails',
@@ -147,7 +147,7 @@ export default function NotificationSettingsPage() {
             <CardTitle>E-Mail-Versandmodus</CardTitle>
           </div>
           <CardDescription>
-            Waehlen Sie, wie Sie E-Mail-Benachrichtigungen erhalten moechten
+            Wählen Sie, wie Sie E-Mail-Benachrichtigungen erhalten möchten
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -187,7 +187,7 @@ export default function NotificationSettingsPage() {
             <CardTitle>E-Mail-Benachrichtigungen</CardTitle>
           </div>
           <CardDescription>
-            Waehlen Sie, fuer welche Ereignisse Sie E-Mails erhalten moechten
+            Wählen Sie, für welche Ereignisse Sie E-Mails erhalten möchten
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">

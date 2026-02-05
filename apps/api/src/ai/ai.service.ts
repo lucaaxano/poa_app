@@ -147,7 +147,7 @@ export class AiService {
       if (error instanceof OpenAI.APIError) {
         if (error.status === 429) {
           throw new BadRequestException(
-            'Der KI-Service ist momentan ueberlastet. Bitte versuchen Sie es in einigen Sekunden erneut.',
+            'Der KI-Service ist momentan überlastet. Bitte versuchen Sie es in einigen Sekunden erneut.',
           );
         }
         if (error.status === 401) {
@@ -158,7 +158,7 @@ export class AiService {
       }
 
       throw new BadRequestException(
-        'Der KI-Service ist momentan nicht verfuegbar. Bitte versuchen Sie es spaeter erneut.',
+        'Der KI-Service ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut.',
       );
     }
   }
@@ -201,7 +201,7 @@ export class AiService {
         messages: [
           {
             role: 'system',
-            content: `${buildExtractionSystemPrompt()}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}`,
+            content: `${buildExtractionSystemPrompt()}\n\nVerfügbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}`,
           },
           { role: 'user', content: conversationText },
         ],
@@ -244,7 +244,7 @@ export class AiService {
         messages: [
           {
             role: 'system',
-            content: `${buildExtractionSystemPrompt()}\n\nVerfuegbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}\n\nWICHTIG: Setze vehicleId auf die korrekte ID basierend auf dem erwaehnte Kennzeichen.`,
+            content: `${buildExtractionSystemPrompt()}\n\nVerfügbare Fahrzeuge (Kennzeichen: ID): ${vehicleContext}\n\nWICHTIG: Setze vehicleId auf die korrekte ID basierend auf dem erwähnte Kennzeichen.`,
           },
           { role: 'user', content: conversationText },
         ],
@@ -258,7 +258,7 @@ export class AiService {
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new BadRequestException(
-          'Konnte keine strukturierten Daten aus dem Gespraech extrahieren.',
+          'Konnte keine strukturierten Daten aus dem Gespräch extrahieren.',
         );
       }
 
@@ -323,13 +323,13 @@ export class AiService {
       !Object.values(DamageCategory).includes(data.damageCategory)
     ) {
       missingFields.push(
-        `Ungueltige Schadenart: ${data.damageCategory}`,
+        `Ungültige Schadenart: ${data.damageCategory}`,
       );
     }
 
     // Validate date format
     if (data.accidentDate && !/^\d{4}-\d{2}-\d{2}$/.test(data.accidentDate)) {
-      missingFields.push('Ungueltigres Datumsformat');
+      missingFields.push('Ungültiges Datumsformat');
     }
 
     return {

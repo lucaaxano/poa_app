@@ -1,6 +1,6 @@
 /**
  * Network Store
- * Zustand Store fuer Netzwerk-Status
+ * Zustand Store für Netzwerk-Status
  */
 
 import { create } from 'zustand';

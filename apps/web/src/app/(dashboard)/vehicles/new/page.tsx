@@ -38,7 +38,7 @@ export default function NewVehiclePage() {
             Neues Fahrzeug
           </h1>
           <p className="text-muted-foreground">
-            Fuegen Sie ein neues Fahrzeug zu Ihrem Fuhrpark hinzu
+            Fügen Sie ein neues Fahrzeug zu Ihrem Fuhrpark hinzu
           </p>
         </div>
       </div>

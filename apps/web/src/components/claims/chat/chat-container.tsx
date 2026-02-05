@@ -54,7 +54,7 @@ export function ChatContainer() {
 
   const handleReset = () => {
     resetChat();
-    toast.info('Chat zurueckgesetzt');
+    toast.info('Chat zurückgesetzt');
   };
 
   return (

@@ -43,7 +43,7 @@ export default function AdminCompanyDetailPage({
         <Link href={'/admin/companies' as Route}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Zurueck
+            Zurück
           </Button>
         </Link>
         <Card>
@@ -61,7 +61,7 @@ export default function AdminCompanyDetailPage({
       <Link href={'/admin/companies' as Route}>
         <Button variant="ghost" size="sm">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurueck zur Firmenliste
+          Zurück zur Firmenliste
         </Button>
       </Link>
 
@@ -137,7 +137,7 @@ export default function AdminCompanyDetailPage({
                 ) : (
                   <div className="text-2xl font-bold">{company?._count.claims ?? 0}</div>
                 )}
-                <p className="text-sm text-muted-foreground">Schaeden</p>
+                <p className="text-sm text-muted-foreground">Schäden</p>
               </div>
             </div>
           </CardContent>

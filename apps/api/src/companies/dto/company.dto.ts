@@ -23,7 +23,7 @@ export class UpdateCompanyDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(3, { message: 'Laendercode darf maximal 3 Zeichen haben' })
+  @MaxLength(3, { message: 'Ländercode darf maximal 3 Zeichen haben' })
   country?: string;
 
   @IsOptional()

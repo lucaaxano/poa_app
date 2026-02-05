@@ -67,18 +67,18 @@ export class WitnessInfoDto {
 
 // Create Claim DTO
 export class CreateClaimDto {
-  @IsUUID('4', { message: 'Ungueltige Fahrzeug-ID' })
+  @IsUUID('4', { message: 'Ungültige Fahrzeug-ID' })
   vehicleId: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Ungueltige Policy-ID' })
+  @IsUUID('4', { message: 'Ungültige Policy-ID' })
   policyId?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Ungueltige Fahrer-ID' })
+  @IsUUID('4', { message: 'Ungültige Fahrer-ID' })
   driverUserId?: string;
 
-  @IsDateString({}, { message: 'Ungueltiges Datum' })
+  @IsDateString({}, { message: 'Ungültiges Datum' })
   accidentDate: string;
 
   @IsOptional()
@@ -100,7 +100,7 @@ export class CreateClaimDto {
   @Min(-180)
   gpsLng?: number;
 
-  @IsEnum(DamageCategory, { message: 'Ungueltige Schadenkategorie' })
+  @IsEnum(DamageCategory, { message: 'Ungültige Schadenkategorie' })
   damageCategory: DamageCategory;
 
   @IsOptional()
@@ -147,7 +147,7 @@ export class CreateClaimDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0, { message: 'Kosten muessen positiv sein' })
+  @Min(0, { message: 'Kosten müssen positiv sein' })
   @Transform(({ value }) => (value === '' || value === null ? undefined : Number(value)))
   estimatedCost?: number;
 
@@ -160,19 +160,19 @@ export class CreateClaimDto {
 // Update Claim DTO
 export class UpdateClaimDto {
   @IsOptional()
-  @IsUUID('4', { message: 'Ungueltige Fahrzeug-ID' })
+  @IsUUID('4', { message: 'Ungültige Fahrzeug-ID' })
   vehicleId?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Ungueltige Policy-ID' })
+  @IsUUID('4', { message: 'Ungültige Policy-ID' })
   policyId?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Ungueltige Fahrer-ID' })
+  @IsUUID('4', { message: 'Ungültige Fahrer-ID' })
   driverUserId?: string;
 
   @IsOptional()
-  @IsDateString({}, { message: 'Ungueltiges Datum' })
+  @IsDateString({}, { message: 'Ungültiges Datum' })
   accidentDate?: string;
 
   @IsOptional()
@@ -193,7 +193,7 @@ export class UpdateClaimDto {
   gpsLng?: number;
 
   @IsOptional()
-  @IsEnum(DamageCategory, { message: 'Ungueltige Schadenkategorie' })
+  @IsEnum(DamageCategory, { message: 'Ungültige Schadenkategorie' })
   damageCategory?: DamageCategory;
 
   @IsOptional()
@@ -240,13 +240,13 @@ export class UpdateClaimDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0, { message: 'Kosten muessen positiv sein' })
+  @Min(0, { message: 'Kosten müssen positiv sein' })
   @Transform(({ value }) => (value === '' || value === null ? undefined : Number(value)))
   estimatedCost?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0, { message: 'Kosten muessen positiv sein' })
+  @Min(0, { message: 'Kosten müssen positiv sein' })
   @Transform(({ value }) => (value === '' || value === null ? undefined : Number(value)))
   finalCost?: number;
 

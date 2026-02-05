@@ -46,7 +46,7 @@ export default function EditVehiclePage() {
         <Link href={'/vehicles' as Route}>
           <Button variant="outline" className="rounded-xl">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck zur Liste
+            Zurück zur Liste
           </Button>
         </Link>
       </div>

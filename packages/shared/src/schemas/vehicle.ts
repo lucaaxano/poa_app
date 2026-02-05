@@ -22,7 +22,7 @@ export const createVehicleSchema = z.object({
   vin: z
     .string()
     .length(17, 'FIN muss genau 17 Zeichen haben')
-    .regex(/^[A-HJ-NPR-Z0-9]{17}$/i, 'Ungueltige FIN')
+    .regex(/^[A-HJ-NPR-Z0-9]{17}$/i, 'Ungültige FIN')
     .transform((val) => val.toUpperCase())
     .optional()
     .or(z.literal('')),

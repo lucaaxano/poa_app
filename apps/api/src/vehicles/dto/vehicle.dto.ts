@@ -45,7 +45,7 @@ export class CreateVehicleDto {
     return value.toUpperCase();
   })
   @Length(17, 17, { message: 'FIN muss genau 17 Zeichen haben' })
-  @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, { message: 'Ungueltige FIN' })
+  @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, { message: 'Ungültige FIN' })
   vin?: string;
 
   @IsOptional()
@@ -64,7 +64,7 @@ export class CreateVehicleDto {
   internalName?: string;
 
   @IsOptional()
-  @IsEnum(VehicleType, { message: 'Ungueltiger Fahrzeugtyp' })
+  @IsEnum(VehicleType, { message: 'Ungültiger Fahrzeugtyp' })
   vehicleType?: VehicleType;
 
   @IsOptional()
@@ -106,7 +106,7 @@ export class UpdateVehicleDto {
     return value.toUpperCase();
   })
   @Length(17, 17, { message: 'FIN muss genau 17 Zeichen haben' })
-  @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, { message: 'Ungueltige FIN' })
+  @Matches(/^[A-HJ-NPR-Z0-9]{17}$/i, { message: 'Ungültige FIN' })
   vin?: string;
 
   @IsOptional()
@@ -125,7 +125,7 @@ export class UpdateVehicleDto {
   internalName?: string;
 
   @IsOptional()
-  @IsEnum(VehicleType, { message: 'Ungueltiger Fahrzeugtyp' })
+  @IsEnum(VehicleType, { message: 'Ungültiger Fahrzeugtyp' })
   vehicleType?: VehicleType;
 
   @IsOptional()

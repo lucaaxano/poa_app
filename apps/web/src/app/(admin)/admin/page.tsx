@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Systemweite Uebersicht und Verwaltung
+          Systemweite Übersicht und Verwaltung
         </p>
       </div>
 
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
           isLoading={isLoading}
         />
         <StatsCard
-          title="Schaeden"
+          title="Schäden"
           value={stats?.totalClaims}
           icon={<FileWarning className="h-5 w-5" />}
           href={'/admin/claims' as Route}
@@ -89,14 +89,14 @@ export default function AdminDashboardPage() {
           isLoading={isLoading}
         />
         <ActivityCard
-          title="Neue Schaeden"
+          title="Neue Schäden"
           subtitle="Diese Woche"
           value={stats?.recentActivity.newClaimsThisWeek}
           icon={<Clock className="h-5 w-5 text-blue-500" />}
           isLoading={isLoading}
         />
         <ActivityCard
-          title="Offene Schaeden"
+          title="Offene Schäden"
           subtitle="Warten auf Bearbeitung"
           value={stats?.recentActivity.pendingClaims}
           icon={<AlertCircle className="h-5 w-5 text-orange-500" />}
@@ -109,8 +109,8 @@ export default function AdminDashboardPage() {
       {stats?.claimsByStatus && Object.keys(stats.claimsByStatus).length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Schaeden nach Status</CardTitle>
-            <CardDescription>Uebersicht aller Schaeden im System</CardDescription>
+            <CardTitle>Schäden nach Status</CardTitle>
+            <CardDescription>Übersicht aller Schäden im System</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
@@ -148,8 +148,8 @@ export default function AdminDashboardPage() {
               icon={<Users className="h-8 w-8" />}
             />
             <QuickLink
-              title="Alle Schaeden"
-              description="Schaeden einsehen"
+              title="Alle Schäden"
+              description="Schäden einsehen"
               href={'/admin/claims' as Route}
               icon={<FileWarning className="h-8 w-8" />}
             />
@@ -294,7 +294,7 @@ function getStatusLabel(status: string): string {
     SUBMITTED: 'Eingereicht',
     APPROVED: 'Genehmigt',
     SENT: 'Gesendet',
-    ACKNOWLEDGED: 'Bestaetigt',
+    ACKNOWLEDGED: 'Bestätigt',
     CLOSED: 'Geschlossen',
     REJECTED: 'Abgelehnt',
   };

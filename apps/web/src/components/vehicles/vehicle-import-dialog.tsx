@@ -79,11 +79,11 @@ export function VehicleImportDialog({ open, onOpenChange }: VehicleImportDialogP
 
     // Client-side checks
     if (!file.name.endsWith('.xlsx')) {
-      toast.error('Bitte waehlen Sie eine .xlsx Datei aus.');
+      toast.error('Bitte wählen Sie eine .xlsx Datei aus.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Die Datei darf maximal 5 MB gross sein.');
+      toast.error('Die Datei darf maximal 5 MB groß sein.');
       return;
     }
 
@@ -123,7 +123,7 @@ export function VehicleImportDialog({ open, onOpenChange }: VehicleImportDialogP
                 <div>
                   <p className="font-medium">Vorlage herunterladen</p>
                   <p className="text-sm text-muted-foreground">
-                    Laden Sie die Excel-Vorlage herunter und fuellen Sie sie mit Ihren
+                    Laden Sie die Excel-Vorlage herunter und füllen Sie sie mit Ihren
                     Fahrzeugdaten aus.
                   </p>
                 </div>
@@ -150,9 +150,9 @@ export function VehicleImportDialog({ open, onOpenChange }: VehicleImportDialogP
                   2
                 </div>
                 <div>
-                  <p className="font-medium">Ausgefuellte Datei hochladen</p>
+                  <p className="font-medium">Ausgefüllte Datei hochladen</p>
                   <p className="text-sm text-muted-foreground">
-                    Waehlen Sie die ausgefuellte Excel-Datei aus (max. 500 Zeilen, max. 5 MB).
+                    Wählen Sie die ausgefüllte Excel-Datei aus (max. 500 Zeilen, max. 5 MB).
                   </p>
                 </div>
               </div>
@@ -169,7 +169,7 @@ export function VehicleImportDialog({ open, onOpenChange }: VehicleImportDialogP
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Upload className="mr-2 h-4 w-4" />
-                Datei auswaehlen
+                Datei auswählen
               </Button>
             </div>
           </div>
@@ -250,7 +250,7 @@ export function VehicleImportDialog({ open, onOpenChange }: VehicleImportDialogP
 
             <DialogFooter>
               <Button className="rounded-xl" onClick={handleClose}>
-                Schliessen
+                Schließen
               </Button>
             </DialogFooter>
           </div>

@@ -1,6 +1,6 @@
 /**
  * Navigation Type Definitions
- * Type-safe Navigation fuer die gesamte App
+ * Type-safe Navigation für die gesamte App
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';

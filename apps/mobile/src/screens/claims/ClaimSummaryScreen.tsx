@@ -1,9 +1,10 @@
 /**
  * Claim Summary Screen
  * Zusammenfassung vor dem Absenden - Mit Store-Daten
+ * Performance optimized with granular selectors
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,12 +13,22 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadow } from '@/constants/theme';
-import { useClaimDraftStore } from '@/stores';
+import {
+  useClaimDraftVehicle,
+  useClaimDraftDate,
+  useClaimDraftTime,
+  useClaimDraftLocation,
+  useClaimDraftGpsCoords,
+  useClaimDraftCategory,
+  useClaimDraftDescription,
+  useClaimDraftPhotos,
+  useClaimDraftActions,
+} from '@/stores';
+import { OptimizedImage } from '@/components/common/OptimizedImage';
 import type { ClaimsScreenProps } from '@/navigation/types';
 
 // Category Labels
@@ -33,41 +44,45 @@ const CATEGORY_LABELS: Record<string, string> = {
 export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSummary'>) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Store State
-  const {
-    vehicle,
-    accidentDate,
-    accidentTime,
-    location,
-    gpsCoords,
-    category,
-    description,
-    photos,
-    reset,
-  } = useClaimDraftStore();
+  // Granular Store Selectors - prevent cascading re-renders
+  const vehicle = useClaimDraftVehicle();
+  const accidentDate = useClaimDraftDate();
+  const accidentTime = useClaimDraftTime();
+  const location = useClaimDraftLocation();
+  const gpsCoords = useClaimDraftGpsCoords();
+  const category = useClaimDraftCategory();
+  const description = useClaimDraftDescription();
+  const photos = useClaimDraftPhotos();
+  const { reset } = useClaimDraftActions();
 
-  // Format Date
-  const formatDate = (dateStr: string | null): string => {
-    if (!dateStr) return '--';
-    const date = new Date(dateStr);
+  // Memoized Format Date
+  const formattedDate = useMemo(() => {
+    if (!accidentDate) return '--';
+    const date = new Date(accidentDate);
     return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
     });
-  };
+  }, [accidentDate]);
 
-  // Format Time
-  const formatTime = (timeStr: string | null): string => {
-    if (!timeStr) return '--';
-    const date = new Date(timeStr);
+  // Memoized Format Time
+  const formattedTime = useMemo(() => {
+    if (!accidentTime) return '--';
+    const date = new Date(accidentTime);
     return date.toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
+  }, [accidentTime]);
 
-  const handleSubmit = async () => {
+  // Memoized category label
+  const categoryLabel = useMemo(
+    () => CATEGORY_LABELS[category] || category || '--',
+    [category]
+  );
+
+  const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
     try {
       // Simulate API call
@@ -86,21 +101,32 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
           },
         ]
       );
-    } catch (error) {
+    } catch {
       Alert.alert('Fehler', 'Der Schaden konnte nicht gesendet werden. Bitte versuchen Sie es erneut.');
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [reset, navigation]);
 
-  const handleEdit = (section: string) => {
-    if (section === 'photos') {
-      navigation.goBack();
-    } else {
-      // Go back to NewClaim screen
-      navigation.navigate('NewClaim');
-    }
-  };
+  const handleEditVehicle = useCallback(() => {
+    navigation.navigate('NewClaim');
+  }, [navigation]);
+
+  const handleEditDatetime = useCallback(() => {
+    navigation.navigate('NewClaim');
+  }, [navigation]);
+
+  const handleEditDetails = useCallback(() => {
+    navigation.navigate('NewClaim');
+  }, [navigation]);
+
+  const handleEditPhotos = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -139,7 +165,7 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Fahrzeug</Text>
-            <TouchableOpacity onPress={() => handleEdit('vehicle')}>
+            <TouchableOpacity onPress={handleEditVehicle}>
               <Text style={styles.editLink}>Bearbeiten</Text>
             </TouchableOpacity>
           </View>
@@ -160,19 +186,19 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Datum & Ort</Text>
-            <TouchableOpacity onPress={() => handleEdit('datetime')}>
+            <TouchableOpacity onPress={handleEditDatetime}>
               <Text style={styles.editLink}>Bearbeiten</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={18} color={colors.text.secondary} />
             <Text style={styles.infoLabel}>Datum:</Text>
-            <Text style={styles.infoValue}>{formatDate(accidentDate)}</Text>
+            <Text style={styles.infoValue}>{formattedDate}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="time-outline" size={18} color={colors.text.secondary} />
             <Text style={styles.infoLabel}>Uhrzeit:</Text>
-            <Text style={styles.infoValue}>{formatTime(accidentTime)}</Text>
+            <Text style={styles.infoValue}>{formattedTime}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="location-outline" size={18} color={colors.text.secondary} />
@@ -193,7 +219,7 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Schadensdetails</Text>
-            <TouchableOpacity onPress={() => handleEdit('details')}>
+            <TouchableOpacity onPress={handleEditDetails}>
               <Text style={styles.editLink}>Bearbeiten</Text>
             </TouchableOpacity>
           </View>
@@ -201,9 +227,7 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
             <Ionicons name="folder-outline" size={18} color={colors.text.secondary} />
             <Text style={styles.infoLabel}>Kategorie:</Text>
             <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>
-                {CATEGORY_LABELS[category] || category || '--'}
-              </Text>
+              <Text style={styles.categoryText}>{categoryLabel}</Text>
             </View>
           </View>
           <View style={styles.descriptionContainer}>
@@ -221,16 +245,16 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>Fotos ({photos.length})</Text>
-            <TouchableOpacity onPress={() => handleEdit('photos')}>
+            <TouchableOpacity onPress={handleEditPhotos}>
               <Text style={styles.editLink}>Bearbeiten</Text>
             </TouchableOpacity>
           </View>
           {photos.length > 0 ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoList}>
               {photos.map((photo) => (
-                <Image
+                <OptimizedImage
                   key={photo.id}
-                  source={{ uri: photo.uri }}
+                  uri={photo.uri}
                   style={styles.photoThumbnail}
                 />
               ))}
@@ -255,7 +279,7 @@ export function ClaimSummaryScreen({ navigation }: ClaimsScreenProps<'ClaimSumma
 
       {/* Footer Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={20} color={colors.text.secondary} />
           <Text style={styles.backButtonText}>Zurück</Text>
         </TouchableOpacity>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Bell,
   Check,
@@ -57,17 +57,37 @@ export default function NotificationsPage() {
   const totalPages = data?.totalPages ?? 1;
   const hasUnread = notifications.some(n => !n.readAt);
 
-  const handleMarkAsRead = (id: string) => {
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleMarkAsRead = useCallback((id: string) => {
     markAsRead.mutate(id);
-  };
+  }, [markAsRead]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     deleteNotification.mutate(id);
-  };
+  }, [deleteNotification]);
 
-  const handleMarkAllAsRead = () => {
+  const handleMarkAllAsRead = useCallback(() => {
     markAllAsRead.mutate();
-  };
+  }, [markAllAsRead]);
+
+  // Memoized filter handlers
+  const handleTypeFilterChange = useCallback((v: string) => {
+    setTypeFilter(v);
+    setPage(1);
+  }, []);
+
+  const handleReadFilterChange = useCallback((v: string) => {
+    setReadFilter(v);
+    setPage(1);
+  }, []);
+
+  const handlePrevPage = useCallback(() => {
+    setPage(p => Math.max(1, p - 1));
+  }, []);
+
+  const handleNextPage = useCallback(() => {
+    setPage(p => Math.min(totalPages, p + 1));
+  }, [totalPages]);
 
   return (
     <div className="space-y-6">
@@ -107,7 +127,7 @@ export default function NotificationsPage() {
           <div className="flex flex-wrap gap-4">
             <div className="w-48">
               <label className="text-sm font-medium mb-2 block">Typ</label>
-              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(1); }}>
+              <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Alle Typen" />
                 </SelectTrigger>
@@ -121,7 +141,7 @@ export default function NotificationsPage() {
             </div>
             <div className="w-48">
               <label className="text-sm font-medium mb-2 block">Status</label>
-              <Select value={readFilter} onValueChange={(v) => { setReadFilter(v); setPage(1); }}>
+              <Select value={readFilter} onValueChange={handleReadFilterChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Alle" />
                 </SelectTrigger>
@@ -162,7 +182,7 @@ export default function NotificationsPage() {
               <h3 className="font-medium">Keine Benachrichtigungen</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-xs">
                 {typeFilter !== 'all' || readFilter !== 'all'
-                  ? 'Keine Benachrichtigungen fuer die ausgewaehlten Filter gefunden.'
+                  ? 'Keine Benachrichtigungen für die ausgewählten Filter gefunden.'
                   : 'Sie haben noch keine Benachrichtigungen erhalten.'}
               </p>
             </div>
@@ -186,10 +206,10 @@ export default function NotificationsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={handlePrevPage}
                 disabled={page === 1}
               >
-                Zurueck
+                Zurück
               </Button>
               <span className="text-sm text-muted-foreground">
                 Seite {page} von {totalPages}
@@ -197,7 +217,7 @@ export default function NotificationsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={handleNextPage}
                 disabled={page === totalPages}
               >
                 Weiter

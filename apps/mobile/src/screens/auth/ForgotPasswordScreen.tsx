@@ -56,11 +56,11 @@ export function ForgotPasswordScreen({ navigation }: AuthScreenProps<'ForgotPass
           </View>
           <Text style={styles.successTitle}>E-Mail gesendet</Text>
           <Text style={styles.successText}>
-            Wir haben Ihnen eine E-Mail mit einem Link zum Zuruecksetzen Ihres
-            Passworts gesendet. Bitte pruefen Sie Ihren Posteingang.
+            Wir haben Ihnen eine E-Mail mit einem Link zum Zurücksetzen Ihres
+            Passworts gesendet. Bitte prüfen Sie Ihren Posteingang.
           </Text>
           <TouchableOpacity style={styles.backButton} onPress={handleBackToLogin}>
-            <Text style={styles.backButtonText}>Zurueck zur Anmeldung</Text>
+            <Text style={styles.backButtonText}>Zurück zur Anmeldung</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -81,7 +81,7 @@ export function ForgotPasswordScreen({ navigation }: AuthScreenProps<'ForgotPass
             <Text style={styles.title}>Passwort vergessen?</Text>
             <Text style={styles.subtitle}>
               Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link
-              zum Zuruecksetzen Ihres Passworts.
+              zum Zurücksetzen Ihres Passworts.
             </Text>
           </View>
 

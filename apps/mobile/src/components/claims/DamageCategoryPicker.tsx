@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, fontSize, fontWeight, borderRadius, damageCategoryColors } from '../../constants/theme';
+import { LineSeparator } from '../common/ListSeparators';
+import { createGetItemLayout, LIST_ITEM_HEIGHTS } from '../../constants/listItemHeights';
 
 interface DamageCategory {
   value: string;
@@ -69,6 +71,14 @@ const DAMAGE_CATEGORIES: DamageCategory[] = [
   },
 ];
 
+// Pre-computed background colors for categories (created once, outside component)
+const CATEGORY_BG_COLORS: Record<string, { backgroundColor: string }> = Object.fromEntries(
+  Object.entries(damageCategoryColors).map(([key, color]) => [
+    key,
+    { backgroundColor: `${color}20` },
+  ])
+);
+
 interface DamageCategoryPickerProps {
   label: string;
   value: string;
@@ -77,6 +87,55 @@ interface DamageCategoryPickerProps {
   required?: boolean;
   disabled?: boolean;
 }
+
+// Memoized Category Item Component
+interface CategoryItemProps {
+  item: DamageCategory;
+  isSelected: boolean;
+  onSelect: (value: string) => void;
+}
+
+const CategoryItem = memo(function CategoryItem({ item, isSelected, onSelect }: CategoryItemProps) {
+  const handlePress = useCallback(() => {
+    onSelect(item.value);
+  }, [item.value, onSelect]);
+
+  const iconBgStyle = useMemo(
+    () => CATEGORY_BG_COLORS[item.value] || { backgroundColor: `${colors.gray[400]}20` },
+    [item.value]
+  );
+
+  return (
+    <TouchableOpacity
+      style={[styles.categoryItem, isSelected && styles.categoryItemSelected]}
+      onPress={handlePress}
+    >
+      <View style={[styles.itemIconCircle, iconBgStyle]}>
+        <Ionicons
+          name={item.icon}
+          size={24}
+          color={damageCategoryColors[item.value]}
+        />
+      </View>
+      <View style={styles.itemInfo}>
+        <Text style={[styles.itemLabel, isSelected && styles.itemLabelSelected]}>
+          {item.label}
+        </Text>
+        <Text style={styles.itemDescription}>{item.description}</Text>
+      </View>
+      {isSelected && (
+        <Ionicons name="checkmark" size={24} color={colors.primary[600]} />
+      )}
+    </TouchableOpacity>
+  );
+});
+
+// FlatList optimization
+const keyExtractor = (item: DamageCategory) => item.value;
+const getItemLayout = createGetItemLayout<DamageCategory>(
+  LIST_ITEM_HEIGHTS.categoryItem,
+  LIST_ITEM_HEIGHTS.vehicleSeparator
+);
 
 export function DamageCategoryPicker({
   label,
@@ -89,12 +148,40 @@ export function DamageCategoryPicker({
   const [isOpen, setIsOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const selectedCategory = DAMAGE_CATEGORIES.find((c) => c.value === value);
+  const selectedCategory = useMemo(
+    () => DAMAGE_CATEGORIES.find((c) => c.value === value),
+    [value]
+  );
 
-  const handleSelect = (categoryValue: string) => {
+  const handleOpen = useCallback(() => {
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  }, [disabled]);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  const handleSelect = useCallback((categoryValue: string) => {
     onValueChange(categoryValue);
     setIsOpen(false);
-  };
+  }, [onValueChange]);
+
+  const renderCategoryItem = useCallback(({ item }: { item: DamageCategory }) => (
+    <CategoryItem
+      item={item}
+      isSelected={item.value === value}
+      onSelect={handleSelect}
+    />
+  ), [value, handleSelect]);
+
+  const selectedIconBgStyle = useMemo(
+    () => selectedCategory
+      ? CATEGORY_BG_COLORS[selectedCategory.value] || { backgroundColor: `${colors.gray[400]}20` }
+      : undefined,
+    [selectedCategory]
+  );
 
   return (
     <View style={styles.container}>
@@ -109,17 +196,12 @@ export function DamageCategoryPicker({
           error && styles.selectButtonError,
           disabled && styles.selectButtonDisabled,
         ]}
-        onPress={() => !disabled && setIsOpen(true)}
+        onPress={handleOpen}
         disabled={disabled}
       >
         {selectedCategory ? (
           <View style={styles.selectedCategory}>
-            <View
-              style={[
-                styles.categoryIconCircle,
-                { backgroundColor: damageCategoryColors[selectedCategory.value] + '20' },
-              ]}
-            >
+            <View style={[styles.categoryIconCircle, selectedIconBgStyle]}>
               <Ionicons
                 name={selectedCategory.icon}
                 size={20}
@@ -153,61 +235,31 @@ export function DamageCategoryPicker({
         visible={isOpen}
         transparent
         animationType="slide"
-        onRequestClose={() => setIsOpen(false)}
+        onRequestClose={handleClose}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setIsOpen(false)}
+          onPress={handleClose}
         >
           <View style={[styles.modalContent, { paddingBottom: insets.bottom + spacing.md }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Schadenskategorie</Text>
-              <TouchableOpacity onPress={() => setIsOpen(false)}>
+              <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
 
             <FlatList
               data={DAMAGE_CATEGORIES}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.categoryItem,
-                    item.value === value && styles.categoryItemSelected,
-                  ]}
-                  onPress={() => handleSelect(item.value)}
-                >
-                  <View
-                    style={[
-                      styles.itemIconCircle,
-                      { backgroundColor: damageCategoryColors[item.value] + '20' },
-                    ]}
-                  >
-                    <Ionicons
-                      name={item.icon}
-                      size={24}
-                      color={damageCategoryColors[item.value]}
-                    />
-                  </View>
-                  <View style={styles.itemInfo}>
-                    <Text
-                      style={[
-                        styles.itemLabel,
-                        item.value === value && styles.itemLabelSelected,
-                      ]}
-                    >
-                      {item.label}
-                    </Text>
-                    <Text style={styles.itemDescription}>{item.description}</Text>
-                  </View>
-                  {item.value === value && (
-                    <Ionicons name="checkmark" size={24} color={colors.primary[600]} />
-                  )}
-                </TouchableOpacity>
-              )}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              keyExtractor={keyExtractor}
+              renderItem={renderCategoryItem}
+              ItemSeparatorComponent={LineSeparator}
+              getItemLayout={getItemLayout}
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              initialNumToRender={10}
+              windowSize={5}
             />
           </View>
         </TouchableOpacity>
@@ -347,9 +399,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.text.secondary,
     marginTop: 2,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border.light,
   },
 });

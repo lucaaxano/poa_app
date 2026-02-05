@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Modal,
   FlatList,
@@ -12,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../constants/theme';
+import { OptimizedImage } from '../common/OptimizedImage';
 
 export interface PhotoItem {
   id: string;
@@ -31,6 +31,55 @@ interface PhotoGalleryProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+// Memoized Photo Grid Item
+interface PhotoGridItemProps {
+  item: PhotoItem;
+  itemSize: number;
+  editable: boolean;
+  onPress: (photo: PhotoItem) => void;
+  onRemove?: (photoId: string) => void;
+}
+
+const PhotoGridItem = memo(function PhotoGridItem({
+  item,
+  itemSize,
+  editable,
+  onPress,
+  onRemove,
+}: PhotoGridItemProps) {
+  const handlePress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
+
+  const handleRemove = useCallback(() => {
+    onRemove?.(item.id);
+  }, [item.id, onRemove]);
+
+  const containerStyle = useMemo(
+    () => [styles.photoItem, { width: itemSize, height: itemSize }],
+    [itemSize]
+  );
+
+  return (
+    <TouchableOpacity
+      style={containerStyle}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <OptimizedImage uri={item.uri} style={styles.photo} />
+      {editable && onRemove && (
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={handleRemove}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="close-circle" size={24} color={colors.error[500]} />
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
+});
+
 export function PhotoGallery({
   photos,
   columns = 3,
@@ -49,26 +98,27 @@ export function PhotoGallery({
 
   const canAddMore = photos.length < maxPhotos;
 
-  const renderPhoto = ({ item }: { item: PhotoItem }) => (
-    <TouchableOpacity
-      style={[styles.photoItem, { width: itemSize, height: itemSize }]}
-      onPress={() => setSelectedPhoto(item)}
-      activeOpacity={0.8}
-    >
-      <Image source={{ uri: item.uri }} style={styles.photo} />
-      {editable && onRemove && (
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => onRemove(item.id)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="close-circle" size={24} color={colors.error[500]} />
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  );
+  const handlePhotoPress = useCallback((photo: PhotoItem) => {
+    setSelectedPhoto(photo);
+  }, []);
 
-  const renderAddButton = () => {
+  const handleCloseModal = useCallback(() => {
+    setSelectedPhoto(null);
+  }, []);
+
+  const renderPhoto = useCallback(({ item }: { item: PhotoItem }) => (
+    <PhotoGridItem
+      item={item}
+      itemSize={itemSize}
+      editable={editable}
+      onPress={handlePhotoPress}
+      onRemove={onRemove}
+    />
+  ), [itemSize, editable, handlePhotoPress, onRemove]);
+
+  const keyExtractor = useCallback((item: PhotoItem) => item.id, []);
+
+  const renderAddButton = useCallback(() => {
     if (!editable || !onAdd || !canAddMore) return null;
 
     return (
@@ -80,7 +130,17 @@ export function PhotoGallery({
         <Text style={styles.addText}>Hinzufügen</Text>
       </TouchableOpacity>
     );
-  };
+  }, [editable, onAdd, canAddMore, itemSize]);
+
+  const columnWrapperStyle = useMemo(
+    () => columns > 1 ? styles.row : undefined,
+    [columns]
+  );
+
+  const closeButtonStyle = useMemo(
+    () => [styles.closeButton, { top: insets.top + spacing.md }],
+    [insets.top]
+  );
 
   if (photos.length === 0 && !editable) {
     return (
@@ -95,13 +155,17 @@ export function PhotoGallery({
     <View style={styles.container}>
       <FlatList
         data={photos}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         renderItem={renderPhoto}
         numColumns={columns}
-        columnWrapperStyle={columns > 1 ? styles.row : undefined}
+        columnWrapperStyle={columnWrapperStyle}
         ListFooterComponent={renderAddButton}
         scrollEnabled={false}
         contentContainerStyle={styles.grid}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        initialNumToRender={10}
+        windowSize={5}
       />
 
       <Text style={styles.counter}>
@@ -113,18 +177,18 @@ export function PhotoGallery({
         visible={!!selectedPhoto}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedPhoto(null)}
+        onRequestClose={handleCloseModal}
       >
         <View style={styles.modalOverlay}>
           <TouchableOpacity
-            style={[styles.closeButton, { top: insets.top + spacing.md }]}
-            onPress={() => setSelectedPhoto(null)}
+            style={closeButtonStyle}
+            onPress={handleCloseModal}
           >
             <Ionicons name="close" size={28} color={colors.white} />
           </TouchableOpacity>
           {selectedPhoto && (
-            <Image
-              source={{ uri: selectedPhoto.uri }}
+            <OptimizedImage
+              uri={selectedPhoto.uri}
               style={styles.fullImage}
               resizeMode="contain"
             />

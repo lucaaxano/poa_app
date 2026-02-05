@@ -43,7 +43,7 @@ export class StripeController {
 
   private validateCompanyId(companyId: string | null): string {
     if (!companyId) {
-      throw new BadRequestException('Kein Unternehmen zugeordnet. Billing ist nur fuer Firmenkonten verfuegbar.');
+      throw new BadRequestException('Kein Unternehmen zugeordnet. Billing ist nur für Firmenkonten verfügbar.');
     }
     return companyId;
   }

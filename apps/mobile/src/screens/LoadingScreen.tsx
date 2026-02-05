@@ -1,6 +1,6 @@
 /**
  * Loading Screen
- * Wird angezeigt waehrend Auth-Check laeuft
+ * Wird angezeigt während Auth-Check läuft
  */
 
 import React from 'react';

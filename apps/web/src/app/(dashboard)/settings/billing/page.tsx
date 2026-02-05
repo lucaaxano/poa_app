@@ -23,7 +23,7 @@ export default function BillingSettingsPage() {
 
     if (success === 'true') {
       toast.success('Abonnement erfolgreich aktiviert!', {
-        description: 'Vielen Dank fuer Ihr Vertrauen.',
+        description: 'Vielen Dank für Ihr Vertrauen.',
         duration: 5000,
       });
       refreshSubscription();
@@ -138,7 +138,7 @@ export default function BillingSettingsPage() {
           <div>
             <p className="font-medium">Was passiert bei mehr Fahrzeugen?</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Der Preis passt sich automatisch an. Bei der naechsten Abrechnung wird die aktuelle Fahrzeuganzahl beruecksichtigt.
+              Der Preis passt sich automatisch an. Bei der nächsten Abrechnung wird die aktuelle Fahrzeuganzahl berücksichtigt.
             </p>
           </div>
         </CardContent>

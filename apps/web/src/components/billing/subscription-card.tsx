@@ -94,7 +94,7 @@ export function SubscriptionCard() {
               </span>
             ) : (
               <span className="text-muted-foreground">
-                Naechste Abrechnung: {format(currentPeriodEnd, 'dd. MMMM yyyy', { locale: de })}
+                Nächste Abrechnung: {format(currentPeriodEnd, 'dd. MMMM yyyy', { locale: de })}
               </span>
             )}
           </div>
@@ -103,11 +103,11 @@ export function SubscriptionCard() {
         {subscription.cancelAtPeriodEnd && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
             <p className="text-sm text-yellow-800">
-              Ihr Abonnement wurde gekuendigt und endet am{' '}
+              Ihr Abonnement wurde gekündigt und endet am{' '}
               {currentPeriodEnd
                 ? format(currentPeriodEnd, 'dd. MMMM yyyy', { locale: de })
                 : 'Ende der Laufzeit'}
-              . Sie koennen es jederzeit reaktivieren.
+              . Sie können es jederzeit reaktivieren.
             </p>
           </div>
         )}
@@ -132,7 +132,7 @@ export function SubscriptionCard() {
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          Zahlungsmethode aendern, Rechnungen einsehen oder kuendigen
+          Zahlungsmethode ändern, Rechnungen einsehen oder kündigen
         </p>
       </CardContent>
     </Card>

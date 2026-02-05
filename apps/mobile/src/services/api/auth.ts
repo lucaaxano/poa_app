@@ -70,7 +70,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginRespons
 };
 
 /**
- * Logout - Tokens loeschen
+ * Logout - Tokens löschen
  */
 export const logout = async (): Promise<void> => {
   await clearTokens();
@@ -85,7 +85,7 @@ export const getProfile = async (): Promise<ProfileResponse> => {
 };
 
 /**
- * Passwort aendern
+ * Passwort ändern
  */
 export const changePassword = async (input: ChangePasswordInput): Promise<void> => {
   await apiClient.patch('/auth/change-password', input);
@@ -99,7 +99,7 @@ export const forgotPassword = async (input: ForgotPasswordInput): Promise<void> 
 };
 
 /**
- * Passwort zuruecksetzen mit Token
+ * Passwort zurücksetzen mit Token
  */
 export const resetPassword = async (input: ResetPasswordInput): Promise<void> => {
   await apiClient.post('/auth/reset-password', input);

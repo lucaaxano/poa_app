@@ -45,11 +45,11 @@ export default function HomePage() {
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
               KFZ-Schadenmanagement
               <br />
-              <span className="text-primary">fuer Ihre Flotte</span>
+              <span className="text-primary">für Ihre Flotte</span>
             </h1>
             <p className="mx-auto mt-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Melden Sie Schaeden schnell und einfach. Behalten Sie den Ueberblick
-              ueber alle Schaeden Ihrer Flotte und optimieren Sie Ihre Versicherungskosten.
+              Melden Sie Schäden schnell und einfach. Behalten Sie den Überblick
+              über alle Schäden Ihrer Flotte und optimieren Sie Ihre Versicherungskosten.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/register">
@@ -89,24 +89,24 @@ export default function HomePage() {
                 Warum POA?
               </h2>
               <p className="mt-4 text-lg text-muted-foreground">
-                Alles was Sie brauchen, um Ihre Flottenschaeden effizient zu verwalten.
+                Alles was Sie brauchen, um Ihre Flottenschäden effizient zu verwalten.
               </p>
             </div>
             <div className="mx-auto mt-16 grid max-w-5xl gap-8 md:grid-cols-3">
               <FeatureCard
                 icon={<Zap className="h-6 w-6" />}
                 title="Schnelle Schadenmeldung"
-                description="Erfassen Sie Schaeden in Minuten statt Stunden. Direkt vom Unfallort aus mit Fotos und allen Details."
+                description="Erfassen Sie Schäden in Minuten statt Stunden. Direkt vom Unfallort aus mit Fotos und allen Details."
               />
               <FeatureCard
                 icon={<Shield className="h-6 w-6" />}
                 title="Automatische Weiterleitung"
-                description="Schaeden werden automatisch an Ihre Versicherung gesendet. Kein manueller Aufwand mehr."
+                description="Schäden werden automatisch an Ihre Versicherung gesendet. Kein manueller Aufwand mehr."
               />
               <FeatureCard
                 icon={<BarChart3 className="h-6 w-6" />}
-                title="Volle Uebersicht"
-                description="Dashboard mit allen Schaeden, Kosten und Auswertungen auf einen Blick."
+                title="Volle Übersicht"
+                description="Dashboard mit allen Schäden, Kosten und Auswertungen auf einen Blick."
               />
             </div>
           </div>

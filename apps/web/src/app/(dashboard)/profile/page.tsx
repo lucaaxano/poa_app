@@ -28,9 +28,9 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Aktuelles Passwort ist erforderlich'),
   newPassword: z.string().min(8, 'Neues Passwort muss mindestens 8 Zeichen haben'),
-  confirmPassword: z.string().min(1, 'Passwort-Bestaetigung ist erforderlich'),
+  confirmPassword: z.string().min(1, 'Passwort-Bestätigung ist erforderlich'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'Passwoerter stimmen nicht ueberein',
+  message: 'Passwörter stimmen nicht überein',
   path: ['confirmPassword'],
 });
 
@@ -102,7 +102,7 @@ export default function ProfilePage() {
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      toast.success('Passwort erfolgreich geaendert');
+      toast.success('Passwort erfolgreich geändert');
       setPasswordSuccess(true);
       resetPassword();
       setTimeout(() => setPasswordSuccess(false), 3000);
@@ -125,7 +125,7 @@ export default function ProfilePage() {
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mein Profil</h1>
         <p className="text-muted-foreground">
-          Verwalten Sie Ihre persoenlichen Daten und Kontoeinstellungen
+          Verwalten Sie Ihre persönlichen Daten und Kontoeinstellungen
         </p>
       </div>
 
@@ -135,10 +135,10 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Persoenliche Daten
+              Persönliche Daten
             </CardTitle>
             <CardDescription>
-              Ihre persoenlichen Informationen und Kontaktdaten
+              Ihre persönlichen Informationen und Kontaktdaten
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                 disabled={!isProfileDirty}
                 className="rounded-xl"
               >
-                Zuruecksetzen
+                Zurücksetzen
               </Button>
               <Button
                 type="submit"
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                 <span className="text-sm">{user.email}</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Die E-Mail-Adresse kann nicht geaendert werden
+                Die E-Mail-Adresse kann nicht geändert werden
               </p>
             </div>
 
@@ -261,10 +261,10 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lock className="h-5 w-5" />
-              Passwort aendern
+              Passwort ändern
             </CardTitle>
             <CardDescription>
-              Aktualisieren Sie Ihr Passwort regelmaessig fuer mehr Sicherheit
+              Aktualisieren Sie Ihr Passwort regelmäßig für mehr Sicherheit
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -303,7 +303,7 @@ export default function ProfilePage() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">
-                  Passwort bestaetigen <span className="text-red-500">*</span>
+                  Passwort bestätigen <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="confirmPassword"
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                 ) : (
                   <Lock className="mr-2 h-4 w-4" />
                 )}
-                {passwordSuccess ? 'Passwort geaendert' : 'Passwort aendern'}
+                {passwordSuccess ? 'Passwort geändert' : 'Passwort ändern'}
               </Button>
             </div>
           </CardContent>

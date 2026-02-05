@@ -24,7 +24,7 @@ export const updateCompanySchema = z.object({
     .or(z.literal('')),
   country: z
     .string()
-    .max(2, 'Laendercode muss 2 Zeichen haben')
+    .max(2, 'Ländercode muss 2 Zeichen haben')
     .default('DE')
     .optional(),
   phone: z
@@ -34,7 +34,7 @@ export const updateCompanySchema = z.object({
     .or(z.literal('')),
   website: z
     .string()
-    .url('Ungueltige URL')
+    .url('Ungültige URL')
     .max(255, 'Website darf maximal 255 Zeichen haben')
     .optional()
     .or(z.literal('')),

@@ -31,12 +31,12 @@ const acceptInvitationSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen haben')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+        'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
       ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwoerter stimmen nicht ueberein',
+    message: 'Passwörter stimmen nicht überein',
     path: ['confirmPassword'],
   });
 
@@ -82,10 +82,10 @@ function AcceptInvitationForm() {
             <AlertCircle className="h-8 w-8 text-destructive" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Ungueltiger Link
+            Ungültiger Link
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Der Einladungslink ist ungueltig oder abgelaufen. Bitte kontaktieren Sie Ihren Administrator fuer eine neue Einladung.
+            Der Einladungslink ist ungültig oder abgelaufen. Bitte kontaktieren Sie Ihren Administrator für eine neue Einladung.
           </p>
           <Link href="/login" prefetch={false} className="mt-8 block">
             <Button variant="outline" className="h-12 w-full rounded-xl">
@@ -134,7 +134,7 @@ function AcceptInvitationForm() {
             Einladung annehmen
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Vervollstaendigen Sie Ihr Profil, um Ihr Konto zu aktivieren.
+            Vervollständigen Sie Ihr Profil, um Ihr Konto zu aktivieren.
           </p>
         </div>
 
@@ -204,7 +204,7 @@ function AcceptInvitationForm() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="text-sm font-medium">
-              Passwort bestaetigen
+              Passwort bestätigen
             </Label>
             <Input
               id="confirmPassword"

@@ -30,14 +30,14 @@ import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/api/client';
 
 const inviteSchema = z.object({
-  email: z.string().email('Ungueltige E-Mail-Adresse'),
+  email: z.string().email('Ungültige E-Mail-Adresse'),
   role: z.enum(['EMPLOYEE', 'COMPANY_ADMIN'] as const),
 });
 
 type InviteFormData = z.infer<typeof inviteSchema>;
 
 const roleOptions = [
-  { value: 'EMPLOYEE' as const, label: 'Mitarbeiter', description: 'Kann Schaeden melden' },
+  { value: 'EMPLOYEE' as const, label: 'Mitarbeiter', description: 'Kann Schäden melden' },
   { value: 'COMPANY_ADMIN' as const, label: 'Administrator', description: 'Vollzugriff auf alle Funktionen' },
 ];
 
@@ -115,7 +115,7 @@ export function InviteModal() {
                 onValueChange={(value) => setValue('role', value as 'EMPLOYEE' | 'COMPANY_ADMIN')}
               >
                 <SelectTrigger className="rounded-xl">
-                  <SelectValue placeholder="Rolle waehlen" />
+                  <SelectValue placeholder="Rolle wählen" />
                 </SelectTrigger>
                 <SelectContent>
                   {roleOptions.map((option) => (

@@ -1,6 +1,6 @@
 /**
  * Dashboard Screen
- * Employee-Uebersicht mit Stats und Quick Actions
+ * Employee-Übersicht mit Stats und Quick Actions
  */
 
 import React from 'react';
@@ -48,7 +48,7 @@ export function DashboardScreen({ navigation }: MainTabScreenProps<'Dashboard'>)
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Meine Schaeden</Text>
+            <Text style={styles.statLabel}>Meine Schäden</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statValue, { color: colors.warning[600] }]}>0</Text>
@@ -74,12 +74,12 @@ export function DashboardScreen({ navigation }: MainTabScreenProps<'Dashboard'>)
 
         {/* Recent Claims */}
         <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>Letzte Schaeden</Text>
+          <Text style={styles.sectionTitle}>Letzte Schäden</Text>
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={48} color={colors.gray[300]} />
-            <Text style={styles.emptyText}>Keine Schaeden vorhanden</Text>
+            <Text style={styles.emptyText}>Keine Schäden vorhanden</Text>
             <Text style={styles.emptySubtext}>
-              Melden Sie Ihren ersten Schaden ueber den Button oben.
+              Melden Sie Ihren ersten Schaden über den Button oben.
             </Text>
           </View>
         </View>

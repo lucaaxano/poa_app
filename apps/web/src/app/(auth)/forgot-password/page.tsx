@@ -62,15 +62,15 @@ export default function ForgotPasswordPage() {
               E-Mail gesendet
             </h1>
             <p className="mt-3 text-muted-foreground">
-              Falls ein Konto mit dieser E-Mail-Adresse existiert, haben wir Ihnen einen Link zum Zuruecksetzen des Passworts gesendet.
+              Falls ein Konto mit dieser E-Mail-Adresse existiert, haben wir Ihnen einen Link zum Zurücksetzen des Passworts gesendet.
             </p>
             <p className="mt-6 text-sm text-muted-foreground">
-              Bitte pruefen Sie Ihren Posteingang und Spam-Ordner.
+              Bitte prüfen Sie Ihren Posteingang und Spam-Ordner.
             </p>
             <Link href="/login" prefetch={false} className="mt-8 block">
               <Button variant="outline" className="h-12 w-full rounded-xl">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurueck zum Login
+                Zurück zum Login
               </Button>
             </Link>
           </div>
@@ -85,7 +85,7 @@ export default function ForgotPasswordPage() {
                 Passwort vergessen?
               </h1>
               <p className="mt-3 text-muted-foreground">
-                Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zuruecksetzen zu erhalten.
+                Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.
               </p>
             </div>
 
@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Zurueck zum Login
+                Zurück zum Login
               </Link>
             </div>
           </>

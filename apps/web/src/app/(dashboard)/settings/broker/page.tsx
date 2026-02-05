@@ -97,7 +97,7 @@ export default function BrokerSettingsPage() {
   const cancelInvitationMutation = useMutation({
     mutationFn: (invitationId: string) => authApi.cancelInvitation(invitationId),
     onSuccess: () => {
-      toast.success('Einladung zurueckgezogen');
+      toast.success('Einladung zurückgezogen');
       queryClient.invalidateQueries({ queryKey: ['invitations'] });
     },
     onError: (error) => {
@@ -156,7 +156,7 @@ export default function BrokerSettingsPage() {
               <DialogHeader>
                 <DialogTitle>Broker einladen</DialogTitle>
                 <DialogDescription>
-                  Geben Sie die E-Mail-Adresse des Brokers ein. Falls der Broker bereits registriert ist, erhaelt er eine Anfrage. Andernfalls wird eine Einladung zur Registrierung gesendet.
+                  Geben Sie die E-Mail-Adresse des Brokers ein. Falls der Broker bereits registriert ist, erhält er eine Anfrage. Andernfalls wird eine Einladung zur Registrierung gesendet.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleInviteBroker}>
@@ -311,7 +311,7 @@ export default function BrokerSettingsPage() {
                       <TableRow>
                         <TableHead>E-Mail</TableHead>
                         <TableHead>Eingeladen von</TableHead>
-                        <TableHead>Laeuft ab am</TableHead>
+                        <TableHead>Läuft ab am</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -368,7 +368,7 @@ export default function BrokerSettingsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Broker entfernen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Dieser Broker wird keinen Zugriff mehr auf Ihre Firmendaten haben. Diese Aktion kann nicht rueckgaengig gemacht werden.
+              Dieser Broker wird keinen Zugriff mehr auf Ihre Firmendaten haben. Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -76,7 +76,7 @@ export default function BrokerRequestsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Broker-Anfragen</h1>
         <p className="text-muted-foreground">
-          Firmen, die Sie als Broker hinzufuegen moechten
+          Firmen, die Sie als Broker hinzufügen möchten
         </p>
       </div>
 
@@ -159,7 +159,7 @@ export default function BrokerRequestsPage() {
             </div>
             <h3 className="font-medium">Keine offenen Anfragen</h3>
             <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-              Sobald eine Firma Sie als Broker hinzufuegen moechte, erscheint die Anfrage hier.
+              Sobald eine Firma Sie als Broker hinzufügen möchte, erscheint die Anfrage hier.
             </p>
           </CardContent>
         </Card>

@@ -1,6 +1,6 @@
 /**
  * Claims List Screen
- * Liste aller eigenen Schaeden
+ * Liste aller eigenen Schäden
  */
 
 import React from 'react';
@@ -19,7 +19,7 @@ export function ClaimsListScreen({ navigation }: ClaimsScreenProps<'ClaimsList'>
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.emptyState}>
         <Ionicons name="document-text-outline" size={64} color={colors.gray[300]} />
-        <Text style={styles.emptyText}>Keine Schaeden vorhanden</Text>
+        <Text style={styles.emptyText}>Keine Schäden vorhanden</Text>
         <Text style={styles.emptySubtext}>
           Melden Sie Ihren ersten Schaden
         </Text>

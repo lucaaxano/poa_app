@@ -50,7 +50,7 @@ export class VehiclesController {
     // For Broker: companyId is required from query params
     if (role === UserRole.BROKER) {
       if (!companyId) {
-        throw new BadRequestException('companyId ist erforderlich fuer Broker');
+        throw new BadRequestException('companyId ist erforderlich für Broker');
       }
       // Check if broker has access to this company
       const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, companyId);
@@ -141,7 +141,7 @@ export class VehiclesController {
     // For Broker: companyId is required from query params
     if (role === UserRole.BROKER) {
       if (!companyId) {
-        throw new BadRequestException('companyId ist erforderlich fuer Broker');
+        throw new BadRequestException('companyId ist erforderlich für Broker');
       }
       // Check if broker has access to this company
       const hasAccess = await this.brokerService.hasBrokerAccessToCompany(userId, companyId);

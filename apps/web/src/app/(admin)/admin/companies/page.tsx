@@ -83,7 +83,7 @@ export default function AdminCompaniesPage() {
                     <TableHead>Stadt</TableHead>
                     <TableHead className="text-center">Benutzer</TableHead>
                     <TableHead className="text-center">Fahrzeuge</TableHead>
-                    <TableHead className="text-center">Schaeden</TableHead>
+                    <TableHead className="text-center">Schäden</TableHead>
                     <TableHead>Erstellt</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>

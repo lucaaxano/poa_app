@@ -11,7 +11,7 @@ export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
   [ClaimStatus.SUBMITTED]: 'Eingereicht',
   [ClaimStatus.APPROVED]: 'Freigegeben',
   [ClaimStatus.SENT]: 'An Versicherung gesendet',
-  [ClaimStatus.ACKNOWLEDGED]: 'Von Versicherung bestaetigt',
+  [ClaimStatus.ACKNOWLEDGED]: 'Von Versicherung bestätigt',
   [ClaimStatus.CLOSED]: 'Abgeschlossen',
   [ClaimStatus.REJECTED]: 'Abgelehnt',
 };
@@ -59,7 +59,7 @@ export const COVERAGE_TYPE_LABELS: Record<CoverageType, string> = {
 // Pricing Model Labels (German)
 export const PRICING_MODEL_LABELS: Record<PricingModel, string> = {
   [PricingModel.QUOTA]: 'Quotenmodell',
-  [PricingModel.PER_PIECE]: 'Stueckpreismodell',
+  [PricingModel.PER_PIECE]: 'Stückpreismodell',
   [PricingModel.SMALL_FLEET]: 'Kleinflotte',
 };
 

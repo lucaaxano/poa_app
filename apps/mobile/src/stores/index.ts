@@ -24,5 +24,17 @@ export {
 
 export {
   useClaimDraftStore,
+  // Granular selectors for performance optimization
+  useClaimDraftVehicle,
+  useClaimDraftDate,
+  useClaimDraftTime,
+  useClaimDraftLocation,
+  useClaimDraftGpsCoords,
+  useClaimDraftCategory,
+  useClaimDraftDescription,
+  useClaimDraftPhotos,
+  useClaimDraftCurrentStep,
+  useClaimDraftIsDirty,
+  useClaimDraftActions,
 } from './claimDraftStore';
 export type { ClaimDraftVehicle, ClaimDraftPhoto, ClaimDraftData } from './claimDraftStore';

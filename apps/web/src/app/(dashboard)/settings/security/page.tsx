@@ -180,7 +180,7 @@ export default function SecuritySettingsPage() {
               Zwei-Faktor-Authentifizierung
             </CardTitle>
             <CardDescription>
-              Schuetzen Sie Ihr Konto mit einer zusaetzlichen Sicherheitsebene
+              Schützen Sie Ihr Konto mit einer zusätzlichen Sicherheitsebene
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -198,8 +198,8 @@ export default function SecuritySettingsPage() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {twoFactorEnabled
-                      ? 'Ihr Konto ist durch 2FA geschuetzt'
-                      : 'Aktivieren Sie 2FA fuer zusaetzliche Sicherheit'}
+                      ? 'Ihr Konto ist durch 2FA geschützt'
+                      : 'Aktivieren Sie 2FA für zusätzliche Sicherheit'}
                   </p>
                 </div>
               </div>
@@ -209,11 +209,11 @@ export default function SecuritySettingsPage() {
             <div className="text-sm text-muted-foreground space-y-2">
               <p>
                 Die Zwei-Faktor-Authentifizierung (2FA) erfordert neben Ihrem Passwort
-                einen zusaetzlichen Sicherheitscode, der alle 30 Sekunden in Ihrer
+                einen zusätzlichen Sicherheitscode, der alle 30 Sekunden in Ihrer
                 Authenticator-App generiert wird.
               </p>
               <p>
-                Unterstuetzte Apps: Google Authenticator, Microsoft Authenticator,
+                Unterstützte Apps: Google Authenticator, Microsoft Authenticator,
                 Authy, 1Password und weitere TOTP-kompatible Apps.
               </p>
             </div>
@@ -407,7 +407,7 @@ export default function SecuritySettingsPage() {
                 onClick={() => setStep('setup')}
                 className="rounded-xl"
               >
-                Zurueck
+                Zurück
               </Button>
               <Button
                 onClick={verifyAndEnable}
@@ -443,7 +443,7 @@ export default function SecuritySettingsPage() {
             <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800">
               <p className="text-sm font-medium">Wichtig!</p>
               <p className="text-sm mt-1">
-                Diese Codes koennen jeweils nur einmal verwendet werden, um sich anzumelden,
+                Diese Codes können jeweils nur einmal verwendet werden, um sich anzumelden,
                 wenn Sie keinen Zugang zu Ihrer Authenticator-App haben. Bewahren Sie sie sicher auf!
               </p>
             </div>

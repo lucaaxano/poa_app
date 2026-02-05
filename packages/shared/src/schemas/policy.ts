@@ -3,13 +3,13 @@ import { CoverageType, PricingModel } from '../types/policy';
 
 // Create Policy Schema
 export const createPolicySchema = z.object({
-  insurerId: z.string().uuid('Ungueltige Versicherer-ID'),
+  insurerId: z.string().uuid('Ungültige Versicherer-ID'),
   policyNumber: z
     .string()
     .min(1, 'Vertragsnummer ist erforderlich')
     .max(100, 'Vertragsnummer darf maximal 100 Zeichen haben'),
   coverageType: z.nativeEnum(CoverageType, {
-    errorMap: () => ({ message: 'Ungueltige Deckungsart' }),
+    errorMap: () => ({ message: 'Ungültige Deckungsart' }),
   }),
   pricingModel: z.nativeEnum(PricingModel).optional(),
   annualPremium: z.number().positive('Jahresbeitrag muss positiv sein').optional(),
@@ -20,10 +20,10 @@ export const createPolicySchema = z.object({
     .max(1, 'Schwellenwert muss zwischen 0 und 1 liegen')
     .optional(),
   validFrom: z.coerce.date({
-    errorMap: () => ({ message: 'Ungueltiges Startdatum' }),
+    errorMap: () => ({ message: 'Ungültiges Startdatum' }),
   }),
   validTo: z.coerce.date().optional(),
-  notes: z.string().max(2000, 'Notizen duerfen maximal 2000 Zeichen haben').optional(),
+  notes: z.string().max(2000, 'Notizen dürfen maximal 2000 Zeichen haben').optional(),
 });
 
 export type CreatePolicySchema = z.infer<typeof createPolicySchema>;

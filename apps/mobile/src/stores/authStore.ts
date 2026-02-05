@@ -1,6 +1,6 @@
 /**
  * Auth Store
- * Zustand Store fuer Authentifizierung (identisches Pattern wie Web-App)
+ * Zustand Store für Authentifizierung (identisches Pattern wie Web-App)
  */
 
 import { create } from 'zustand';
@@ -145,7 +145,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
       });
     } catch {
-      // Token ungueltig -> ausloggen
+      // Token ungültig -> ausloggen
       try {
         await clearTokens();
       } catch (clearError) {
@@ -159,7 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // Set User (fuer Updates)
+  // Set User (für Updates)
   setUser: (user, company) => {
     set({
       user,
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 
-  // Clear Auth (fuer Token-Fehler)
+  // Clear Auth (für Token-Fehler)
   clearAuth: () => {
     set({
       user: null,

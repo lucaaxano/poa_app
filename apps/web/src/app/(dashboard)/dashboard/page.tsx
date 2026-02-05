@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { FileWarning, Car, Users, TrendingUp, Plus, ArrowRight, Clock, AlertCircle, Loader2, Building2, BarChart3 } from 'lucide-react';
@@ -27,7 +28,7 @@ interface StatCardProps {
   };
 }
 
-function StatCard({ title, value, description, icon, iconBg, isLoading, trend }: StatCardProps) {
+const StatCard = memo(function StatCard({ title, value, description, icon, iconBg, isLoading, trend }: StatCardProps) {
   return (
     <Card className="rounded-2xl border shadow-soft hover:shadow-soft-lg transition-all">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -59,7 +60,7 @@ function StatCard({ title, value, description, icon, iconBg, isLoading, trend }:
       </CardContent>
     </Card>
   );
-}
+});
 
 interface QuickActionProps {
   icon: React.ReactNode;
@@ -68,7 +69,7 @@ interface QuickActionProps {
   href: Route;
 }
 
-function QuickAction({ icon, title, description, href }: QuickActionProps) {
+const QuickAction = memo(function QuickAction({ icon, title, description, href }: QuickActionProps) {
   return (
     <Link href={href} prefetch={false}>
       <div className="group flex items-center gap-4 rounded-xl border bg-white p-4 transition-all hover:border-primary/20 hover:shadow-soft">
@@ -83,20 +84,20 @@ function QuickAction({ icon, title, description, href }: QuickActionProps) {
       </div>
     </Link>
   );
-}
+});
 
-// Status Badge Component
-function StatusBadge({ status }: { status: ClaimStatus }) {
-  const statusConfig: Record<ClaimStatus, { label: string; className: string }> = {
-    [ClaimStatus.DRAFT]: { label: 'Entwurf', className: 'bg-gray-100 text-gray-700' },
-    [ClaimStatus.SUBMITTED]: { label: 'Eingereicht', className: 'bg-blue-100 text-blue-700' },
-    [ClaimStatus.APPROVED]: { label: 'Freigegeben', className: 'bg-green-100 text-green-700' },
-    [ClaimStatus.SENT]: { label: 'Gesendet', className: 'bg-purple-100 text-purple-700' },
-    [ClaimStatus.ACKNOWLEDGED]: { label: 'Bestaetigt', className: 'bg-teal-100 text-teal-700' },
-    [ClaimStatus.CLOSED]: { label: 'Abgeschlossen', className: 'bg-gray-100 text-gray-700' },
-    [ClaimStatus.REJECTED]: { label: 'Abgelehnt', className: 'bg-red-100 text-red-700' },
-  };
+// Status Badge Component - memoized with config moved outside
+const statusConfig: Record<ClaimStatus, { label: string; className: string }> = {
+  [ClaimStatus.DRAFT]: { label: 'Entwurf', className: 'bg-gray-100 text-gray-700' },
+  [ClaimStatus.SUBMITTED]: { label: 'Eingereicht', className: 'bg-blue-100 text-blue-700' },
+  [ClaimStatus.APPROVED]: { label: 'Freigegeben', className: 'bg-green-100 text-green-700' },
+  [ClaimStatus.SENT]: { label: 'Gesendet', className: 'bg-purple-100 text-purple-700' },
+  [ClaimStatus.ACKNOWLEDGED]: { label: 'Bestätigt', className: 'bg-teal-100 text-teal-700' },
+  [ClaimStatus.CLOSED]: { label: 'Abgeschlossen', className: 'bg-gray-100 text-gray-700' },
+  [ClaimStatus.REJECTED]: { label: 'Abgelehnt', className: 'bg-red-100 text-red-700' },
+};
 
+const StatusBadge = memo(function StatusBadge({ status }: { status: ClaimStatus }) {
   const config = statusConfig[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
 
   return (
@@ -104,21 +105,22 @@ function StatusBadge({ status }: { status: ClaimStatus }) {
       {config.label}
     </span>
   );
-}
+});
 
-// Damage Category Label
+// Damage Category Labels - moved outside function to avoid recreation
+const damageCategoryLabels: Record<DamageCategory, string> = {
+  [DamageCategory.LIABILITY]: 'Haftpflicht',
+  [DamageCategory.COMPREHENSIVE]: 'Kasko',
+  [DamageCategory.GLASS]: 'Glas',
+  [DamageCategory.WILDLIFE]: 'Wild',
+  [DamageCategory.PARKING]: 'Parkschaden',
+  [DamageCategory.THEFT]: 'Diebstahl',
+  [DamageCategory.VANDALISM]: 'Vandalismus',
+  [DamageCategory.OTHER]: 'Sonstiges',
+};
+
 function getDamageCategoryLabel(category: DamageCategory): string {
-  const labels: Record<DamageCategory, string> = {
-    [DamageCategory.LIABILITY]: 'Haftpflicht',
-    [DamageCategory.COMPREHENSIVE]: 'Kasko',
-    [DamageCategory.GLASS]: 'Glas',
-    [DamageCategory.WILDLIFE]: 'Wild',
-    [DamageCategory.PARKING]: 'Parkschaden',
-    [DamageCategory.THEFT]: 'Diebstahl',
-    [DamageCategory.VANDALISM]: 'Vandalismus',
-    [DamageCategory.OTHER]: 'Sonstiges',
-  };
-  return labels[category] || category;
+  return damageCategoryLabels[category] || category;
 }
 
 export default function DashboardPage() {
@@ -171,15 +173,15 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Willkommen zurueck, {user?.firstName}!
+            Willkommen zurück, {user?.firstName}!
           </h1>
         </div>
         <p className="text-muted-foreground">
           {isBroker
-            ? `Hier ist eine Uebersicht ueber ${displayName}`
+            ? `Hier ist eine Übersicht über ${displayName}`
             : isAdmin
-              ? `Hier ist eine Uebersicht ueber ${company?.name}`
-              : 'Hier ist eine Uebersicht ueber Ihre Schaeden'}
+              ? `Hier ist eine Übersicht über ${company?.name}`
+              : 'Hier ist eine Übersicht über Ihre Schäden'}
         </p>
       </div>
 
@@ -190,22 +192,22 @@ export default function DashboardPage() {
           <StatCard
             title="Betreute Firmen"
             value={(brokerAggregatedStats as any)?.totalCompanies ?? 0}
-            description="Firmen verknuepft"
+            description="Firmen verknüpft"
             icon={<Building2 className="h-5 w-5 text-indigo-600" />}
             iconBg="bg-indigo-50"
             isLoading={isLoadingBrokerStats}
           />
         )}
         <StatCard
-          title="Offene Schaeden"
+          title="Offene Schäden"
           value={openClaims}
-          description={isBroker ? 'Warten auf Bearbeitung' : isAdmin ? 'Warten auf Bearbeitung' : 'Ihre offenen Schaeden'}
+          description={isBroker ? 'Warten auf Bearbeitung' : isAdmin ? 'Warten auf Bearbeitung' : 'Ihre offenen Schäden'}
           icon={<AlertCircle className="h-5 w-5 text-orange-600" />}
           iconBg="bg-orange-50"
           isLoading={isLoadingStats}
         />
         <StatCard
-          title="Schaeden gesamt"
+          title="Schäden gesamt"
           value={stats?.totalClaims ?? 0}
           description="Dieses Jahr"
           icon={<FileWarning className="h-5 w-5 text-primary" />}
@@ -326,7 +328,7 @@ export default function DashboardPage() {
               <CardTitle>Schnellzugriff</CardTitle>
               <InlineHelp topicKey="dashboard-quickactions" />
             </div>
-            <CardDescription>Haeufige Aktionen</CardDescription>
+            <CardDescription>Häufige Aktionen</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {/* Broker-specific actions */}
@@ -348,8 +350,8 @@ export default function DashboardPage() {
             )}
             <QuickAction
               icon={<FileWarning className="h-5 w-5" />}
-              title="Alle Schaeden"
-              description="Schaeden einsehen und verwalten"
+              title="Alle Schäden"
+              description="Schäden einsehen und verwalten"
               href={'/claims' as Route}
             />
             {(isAdmin || isBroker) && (
@@ -375,12 +377,12 @@ export default function DashboardPage() {
         <Card className="rounded-2xl border shadow-soft lg:col-span-3 overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
             <div className="min-w-0">
-              <CardTitle>Letzte Schaeden</CardTitle>
+              <CardTitle>Letzte Schäden</CardTitle>
               <CardDescription>
                 {isBroker && activeCompany
-                  ? `Neueste Schaeden von ${activeCompany.name}`
+                  ? `Neueste Schäden von ${activeCompany.name}`
                   : isBroker
-                    ? 'Neueste Schaeden aller Firmen'
+                    ? 'Neueste Schäden aller Firmen'
                     : 'Die neuesten Schadenmeldungen'}
               </CardDescription>
             </div>
@@ -441,10 +443,10 @@ export default function DashboardPage() {
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
                   <Clock className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="font-medium">Noch keine Schaeden</h3>
+                <h3 className="font-medium">Noch keine Schäden</h3>
                 <p className="mt-1 text-sm text-muted-foreground max-w-xs">
                   {isBroker
-                    ? 'Es wurden noch keine Schaeden von den betreuten Firmen gemeldet.'
+                    ? 'Es wurden noch keine Schäden von den betreuten Firmen gemeldet.'
                     : 'Erstellen Sie Ihren ersten Schaden, um hier die neuesten Meldungen zu sehen.'}
                 </p>
                 {!isBroker && (

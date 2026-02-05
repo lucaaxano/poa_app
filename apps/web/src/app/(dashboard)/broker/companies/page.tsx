@@ -42,7 +42,7 @@ export default function BrokerCompaniesPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Betreute Firmen</h1>
         <p className="text-muted-foreground">
-          Uebersicht aller Firmen, die Sie als Broker betreuen
+          Übersicht aller Firmen, die Sie als Broker betreuen
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default function BrokerCompaniesPage() {
         <Card className="rounded-xl shadow-soft">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Gesamtschaeden
+              Gesamtschäden
             </CardTitle>
             <FileWarning className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -116,7 +116,7 @@ export default function BrokerCompaniesPage() {
       {/* Companies Table */}
       <Card className="rounded-xl shadow-soft">
         <CardHeader>
-          <CardTitle>Firmen-Uebersicht</CardTitle>
+          <CardTitle>Firmen-Übersicht</CardTitle>
           <CardDescription>
             Klicken Sie auf eine Firma, um deren Details anzuzeigen
           </CardDescription>
@@ -135,7 +135,7 @@ export default function BrokerCompaniesPage() {
                   <TableHead>Firma</TableHead>
                   <TableHead>Stadt</TableHead>
                   <TableHead className="text-center">Fahrzeuge</TableHead>
-                  <TableHead className="text-center">Schaeden</TableHead>
+                  <TableHead className="text-center">Schäden</TableHead>
                   <TableHead className="text-center">Offene</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
@@ -206,9 +206,9 @@ export default function BrokerCompaniesPage() {
       {stats && stats.claimsByCompany.length > 0 && (
         <Card className="rounded-xl shadow-soft">
           <CardHeader>
-            <CardTitle>Schaeden nach Firma</CardTitle>
+            <CardTitle>Schäden nach Firma</CardTitle>
             <CardDescription>
-              Verteilung der Schaeden auf die betreuten Firmen
+              Verteilung der Schäden auf die betreuten Firmen
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -223,7 +223,7 @@ export default function BrokerCompaniesPage() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{item.companyName}</span>
                       <span className="text-muted-foreground">
-                        {item.claimCount} Schaeden ({percentage}%)
+                        {item.claimCount} Schäden ({percentage}%)
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">

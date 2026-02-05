@@ -19,7 +19,7 @@ import { Eye, EyeOff, ArrowRight, CheckCircle2, Building2, Users, Zap, Mail } fr
 const registerFormSchema = registerSchema.extend({
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwoerter stimmen nicht ueberein',
+  message: 'Passwörter stimmen nicht überein',
   path: ['confirmPassword'],
 });
 
@@ -124,7 +124,7 @@ export default function RegisterPage() {
               Konto erstellen
             </h1>
             <p className="mt-2 text-muted-foreground">
-              Registrieren Sie Ihre Firma fuer POA
+              Registrieren Sie Ihre Firma für POA
             </p>
           </div>
 
@@ -228,7 +228,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                Passwort bestaetigen
+                Passwort bestätigen
               </Label>
               <Input
                 id="confirmPassword"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { format } from 'date-fns';
@@ -53,7 +53,7 @@ const statusLabels: Record<ClaimStatus, string> = {
   [ClaimStatus.SUBMITTED]: 'Eingereicht',
   [ClaimStatus.APPROVED]: 'Genehmigt',
   [ClaimStatus.SENT]: 'Gesendet',
-  [ClaimStatus.ACKNOWLEDGED]: 'Bestaetigt',
+  [ClaimStatus.ACKNOWLEDGED]: 'Bestätigt',
   [ClaimStatus.CLOSED]: 'Abgeschlossen',
   [ClaimStatus.REJECTED]: 'Abgelehnt',
 };
@@ -79,6 +79,130 @@ const damageCategoryLabels: Record<DamageCategory, string> = {
   [DamageCategory.OTHER]: 'Sonstiges',
 };
 
+// Memoized date formatter - moved outside component to avoid recreation
+const formatDate = (dateString: string) => {
+  return format(new Date(dateString), 'dd.MM.yyyy', { locale: de });
+};
+
+// Memoized currency formatter
+const formatCurrency = (value: number | null) => {
+  if (value === null) return '-';
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(value);
+};
+
+// Memoized mobile claim card component
+interface ClaimCardProps {
+  claim: any;
+  isBroker: boolean;
+}
+
+const ClaimCard = memo(function ClaimCard({ claim, isBroker }: ClaimCardProps) {
+  return (
+    <Link
+      href={`/claims/${claim.id}` as Route}
+      prefetch={false}
+      className="block rounded-xl border p-4 hover:bg-muted/50 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-primary">{claim.claimNumber}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {claim.vehicle?.licensePlate || claim.vehicle}
+            {claim.vehicle?.brand && (
+              <span> - {claim.vehicle.brand} {claim.vehicle.model}</span>
+            )}
+          </p>
+          {isBroker && claim.company?.name && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Building2 className="h-3 w-3" />
+              {claim.company.name}
+            </p>
+          )}
+        </div>
+        <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
+          {statusLabels[claim.status as ClaimStatus]}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+        <span>{formatDate(claim.accidentDate)}</span>
+        <span>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</span>
+        {claim.estimatedCost !== null && (
+          <span>{formatCurrency(claim.estimatedCost)}</span>
+        )}
+      </div>
+    </Link>
+  );
+});
+
+// Memoized table row component
+interface ClaimTableRowProps {
+  claim: any;
+  isBroker: boolean;
+}
+
+const ClaimTableRow = memo(function ClaimTableRow({ claim, isBroker }: ClaimTableRowProps) {
+  return (
+    <TableRow>
+      <TableCell>
+        <Link
+          href={`/claims/${claim.id}` as Route}
+          prefetch={false}
+          className="font-medium text-primary hover:underline"
+        >
+          {claim.claimNumber}
+        </Link>
+      </TableCell>
+      {isBroker && (
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span>{claim.company?.name || '-'}</span>
+          </div>
+        </TableCell>
+      )}
+      <TableCell>
+        {claim.vehicle?.licensePlate || claim.vehicle}
+        {claim.vehicle?.brand && (
+          <span className="text-muted-foreground text-sm ml-2">
+            ({claim.vehicle.brand} {claim.vehicle.model})
+          </span>
+        )}
+      </TableCell>
+      <TableCell>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</TableCell>
+      <TableCell>{formatDate(claim.accidentDate)}</TableCell>
+      <TableCell>{formatCurrency(claim.estimatedCost)}</TableCell>
+      <TableCell>
+        {claim.reporter?.firstName} {claim.reporter?.lastName}
+      </TableCell>
+      <TableCell>
+        <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
+          {statusLabels[claim.status as ClaimStatus]}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Aktionen">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/claims/${claim.id}` as Route} prefetch={false}>
+                <Eye className="mr-2 h-4 w-4" />
+                Details anzeigen
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export default function ClaimsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -98,31 +222,31 @@ export default function ClaimsPage() {
   const isLoading = isBroker ? isLoadingBroker : isLoadingRegular;
   const error = isBroker ? brokerError : regularError;
 
-  // Filter claims (client-side filtering for non-broker, broker uses server-side)
-  const filteredClaims = claims?.filter((claim: any) => {
-    // For broker, search is handled server-side
-    const matchesSearch = isBroker ? true :
-      !search ||
-      claim.claimNumber.toLowerCase().includes(search.toLowerCase()) ||
-      claim.vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-      claim.description?.toLowerCase().includes(search.toLowerCase());
+  // Memoize search handler
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  }, []);
 
-    const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
+  // Memoize status filter handler
+  const handleStatusFilterChange = useCallback((value: string) => {
+    setStatusFilter(value);
+  }, []);
 
-    return matchesSearch && matchesStatus;
-  });
+  // Memoize filtered claims to prevent recalculation on every render
+  const filteredClaims = useMemo(() => {
+    return claims?.filter((claim: any) => {
+      // For broker, search is handled server-side
+      const matchesSearch = isBroker ? true :
+        !search ||
+        claim.claimNumber.toLowerCase().includes(search.toLowerCase()) ||
+        claim.vehicle.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
+        claim.description?.toLowerCase().includes(search.toLowerCase());
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd.MM.yyyy', { locale: de });
-  };
+      const matchesStatus = statusFilter === 'all' || claim.status === statusFilter;
 
-  const formatCurrency = (value: number | null) => {
-    if (value === null) return '-';
-    return new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    }).format(value);
-  };
+      return matchesSearch && matchesStatus;
+    });
+  }, [claims, search, statusFilter, isBroker]);
 
   if (isLoading) {
     return (
@@ -140,7 +264,7 @@ export default function ClaimsPage() {
       <div className="space-y-6">
         <OnboardingDialog pageKey="claims" />
         <div className="flex items-center justify-center py-12">
-          <p className="text-red-600">Fehler beim Laden der Schaeden</p>
+          <p className="text-red-600">Fehler beim Laden der Schäden</p>
         </div>
       </div>
     );
@@ -155,14 +279,14 @@ export default function ClaimsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Schaeden</h1>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Schäden</h1>
             <InlineHelp topicKey="claims-list" />
           </div>
           <p className="text-muted-foreground">
             {isBroker
               ? activeCompany
-                ? `Schaeden von ${activeCompany.name}`
-                : 'Schaeden aller betreuten Firmen'
+                ? `Schäden von ${activeCompany.name}`
+                : 'Schäden aller betreuten Firmen'
               : 'Verwalten Sie Ihre Schadensmeldungen'}
           </p>
         </div>
@@ -188,14 +312,14 @@ export default function ClaimsPage() {
               <Input
                 placeholder="Suchen nach Schadennummer, Kennzeichen..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-10 rounded-xl"
               />
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <InlineHelp topicKey="claims-filters" className="ml-0" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-[180px] rounded-xl">
                   <SelectValue placeholder="Status filtern" />
                 </SelectTrigger>
@@ -218,7 +342,7 @@ export default function ClaimsPage() {
         <CardHeader>
           <CardTitle>Schadensliste</CardTitle>
           <CardDescription>
-            {filteredClaims?.length ?? 0} Schaden/Schaeden
+            {filteredClaims?.length ?? 0} Schaden/Schäden
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -229,40 +353,7 @@ export default function ClaimsPage() {
               {/* Mobile Card Layout */}
               <div className="space-y-3 md:hidden">
                 {filteredClaims.map((claim: any) => (
-                  <Link
-                    key={claim.id}
-                    href={`/claims/${claim.id}` as Route}
-                    prefetch={false}
-                    className="block rounded-xl border p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-primary">{claim.claimNumber}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {claim.vehicle?.licensePlate || claim.vehicle}
-                          {claim.vehicle?.brand && (
-                            <span> - {claim.vehicle.brand} {claim.vehicle.model}</span>
-                          )}
-                        </p>
-                        {isBroker && claim.company?.name && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Building2 className="h-3 w-3" />
-                            {claim.company.name}
-                          </p>
-                        )}
-                      </div>
-                      <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
-                        {statusLabels[claim.status as ClaimStatus]}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <span>{formatDate(claim.accidentDate)}</span>
-                      <span>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</span>
-                      {claim.estimatedCost !== null && (
-                        <span>{formatCurrency(claim.estimatedCost)}</span>
-                      )}
-                    </div>
-                  </Link>
+                  <ClaimCard key={claim.id} claim={claim} isBroker={isBroker} />
                 ))}
               </div>
 
@@ -285,62 +376,7 @@ export default function ClaimsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredClaims.map((claim: any) => (
-                      <TableRow key={claim.id}>
-                        <TableCell>
-                          <Link
-                            href={`/claims/${claim.id}` as Route}
-                            prefetch={false}
-                            className="font-medium text-primary hover:underline"
-                          >
-                            {claim.claimNumber}
-                          </Link>
-                        </TableCell>
-                        {/* Company cell for broker */}
-                        {isBroker && (
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span>{claim.company?.name || '-'}</span>
-                            </div>
-                          </TableCell>
-                        )}
-                        <TableCell>
-                          {claim.vehicle?.licensePlate || claim.vehicle}
-                          {claim.vehicle?.brand && (
-                            <span className="text-muted-foreground text-sm ml-2">
-                              ({claim.vehicle.brand} {claim.vehicle.model})
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>{damageCategoryLabels[claim.damageCategory as DamageCategory]}</TableCell>
-                        <TableCell>{formatDate(claim.accidentDate)}</TableCell>
-                        <TableCell>{formatCurrency(claim.estimatedCost)}</TableCell>
-                        <TableCell>
-                          {claim.reporter?.firstName} {claim.reporter?.lastName}
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[claim.status as ClaimStatus]} variant="secondary">
-                            {statusLabels[claim.status as ClaimStatus]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" aria-label="Aktionen">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/claims/${claim.id}` as Route} prefetch={false}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Details anzeigen
-                                </Link>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
+                      <ClaimTableRow key={claim.id} claim={claim} isBroker={isBroker} />
                     ))}
                   </TableBody>
                 </Table>
@@ -351,10 +387,10 @@ export default function ClaimsPage() {
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
                 <FileWarning className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="font-medium">Keine Schaeden gefunden</h3>
+              <h3 className="font-medium">Keine Schäden gefunden</h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-xs">
                 {search || statusFilter !== 'all'
-                  ? 'Keine Schaeden entsprechen Ihren Filterkriterien.'
+                  ? 'Keine Schäden entsprechen Ihren Filterkriterien.'
                   : 'Melden Sie Ihren ersten Schaden.'}
               </p>
               {!search && statusFilter === 'all' && (

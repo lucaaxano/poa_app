@@ -72,7 +72,7 @@ const statusLabels: Record<ClaimStatus, string> = {
   [ClaimStatus.SUBMITTED]: 'Eingereicht',
   [ClaimStatus.APPROVED]: 'Genehmigt',
   [ClaimStatus.SENT]: 'Gesendet',
-  [ClaimStatus.ACKNOWLEDGED]: 'Bestaetigt',
+  [ClaimStatus.ACKNOWLEDGED]: 'Bestätigt',
   [ClaimStatus.CLOSED]: 'Abgeschlossen',
   [ClaimStatus.REJECTED]: 'Abgelehnt',
 };
@@ -101,10 +101,10 @@ const damageCategoryLabels: Record<DamageCategory, string> = {
 const eventTypeLabels: Record<ClaimEventType, string> = {
   [ClaimEventType.CREATED]: 'Erstellt',
   [ClaimEventType.UPDATED]: 'Aktualisiert',
-  [ClaimEventType.STATUS_CHANGED]: 'Status geaendert',
+  [ClaimEventType.STATUS_CHANGED]: 'Status geändert',
   [ClaimEventType.EMAIL_SENT]: 'E-Mail gesendet',
-  [ClaimEventType.COMMENT_ADDED]: 'Kommentar hinzugefuegt',
-  [ClaimEventType.ATTACHMENT_ADDED]: 'Anhang hinzugefuegt',
+  [ClaimEventType.COMMENT_ADDED]: 'Kommentar hinzugefügt',
+  [ClaimEventType.ATTACHMENT_ADDED]: 'Anhang hinzugefügt',
   [ClaimEventType.ATTACHMENT_REMOVED]: 'Anhang entfernt',
   [ClaimEventType.ASSIGNED]: 'Zugewiesen',
 };
@@ -203,7 +203,7 @@ export default function ClaimDetailPage() {
     try {
       await addCommentMutation.mutateAsync({ id: claimId, content: newComment });
       setNewComment('');
-      toast.success('Kommentar hinzugefuegt');
+      toast.success('Kommentar hinzugefügt');
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error(getErrorMessage(error));
@@ -225,10 +225,10 @@ export default function ClaimDetailPage() {
   };
 
   const handleDeleteAttachment = async (attachmentId: string) => {
-    if (!confirm('Anhang wirklich loeschen?')) return;
+    if (!confirm('Anhang wirklich löschen?')) return;
     try {
       await deleteMutation.mutateAsync({ claimId, attachmentId });
-      toast.success('Anhang geloescht');
+      toast.success('Anhang gelöscht');
     } catch (error) {
       console.error('Error deleting attachment:', error);
       toast.error(getErrorMessage(error));
@@ -293,7 +293,7 @@ export default function ClaimDetailPage() {
       <div className="flex flex-col items-center justify-center py-12">
         <p className="text-red-600 mb-4">Schaden nicht gefunden</p>
         <Link href={'/claims' as Route}>
-          <Button>Zurueck zur Liste</Button>
+          <Button>Zurück zur Liste</Button>
         </Link>
       </div>
     );
@@ -432,7 +432,7 @@ export default function ClaimDetailPage() {
           </TabsTrigger>
           <TabsTrigger value="attachments" className="rounded-lg">
             <Paperclip className="mr-2 h-4 w-4" />
-            Anhaenge ({claim.attachments?.length ?? 0})
+            Anhänge ({claim.attachments?.length ?? 0})
           </TabsTrigger>
           <TabsTrigger value="history" className="rounded-lg">
             <Clock className="mr-2 h-4 w-4" />
@@ -533,12 +533,12 @@ export default function ClaimDetailPage() {
             </Card>
           )}
 
-          {/* Zusaetzliche Infos */}
+          {/* Zusätzliche Infos */}
           <Card className="rounded-2xl border shadow-soft">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
-                Zusaetzliche Informationen
+                Zusätzliche Informationen
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -604,7 +604,7 @@ export default function ClaimDetailPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Paperclip className="h-5 w-5" />
-                Anhaenge
+                Anhänge
               </CardTitle>
               <CardDescription>
                 Fotos, Videos und Dokumente zum Schaden
@@ -643,7 +643,7 @@ export default function ClaimDetailPage() {
                     <>
                       <Upload className="h-10 w-10 text-muted-foreground" />
                       <p className="font-medium">
-                        Dateien hier ablegen oder klicken zum Auswaehlen
+                        Dateien hier ablegen oder klicken zum Auswählen
                       </p>
                       <p className="text-sm text-muted-foreground">
                         Bilder, Videos und PDFs bis 20 MB
@@ -716,7 +716,7 @@ export default function ClaimDetailPage() {
                 </div>
               ) : (
                 <p className="text-muted-foreground text-center py-8">
-                  Noch keine Anhaenge vorhanden
+                  Noch keine Anhänge vorhanden
                 </p>
               )}
             </CardContent>
@@ -729,7 +729,7 @@ export default function ClaimDetailPage() {
             <CardHeader>
               <CardTitle>Verlauf</CardTitle>
               <CardDescription>
-                Alle Aenderungen und Ereignisse
+                Alle Änderungen und Ereignisse
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -838,7 +838,7 @@ export default function ClaimDetailPage() {
           <DialogHeader>
             <DialogTitle>Schaden ablehnen</DialogTitle>
             <DialogDescription>
-              Bitte geben Sie einen Grund fuer die Ablehnung an.
+              Bitte geben Sie einen Grund für die Ablehnung an.
             </DialogDescription>
           </DialogHeader>
           <Textarea

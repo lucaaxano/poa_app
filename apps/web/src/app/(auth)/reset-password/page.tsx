@@ -21,12 +21,12 @@ const resetPasswordFormSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen haben')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Passwort muss mindestens einen Grossbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
+        'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten'
       ),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwoerter stimmen nicht ueberein',
+    message: 'Passwörter stimmen nicht überein',
     path: ['confirmPassword'],
   });
 
@@ -67,10 +67,10 @@ function ResetPasswordForm() {
             <AlertCircle className="h-8 w-8 text-destructive" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Ungueltiger Link
+            Ungültiger Link
           </h1>
           <p className="mt-3 text-muted-foreground">
-            Der Link zum Zuruecksetzen des Passworts ist ungueltig oder abgelaufen.
+            Der Link zum Zurücksetzen des Passworts ist ungültig oder abgelaufen.
           </p>
           <Link href="/forgot-password" prefetch={false} className="mt-8 block">
             <Button variant="outline" className="h-12 w-full rounded-xl">
@@ -89,7 +89,7 @@ function ResetPasswordForm() {
         token,
         password: data.password,
       });
-      toast.success('Passwort erfolgreich zurueckgesetzt');
+      toast.success('Passwort erfolgreich zurückgesetzt');
       router.push('/login');
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -154,7 +154,7 @@ function ResetPasswordForm() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword" className="text-sm font-medium">
-              Passwort bestaetigen
+              Passwort bestätigen
             </Label>
             <Input
               id="confirmPassword"
@@ -186,7 +186,7 @@ function ResetPasswordForm() {
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck zum Login
+            Zurück zum Login
           </Link>
         </div>
       </div>

@@ -50,7 +50,7 @@ const adminNavItems: NavItem[] = [
     icon: ADMIN_SIDEBAR_ICONS.users,
   },
   {
-    title: 'Schaeden',
+    title: 'Schäden',
     href: '/admin/claims' as Route,
     icon: ADMIN_SIDEBAR_ICONS.claims,
   },
@@ -110,10 +110,10 @@ export const AdminSidebar = memo(function AdminSidebar({ collapsed = false, onCo
               'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors',
               collapsed && 'justify-center px-2'
             )}
-            title={collapsed ? 'Zurueck zum Dashboard' : undefined}
+            title={collapsed ? 'Zurück zum Dashboard' : undefined}
           >
             <ArrowLeft className="h-5 w-5" />
-            {!collapsed && <span>Zurueck zum Dashboard</span>}
+            {!collapsed && <span>Zurück zum Dashboard</span>}
           </Link>
         </div>
 

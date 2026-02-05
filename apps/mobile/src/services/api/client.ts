@@ -80,7 +80,7 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Wenn bereits refresh laeuft, Request in Queue stellen
+    // Wenn bereits refresh läuft, Request in Queue stellen
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -121,10 +121,10 @@ apiClient.interceptors.response.use(
       // Queue mit Fehler verarbeiten
       processQueue(refreshError, null);
 
-      // Tokens loeschen
+      // Tokens löschen
       await clearTokens();
 
-      // Auth Store wird ueber Event informiert
+      // Auth Store wird über Event informiert
       // (muss in AuthProvider implementiert werden)
       return Promise.reject(refreshError);
     } finally {

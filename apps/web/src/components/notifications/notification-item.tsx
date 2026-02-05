@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { formatDistanceToNow } from 'date-fns';
@@ -47,7 +48,7 @@ const typeColors: Record<NotificationType, string> = {
   SYSTEM: 'text-gray-600 bg-gray-50',
 };
 
-export function NotificationItem({
+export const NotificationItem = memo(function NotificationItem({
   notification,
   onMarkAsRead,
   onDelete,
@@ -58,7 +59,7 @@ export function NotificationItem({
   const colorClass = typeColors[notification.type] || 'text-gray-600 bg-gray-50';
   const isUnread = !notification.readAt;
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     // Mark as read if unread
     if (isUnread && onMarkAsRead) {
       onMarkAsRead(notification.id);
@@ -69,19 +70,19 @@ export function NotificationItem({
     if (data?.claimId) {
       router.push(`/claims/${data.claimId}` as Route);
     }
-  };
+  }, [isUnread, onMarkAsRead, notification.id, notification.data, router]);
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
       onDelete(notification.id);
     }
-  };
+  }, [onDelete, notification.id]);
 
-  const timeAgo = formatDistanceToNow(new Date(notification.createdAt), {
+  const timeAgo = useMemo(() => formatDistanceToNow(new Date(notification.createdAt), {
     addSuffix: true,
     locale: de,
-  });
+  }), [notification.createdAt]);
 
   return (
     <div
@@ -127,11 +128,11 @@ export function NotificationItem({
           size="icon"
           className="flex-shrink-0 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={handleDelete}
-          aria-label="Benachrichtigung loeschen"
+          aria-label="Benachrichtigung löschen"
         >
           <Trash2 className="h-4 w-4 text-muted-foreground" />
         </Button>
       )}
     </div>
   );
-}
+});

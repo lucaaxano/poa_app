@@ -73,15 +73,15 @@ export class VehiclesImportService {
       allowBlank: true,
       formulae: ['"PKW,LKW,Transporter,Motorrad,Sonstiges"'],
       showErrorMessage: true,
-      errorTitle: 'Ungueltiger Typ',
-      error: 'Bitte waehlen Sie einen gueltigen Fahrzeugtyp.',
+      errorTitle: 'Ungültiger Typ',
+      error: 'Bitte wählen Sie einen gültigen Fahrzeugtyp.',
     });
 
     // Freeze header row
     ws.views = [{ state: 'frozen', ySplit: 1 }];
 
-    // Sheet 2: Gueltige Werte
-    const refSheet = workbook.addWorksheet('Gueltige Werte');
+    // Sheet 2: Gültige Werte
+    const refSheet = workbook.addWorksheet('Gültige Werte');
     refSheet.columns = [
       { header: 'Fahrzeugtyp', key: 'type', width: 20 },
     ];
@@ -112,19 +112,19 @@ export class VehiclesImportService {
     const worksheet = workbook.getWorksheet(1);
     if (!worksheet) {
       throw new BadRequestException(
-        'Die Excel-Datei enthaelt kein gueltiges Arbeitsblatt.',
+        'Die Excel-Datei enthält kein gültiges Arbeitsblatt.',
       );
     }
 
     const rowCount = worksheet.rowCount - 1; // exclude header
     if (rowCount <= 0) {
       throw new BadRequestException(
-        'Die Excel-Datei enthaelt keine Datenzeilen.',
+        'Die Excel-Datei enthält keine Datenzeilen.',
       );
     }
     if (rowCount > MAX_ROWS) {
       throw new BadRequestException(
-        `Maximal ${MAX_ROWS} Zeilen erlaubt. Die Datei enthaelt ${rowCount} Datenzeilen.`,
+        `Maximal ${MAX_ROWS} Zeilen erlaubt. Die Datei enthält ${rowCount} Datenzeilen.`,
       );
     }
 
@@ -207,7 +207,7 @@ export class VehiclesImportService {
             field: 'Fahrzeugtyp',
             value: cellVal(2),
             message:
-              'Ungueltiger Fahrzeugtyp. Erlaubt: PKW, LKW, Transporter, Motorrad, Sonstiges',
+              'Ungültiger Fahrzeugtyp. Erlaubt: PKW, LKW, Transporter, Motorrad, Sonstiges',
           });
         }
       }
@@ -295,7 +295,7 @@ export class VehiclesImportService {
             row: rowNumber,
             field: 'FIN',
             value: vin,
-            message: 'Ungueltige FIN (nur A-Z ohne I/O/Q und 0-9 erlaubt)',
+            message: 'Ungültige FIN (nur A-Z ohne I/O/Q und 0-9 erlaubt)',
           });
         }
       }

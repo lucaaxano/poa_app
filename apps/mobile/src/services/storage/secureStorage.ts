@@ -1,6 +1,6 @@
 /**
  * Secure Storage Service
- * Verwendet expo-secure-store fuer sichere Token-Speicherung
+ * Verwendet expo-secure-store für sichere Token-Speicherung
  */
 
 import * as SecureStore from 'expo-secure-store';
@@ -80,7 +80,7 @@ export const clearTokens = async (): Promise<void> => {
 };
 
 /**
- * Prueft ob Tokens vorhanden sind
+ * Prüft ob Tokens vorhanden sind
  */
 export const hasTokens = async (): Promise<boolean> => {
   const accessToken = await getAccessToken();

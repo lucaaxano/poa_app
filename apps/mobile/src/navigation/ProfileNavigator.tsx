@@ -1,6 +1,6 @@
 /**
  * Profile Navigator
- * Stack Navigator fuer Profil-Screens
+ * Stack Navigator für Profil-Screens
  */
 
 import React from 'react';
@@ -31,7 +31,7 @@ export function ProfileNavigator() {
       <ProfileStack.Screen
         name="ChangePassword"
         component={ChangePasswordScreen}
-        options={{ title: 'Passwort aendern' }}
+        options={{ title: 'Passwort ändern' }}
       />
       <ProfileStack.Screen
         name="NotificationSettings"

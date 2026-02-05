@@ -1,6 +1,6 @@
 /**
  * Claims Navigator
- * Stack Navigator fuer Schaden-Screens
+ * Stack Navigator für Schaden-Screens
  */
 
 import React from 'react';
@@ -28,7 +28,7 @@ export function ClaimsNavigator() {
       <ClaimsStack.Screen
         name="ClaimsList"
         component={ClaimsListScreen}
-        options={{ title: 'Meine Schaeden' }}
+        options={{ title: 'Meine Schäden' }}
       />
       <ClaimsStack.Screen
         name="ClaimDetail"
@@ -43,7 +43,7 @@ export function ClaimsNavigator() {
       <ClaimsStack.Screen
         name="ClaimPhotos"
         component={ClaimPhotosScreen}
-        options={{ title: 'Fotos hinzufuegen' }}
+        options={{ title: 'Fotos hinzufügen' }}
       />
       <ClaimsStack.Screen
         name="ClaimSummary"

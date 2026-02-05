@@ -45,13 +45,13 @@ export function NotificationSettingsScreen({ navigation }: ProfileScreenProps<'N
     {
       key: 'new_comment',
       label: 'Neue Kommentare',
-      description: 'Benachrichtigung bei neuen Kommentaren zu Ihren Schaeden',
+      description: 'Benachrichtigung bei neuen Kommentaren zu Ihren Schäden',
       enabled: true,
     },
     {
       key: 'status_change',
-      label: 'Statusaenderungen',
-      description: 'Benachrichtigung wenn sich der Status eines Schadens aendert',
+      label: 'Statusänderungen',
+      description: 'Benachrichtigung wenn sich der Status eines Schadens ändert',
       enabled: true,
     },
   ]);
@@ -156,7 +156,7 @@ export function NotificationSettingsScreen({ navigation }: ProfileScreenProps<'N
         <View style={styles.infoContainer}>
           <Ionicons name="information-circle-outline" size={20} color={colors.text.tertiary} />
           <Text style={styles.infoText}>
-            Sie koennen Push-Benachrichtigungen auch in den Geraeteeinstellungen deaktivieren.
+            Sie können Push-Benachrichtigungen auch in den Geräteeinstellungen deaktivieren.
           </Text>
         </View>
       </ScrollView>

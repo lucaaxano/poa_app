@@ -1,6 +1,7 @@
 /**
  * useCreateClaim Hook
  * Claim erstellen mit mehrstufigem Workflow
+ * Performance optimized with parallel photo uploads
  */
 
 import { useState, useCallback } from 'react';
@@ -147,13 +148,17 @@ export function useCreateClaim(): UseCreateClaimReturn {
       const input = buildClaimInput();
       const claim = await claimsApi.create({ ...input, submitImmediately: false });
 
-      // Fotos hochladen
-      for (const photo of draft.photos) {
-        await claimsApi.uploadAttachment(claim.id, {
-          uri: photo.uri,
-          name: photo.name,
-          type: photo.type,
-        });
+      // Upload photos in parallel for better performance
+      if (draft.photos.length > 0) {
+        await Promise.all(
+          draft.photos.map((photo) =>
+            claimsApi.uploadAttachment(claim.id, {
+              uri: photo.uri,
+              name: photo.name,
+              type: photo.type,
+            })
+          )
+        );
       }
 
       return claim;
@@ -175,13 +180,17 @@ export function useCreateClaim(): UseCreateClaimReturn {
       const input = buildClaimInput();
       const claim = await claimsApi.create({ ...input, submitImmediately: true });
 
-      // Fotos hochladen
-      for (const photo of draft.photos) {
-        await claimsApi.uploadAttachment(claim.id, {
-          uri: photo.uri,
-          name: photo.name,
-          type: photo.type,
-        });
+      // Upload photos in parallel for better performance
+      if (draft.photos.length > 0) {
+        await Promise.all(
+          draft.photos.map((photo) =>
+            claimsApi.uploadAttachment(claim.id, {
+              uri: photo.uri,
+              name: photo.name,
+              type: photo.type,
+            })
+          )
+        );
       }
 
       // Submit wenn noch nicht automatisch erfolgt

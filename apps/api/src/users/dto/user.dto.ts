@@ -24,6 +24,6 @@ export class UpdateUserDto {
 }
 
 export class UpdateUserRoleDto {
-  @IsEnum(UserRole, { message: 'Ungueltige Rolle' })
+  @IsEnum(UserRole, { message: 'Ungültige Rolle' })
   role: UserRole;
 }

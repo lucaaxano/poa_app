@@ -20,11 +20,11 @@ const witnessInfoSchema = z.object({
 
 // Create Claim Schema
 export const createClaimSchema = z.object({
-  vehicleId: z.string().uuid('Ungueltige Fahrzeug-ID'),
-  policyId: z.string().uuid('Ungueltige Policy-ID').optional(),
-  driverUserId: z.string().uuid('Ungueltige Fahrer-ID').optional(),
+  vehicleId: z.string().uuid('Ungültige Fahrzeug-ID'),
+  policyId: z.string().uuid('Ungültige Policy-ID').optional(),
+  driverUserId: z.string().uuid('Ungültige Fahrer-ID').optional(),
   accidentDate: z.coerce.date({
-    errorMap: () => ({ message: 'Ungueltiges Datum' }),
+    errorMap: () => ({ message: 'Ungültiges Datum' }),
   }),
   accidentTime: z.string().optional(),
   accidentLocation: z
@@ -34,7 +34,7 @@ export const createClaimSchema = z.object({
   gpsLat: z.number().min(-90).max(90).optional(),
   gpsLng: z.number().min(-180).max(180).optional(),
   damageCategory: z.nativeEnum(DamageCategory, {
-    errorMap: () => ({ message: 'Ungueltige Schadenkategorie' }),
+    errorMap: () => ({ message: 'Ungültige Schadenkategorie' }),
   }),
   damageSubcategory: z.string().max(100).optional(),
   description: z
@@ -62,21 +62,21 @@ export type UpdateClaimSchema = z.infer<typeof updateClaimSchema>;
 
 // Submit Claim Schema (for status change)
 export const submitClaimSchema = z.object({
-  claimId: z.string().uuid('Ungueltige Schaden-ID'),
+  claimId: z.string().uuid('Ungültige Schaden-ID'),
 });
 
 export type SubmitClaimSchema = z.infer<typeof submitClaimSchema>;
 
 // Approve Claim Schema
 export const approveClaimSchema = z.object({
-  claimId: z.string().uuid('Ungueltige Schaden-ID'),
+  claimId: z.string().uuid('Ungültige Schaden-ID'),
 });
 
 export type ApproveClaimSchema = z.infer<typeof approveClaimSchema>;
 
 // Reject Claim Schema
 export const rejectClaimSchema = z.object({
-  claimId: z.string().uuid('Ungueltige Schaden-ID'),
+  claimId: z.string().uuid('Ungültige Schaden-ID'),
   rejectionReason: z
     .string()
     .min(10, 'Ablehnungsgrund muss mindestens 10 Zeichen haben')
@@ -87,8 +87,8 @@ export type RejectClaimSchema = z.infer<typeof rejectClaimSchema>;
 
 // Send Claim Schema
 export const sendClaimSchema = z.object({
-  claimId: z.string().uuid('Ungueltige Schaden-ID'),
-  policyId: z.string().uuid('Policy ist erforderlich fuer den Versand'),
+  claimId: z.string().uuid('Ungültige Schaden-ID'),
+  policyId: z.string().uuid('Policy ist erforderlich für den Versand'),
 });
 
 export type SendClaimSchema = z.infer<typeof sendClaimSchema>;

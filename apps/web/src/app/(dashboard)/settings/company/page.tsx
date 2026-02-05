@@ -88,7 +88,7 @@ export default function CompanySettingsPage() {
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Die Datei darf maximal 2MB gross sein');
+      toast.error('Die Datei darf maximal 2MB groß sein');
       return;
     }
 
@@ -247,11 +247,11 @@ export default function CompanySettingsPage() {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="address">Strasse und Hausnummer</Label>
+                <Label htmlFor="address">Straße und Hausnummer</Label>
                 <Input
                   id="address"
                   {...register('address')}
-                  placeholder="z.B. Musterstrasse 123"
+                  placeholder="z.B. Musterstraße 123"
                   className="rounded-xl"
                 />
               </div>
@@ -338,7 +338,7 @@ export default function CompanySettingsPage() {
             disabled={!isDirty}
             className="rounded-xl"
           >
-            Zuruecksetzen
+            Zurücksetzen
           </Button>
           <Button
             type="submit"

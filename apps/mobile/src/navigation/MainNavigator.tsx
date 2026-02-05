@@ -1,6 +1,6 @@
 /**
  * Main Navigator
- * Bottom Tab Navigator fuer authentifizierte Screens
+ * Bottom Tab Navigator für authentifizierte Screens
  */
 
 import React from 'react';
@@ -61,13 +61,13 @@ export function MainNavigator() {
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
-        options={{ title: 'Uebersicht' }}
+        options={{ title: 'Übersicht' }}
       />
       <Tab.Screen
         name="Claims"
         component={ClaimsNavigator}
         options={{
-          title: 'Schaeden',
+          title: 'Schäden',
           headerShown: false,
         }}
       />

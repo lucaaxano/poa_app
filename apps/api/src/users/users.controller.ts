@@ -62,7 +62,7 @@ export class UsersController {
   ) {
     // Prevent changing own role
     if (id === req.user.id) {
-      throw new ForbiddenException('Sie koennen Ihre eigene Rolle nicht aendern');
+      throw new ForbiddenException('Sie können Ihre eigene Rolle nicht ändern');
     }
     return this.usersService.updateRole(id, req.user.companyId!, updateRoleDto.role);
   }
@@ -73,7 +73,7 @@ export class UsersController {
   async deactivate(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     // Prevent deactivating self
     if (id === req.user.id) {
-      throw new ForbiddenException('Sie koennen sich nicht selbst deaktivieren');
+      throw new ForbiddenException('Sie können sich nicht selbst deaktivieren');
     }
     return this.usersService.deactivate(id, req.user.companyId!);
   }
@@ -107,7 +107,7 @@ export class UsersController {
   async delete(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     // Prevent deleting self
     if (id === req.user.id) {
-      throw new ForbiddenException('Sie koennen sich nicht selbst loeschen');
+      throw new ForbiddenException('Sie können sich nicht selbst löschen');
     }
     await this.usersService.delete(id, req.user.companyId!);
     return { success: true };

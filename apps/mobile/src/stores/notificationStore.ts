@@ -1,6 +1,6 @@
 /**
  * Notification Store
- * Zustand Store fuer In-App Benachrichtigungen
+ * Zustand Store für In-App Benachrichtigungen
  */
 
 import { create } from 'zustand';

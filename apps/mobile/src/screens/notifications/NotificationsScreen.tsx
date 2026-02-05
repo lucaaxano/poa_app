@@ -1,9 +1,10 @@
 /**
  * Notifications Screen
  * Liste aller Benachrichtigungen
+ * Performance optimized with memoization
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadow } from '@/constants/theme';
+import { SpacingSeparator } from '@/components/common/ListSeparators';
+import { createGetItemLayout, LIST_ITEM_HEIGHTS } from '@/constants/listItemHeights';
 import type { MainTabScreenProps } from '@/navigation/types';
 
 interface Notification {
@@ -41,40 +44,36 @@ const NOTIFICATION_COLORS: Record<string, string> = {
   status_change: colors.warning[600],
 };
 
-export function NotificationsScreen({ navigation }: MainTabScreenProps<'Notifications'>) {
-  const [refreshing, setRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+// Pre-computed background colors for notification types
+const NOTIFICATION_BG_COLORS: Record<string, { backgroundColor: string }> = {
+  claim_approved: { backgroundColor: `${colors.success[600]}15` },
+  claim_rejected: { backgroundColor: `${colors.error[600]}15` },
+  comment: { backgroundColor: `${colors.primary[600]}15` },
+  status_change: { backgroundColor: `${colors.warning[600]}15` },
+};
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    // TODO: Fetch notifications
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+// Memoized Notification Item Component
+interface NotificationItemProps {
+  item: Notification;
+  onPress: (notification: Notification) => void;
+}
 
-  const handleMarkAllRead = () => {
-    // TODO: Mark all as read
-  };
+const NotificationItem = memo(function NotificationItem({ item, onPress }: NotificationItemProps) {
+  const handlePress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
 
-  const handleNotificationPress = (notification: Notification) => {
-    if (notification.claimId) {
-      navigation.navigate('Claims', {
-        screen: 'ClaimDetail',
-        params: { claimId: notification.claimId },
-      });
-    }
-  };
+  const iconBgStyle = useMemo(
+    () => NOTIFICATION_BG_COLORS[item.type] || NOTIFICATION_BG_COLORS.status_change,
+    [item.type]
+  );
 
-  const renderNotification = ({ item }: { item: Notification }) => (
+  return (
     <TouchableOpacity
       style={[styles.notificationItem, !item.isRead && styles.unreadItem]}
-      onPress={() => handleNotificationPress(item)}
+      onPress={handlePress}
     >
-      <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: `${NOTIFICATION_COLORS[item.type]}15` },
-        ]}
-      >
+      <View style={[styles.iconContainer, iconBgStyle]}>
         <Ionicons
           name={NOTIFICATION_ICONS[item.type]}
           size={24}
@@ -94,15 +93,59 @@ export function NotificationsScreen({ navigation }: MainTabScreenProps<'Notifica
       <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
     </TouchableOpacity>
   );
+});
 
-  const renderEmpty = () => (
+// FlatList optimization
+const keyExtractor = (item: Notification) => item.id;
+const getItemLayout = createGetItemLayout<Notification>(
+  LIST_ITEM_HEIGHTS.notification,
+  LIST_ITEM_HEIGHTS.notificationSeparator
+);
+
+export function NotificationsScreen({ navigation }: MainTabScreenProps<'Notifications'>) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // TODO: Fetch notifications
+    setTimeout(() => setRefreshing(false), 1000);
+  }, []);
+
+  const handleMarkAllRead = useCallback(() => {
+    // TODO: Mark all as read
+  }, []);
+
+  const handleNotificationPress = useCallback((notification: Notification) => {
+    if (notification.claimId) {
+      navigation.navigate('Claims', {
+        screen: 'ClaimDetail',
+        params: { claimId: notification.claimId },
+      });
+    }
+  }, [navigation]);
+
+  const renderNotification = useCallback(({ item }: { item: Notification }) => (
+    <NotificationItem item={item} onPress={handleNotificationPress} />
+  ), [handleNotificationPress]);
+
+  const renderEmpty = useCallback(() => (
     <View style={styles.emptyState}>
       <Ionicons name="notifications-outline" size={64} color={colors.gray[300]} />
       <Text style={styles.emptyText}>Keine Benachrichtigungen</Text>
       <Text style={styles.emptySubtext}>
-        Sie werden hier benachrichtigt, wenn es Neuigkeiten zu Ihren Schaeden gibt.
+        Sie werden hier benachrichtigt, wenn es Neuigkeiten zu Ihren Schäden gibt.
       </Text>
     </View>
+  ), []);
+
+  const refreshControl = useMemo(() => (
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  ), [refreshing, onRefresh]);
+
+  const contentContainerStyle = useMemo(
+    () => notifications.length === 0 ? styles.emptyContainer : styles.listContent,
+    [notifications.length]
   );
 
   return (
@@ -119,14 +162,18 @@ export function NotificationsScreen({ navigation }: MainTabScreenProps<'Notifica
 
       <FlatList
         data={notifications}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
         renderItem={renderNotification}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={notifications.length === 0 ? styles.emptyContainer : styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={contentContainerStyle}
+        refreshControl={refreshControl}
+        ItemSeparatorComponent={SpacingSeparator}
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
+        windowSize={5}
       />
     </SafeAreaView>
   );

@@ -145,7 +145,7 @@ export default function NewClaimPage() {
   // --- GPS Handler ---
   const handleGetLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setLocationError('Standortermittlung wird von Ihrem Browser nicht unterstuetzt.');
+      setLocationError('Standortermittlung wird von Ihrem Browser nicht unterstützt.');
       return;
     }
 
@@ -211,7 +211,7 @@ export default function NewClaimPage() {
     }
 
     if (fileArray.length > remaining) {
-      toast.error(`Sie koennen nur noch ${remaining} weitere Fotos hinzufuegen.`);
+      toast.error(`Sie können nur noch ${remaining} weitere Fotos hinzufügen.`);
     }
 
     const filesToAdd = fileArray.slice(0, remaining);
@@ -219,7 +219,7 @@ export default function NewClaimPage() {
 
     for (const file of filesToAdd) {
       if (!ACCEPTED_TYPES.includes(file.type)) {
-        toast.error(`"${file.name}" ist kein unterstuetztes Bildformat. Erlaubt: JPEG, PNG, WEBP.`);
+        toast.error(`"${file.name}" ist kein unterstütztes Bildformat. Erlaubt: JPEG, PNG, WEBP.`);
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
@@ -328,7 +328,7 @@ export default function NewClaimPage() {
 
         if (failedCount > 0) {
           toast.warning(
-            `${failedCount} von ${stagedPhotos.length} Fotos konnten nicht hochgeladen werden. Sie koennen diese spaeter nachtraeglich hinzufuegen.`
+            `${failedCount} von ${stagedPhotos.length} Fotos konnten nicht hochgeladen werden. Sie können diese später nachträglich hinzufügen.`
           );
         }
       }
@@ -402,7 +402,7 @@ export default function NewClaimPage() {
                 Lieber per Chat?
               </p>
               <p className="text-sm text-muted-foreground">
-                Unser KI-Assistent fuehrt Sie durch die Schadenmeldung
+                Unser KI-Assistent führt Sie durch die Schadenmeldung
               </p>
             </div>
           </div>
@@ -424,7 +424,7 @@ export default function NewClaimPage() {
               Fahrzeug & Zeitpunkt
             </CardTitle>
             <CardDescription>
-              Waehlen Sie das betroffene Fahrzeug und geben Sie Datum und Uhrzeit des Unfalls an
+              Wählen Sie das betroffene Fahrzeug und geben Sie Datum und Uhrzeit des Unfalls an
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -436,7 +436,7 @@ export default function NewClaimPage() {
                   onValueChange={(value) => setValue('vehicleId', value)}
                 >
                   <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Fahrzeug waehlen..." />
+                    <SelectValue placeholder="Fahrzeug wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     {activeVehicles.map((vehicle) => (
@@ -499,7 +499,7 @@ export default function NewClaimPage() {
                   onValueChange={(value) => setValue('policyId', value === '_none' ? undefined : value)}
                 >
                   <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Vertrag waehlen..." />
+                    <SelectValue placeholder="Vertrag wählen..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">Kein Vertrag</SelectItem>
@@ -593,7 +593,7 @@ export default function NewClaimPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estimatedCost">Geschaetzte Kosten (EUR)</Label>
+                <Label htmlFor="estimatedCost">Geschätzte Kosten (EUR)</Label>
                 <Input
                   id="estimatedCost"
                   type="number"
@@ -616,7 +616,7 @@ export default function NewClaimPage() {
               Beschreibung
             </CardTitle>
             <CardDescription>
-              Beschreiben Sie den Unfallhergang so detailliert wie moeglich
+              Beschreiben Sie den Unfallhergang so detailliert wie möglich
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -677,7 +677,7 @@ export default function NewClaimPage() {
             {/* Photo count */}
             {stagedPhotos.length > 0 && (
               <p className="text-sm text-muted-foreground">
-                {stagedPhotos.length} von {MAX_PHOTOS} Fotos ausgewaehlt
+                {stagedPhotos.length} von {MAX_PHOTOS} Fotos ausgewählt
               </p>
             )}
 
@@ -706,12 +706,12 @@ export default function NewClaimPage() {
           </CardContent>
         </Card>
 
-        {/* Zusaetzliche Informationen */}
+        {/* Zusätzliche Informationen */}
         <Card className="rounded-2xl border shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
-              Zusaetzliche Informationen
+              Zusätzliche Informationen
             </CardTitle>
             <CardDescription>
               Polizei, Personenschaden und Unfallgegner

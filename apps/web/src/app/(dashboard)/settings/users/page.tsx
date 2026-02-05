@@ -94,35 +94,35 @@ export default function UsersSettingsPage() {
         toast.success('Benutzer aktiviert');
       }
     } catch {
-      toast.error('Fehler beim Aendern des Status');
+      toast.error('Fehler beim Ändern des Status');
     }
   };
 
   const handleChangeRole = async (id: string, role: UserRole) => {
     try {
       await updateUserRole.mutateAsync({ id, role });
-      toast.success('Rolle erfolgreich geaendert');
+      toast.success('Rolle erfolgreich geändert');
     } catch {
-      toast.error('Fehler beim Aendern der Rolle');
+      toast.error('Fehler beim Ändern der Rolle');
     }
   };
 
   const handleCancelInvitation = async (id: string) => {
     try {
       await cancelInvitation.mutateAsync(id);
-      toast.success('Einladung zurueckgezogen');
+      toast.success('Einladung zurückgezogen');
     } catch {
-      toast.error('Fehler beim Zurueckziehen der Einladung');
+      toast.error('Fehler beim Zurückziehen der Einladung');
     }
   };
 
   const handleDeleteUser = async (id: string) => {
     try {
       await deleteUser.mutateAsync(id);
-      toast.success('Benutzer erfolgreich geloescht');
+      toast.success('Benutzer erfolgreich gelöscht');
       setUserToDelete(null);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Fehler beim Loeschen des Benutzers';
+      const message = error instanceof Error ? error.message : 'Fehler beim Löschen des Benutzers';
       toast.error(message);
       setUserToDelete(null);
     }
@@ -287,7 +287,7 @@ export default function UsersSettingsPage() {
                                     }}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" />
-                                    Loeschen
+                                    Löschen
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -336,7 +336,7 @@ export default function UsersSettingsPage() {
                         <TableHead>E-Mail</TableHead>
                         <TableHead>Rolle</TableHead>
                         <TableHead>Eingeladen von</TableHead>
-                        <TableHead>Laeuft ab am</TableHead>
+                        <TableHead>Läuft ab am</TableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>

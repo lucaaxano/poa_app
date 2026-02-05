@@ -155,3 +155,64 @@ export const useClaimDraftStore = create<ClaimDraftStore>((set, get) => ({
     };
   },
 }));
+
+// =============================================================================
+// GRANULAR SELECTORS
+// These selectors prevent cascading re-renders by only subscribing to
+// specific pieces of state. Use these instead of destructuring the whole store.
+// =============================================================================
+
+/** Select only the vehicle from the draft */
+export const useClaimDraftVehicle = () => useClaimDraftStore((s) => s.vehicle);
+
+/** Select only the accident date (ISO string) */
+export const useClaimDraftDate = () => useClaimDraftStore((s) => s.accidentDate);
+
+/** Select only the accident time (ISO string) */
+export const useClaimDraftTime = () => useClaimDraftStore((s) => s.accidentTime);
+
+/** Select only the location string */
+export const useClaimDraftLocation = () => useClaimDraftStore((s) => s.location);
+
+/** Select only the GPS coordinates */
+export const useClaimDraftGpsCoords = () => useClaimDraftStore((s) => s.gpsCoords);
+
+/** Select only the damage category */
+export const useClaimDraftCategory = () => useClaimDraftStore((s) => s.category);
+
+/** Select only the description */
+export const useClaimDraftDescription = () => useClaimDraftStore((s) => s.description);
+
+/** Select only the photos array */
+export const useClaimDraftPhotos = () => useClaimDraftStore((s) => s.photos);
+
+/** Select only the current step */
+export const useClaimDraftCurrentStep = () => useClaimDraftStore((s) => s.currentStep);
+
+/** Select only the isDirty flag */
+export const useClaimDraftIsDirty = () => useClaimDraftStore((s) => s.isDirty);
+
+/**
+ * Select all actions with stable references.
+ * Actions don't change between renders, so this selector is safe to use
+ * without causing unnecessary re-renders.
+ */
+export const useClaimDraftActions = () => useClaimDraftStore((s) => ({
+  setVehicle: s.setVehicle,
+  setAccidentDate: s.setAccidentDate,
+  setAccidentTime: s.setAccidentTime,
+  setLocation: s.setLocation,
+  setGpsCoords: s.setGpsCoords,
+  setCategory: s.setCategory,
+  setDescription: s.setDescription,
+  addPhoto: s.addPhoto,
+  removePhoto: s.removePhoto,
+  clearPhotos: s.clearPhotos,
+  setCurrentStep: s.setCurrentStep,
+  nextStep: s.nextStep,
+  prevStep: s.prevStep,
+  reset: s.reset,
+  isStep1Valid: s.isStep1Valid,
+  isStep2Valid: s.isStep2Valid,
+  getSubmitData: s.getSubmitData,
+}));
