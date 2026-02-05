@@ -2,7 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../constants/theme';
 
-type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary';
+/**
+ * Badge component with variants aligned to web app
+ * See packages/shared/src/design-tokens.ts for color definitions
+ */
+type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary' | 'secondary' | 'outline';
 type BadgeSize = 'sm' | 'md';
 
 interface BadgeProps {
@@ -60,6 +64,25 @@ const variantStyles: Record<BadgeVariant, { container: ViewStyle; text: TextStyl
     },
     text: {
       color: colors.primary[700],
+    },
+  },
+  // Added for consistency with web app
+  secondary: {
+    container: {
+      backgroundColor: colors.gray[100],
+    },
+    text: {
+      color: colors.gray[800],
+    },
+  },
+  outline: {
+    container: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.border.medium,
+    },
+    text: {
+      color: colors.text.primary,
     },
   },
 };

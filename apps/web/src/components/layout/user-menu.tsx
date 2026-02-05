@@ -45,7 +45,11 @@ export const UserMenu = memo(function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted">
+        <Button
+          variant="ghost"
+          className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted"
+          aria-label={`Benutzermenu fuer ${fullName}`}
+        >
           {company?.logoUrl ? (
             <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-muted">
               <img
@@ -55,14 +59,14 @@ export const UserMenu = memo(function UserMenu() {
               />
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium" aria-hidden="true">
               {initials}
             </div>
           )}
           <div className="hidden md:flex flex-col items-start">
             <span className="text-sm font-medium">{user?.firstName}</span>
           </div>
-          <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 rounded-xl p-2" align="end" forceMount>

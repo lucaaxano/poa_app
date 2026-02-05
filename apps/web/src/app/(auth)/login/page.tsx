@@ -42,6 +42,24 @@ export default function LoginPage() {
     },
   });
 
+  // Restore 2FA session from sessionStorage on page load (refresh safety)
+  useEffect(() => {
+    const stored = sessionStorage.getItem('poa-2fa-session');
+    if (stored && !twoFactor.requires2FA) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.requires2FA && parsed.tempToken && parsed.userId) {
+          // Trigger state update in auth store by setting twoFactor state
+          // This will restore the 2FA UI after a page refresh
+          useAuthStore.setState({ twoFactor: parsed });
+        }
+      } catch {
+        // Invalid session data - clear it
+        sessionStorage.removeItem('poa-2fa-session');
+      }
+    }
+  }, [twoFactor.requires2FA]);
+
   // Focus first input when 2FA is required
   useEffect(() => {
     if (twoFactor.requires2FA && !useBackupCode) {

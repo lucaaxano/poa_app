@@ -105,8 +105,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   // Check Auth (beim App-Start)
+  // NON-BLOCKING: Does not set isLoading: true to prevent UI blocking
   checkAuth: async () => {
-    const token = await getAccessToken();
+    let token: string | null = null;
+
+    try {
+      token = await getAccessToken();
+    } catch (storageError) {
+      // AsyncStorage error - log and continue without auth
+      console.warn('[Auth] Storage error during checkAuth:', storageError);
+      set({
+        isInitialized: true,
+        isAuthenticated: false,
+        user: null,
+        company: null,
+      });
+      return;
+    }
 
     if (!token) {
       set({
@@ -118,25 +133,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return;
     }
 
-    set({ isLoading: true });
+    // NON-BLOCKING: Set isInitialized immediately so UI can render
+    // isLoading stays false to prevent blocking spinner
+    set({ isInitialized: true });
+
     try {
       const response = await authApi.getProfile();
       set({
         user: response.user,
         company: response.company,
         isAuthenticated: true,
-        isLoading: false,
-        isInitialized: true,
       });
     } catch {
       // Token ungueltig -> ausloggen
-      await clearTokens();
+      try {
+        await clearTokens();
+      } catch (clearError) {
+        console.warn('[Auth] Error clearing tokens:', clearError);
+      }
       set({
         user: null,
         company: null,
         isAuthenticated: false,
-        isLoading: false,
-        isInitialized: true,
       });
     }
   },

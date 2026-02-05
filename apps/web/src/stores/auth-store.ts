@@ -51,6 +51,50 @@ interface TwoFactorState {
   userId: string | null;
 }
 
+// 2FA SessionStorage key for page-refresh safety
+const TWO_FACTOR_SESSION_KEY = 'poa-2fa-session';
+
+/**
+ * Save 2FA state to sessionStorage for page-refresh safety
+ */
+const save2FAToSession = (state: TwoFactorState): void => {
+  if (typeof window === 'undefined') return;
+  if (state.requires2FA && state.tempToken) {
+    sessionStorage.setItem(TWO_FACTOR_SESSION_KEY, JSON.stringify(state));
+  } else {
+    sessionStorage.removeItem(TWO_FACTOR_SESSION_KEY);
+  }
+};
+
+/**
+ * Restore 2FA state from sessionStorage after page refresh
+ */
+const restore2FAFromSession = (): TwoFactorState | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = sessionStorage.getItem(TWO_FACTOR_SESSION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as TwoFactorState;
+      // Validate the stored state has required fields
+      if (parsed.requires2FA && parsed.tempToken && parsed.userId) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Invalid JSON or missing fields - clear and ignore
+    sessionStorage.removeItem(TWO_FACTOR_SESSION_KEY);
+  }
+  return null;
+};
+
+/**
+ * Clear 2FA state from sessionStorage
+ */
+const clear2FASession = (): void => {
+  if (typeof window === 'undefined') return;
+  sessionStorage.removeItem(TWO_FACTOR_SESSION_KEY);
+};
+
 interface AuthState {
   user: User | null;
   company: Company | null;
@@ -108,13 +152,16 @@ export const useAuthStore = create<AuthState>()(
 
           // Check if 2FA is required
           if (requires2FA(response)) {
+            const twoFactorState = {
+              requires2FA: true,
+              tempToken: response.tempToken,
+              userId: response.userId,
+            };
+            // Save to sessionStorage for page-refresh safety
+            save2FAToSession(twoFactorState);
             set({
               isLoading: false,
-              twoFactor: {
-                requires2FA: true,
-                tempToken: response.tempToken,
-                userId: response.userId,
-              },
+              twoFactor: twoFactorState,
             });
             return { requires2FA: true };
           }
@@ -142,16 +189,26 @@ export const useAuthStore = create<AuthState>()(
       },
 
       complete2FA: async (token: string) => {
-        const { twoFactor } = get();
+        let { twoFactor } = get();
+
+        // Try to restore from sessionStorage if not in memory (page refresh case)
         if (!twoFactor.tempToken) {
-          throw new Error('Keine 2FA-Sitzung aktiv');
+          const restored = restore2FAFromSession();
+          if (restored) {
+            twoFactor = restored;
+            set({ twoFactor: restored });
+          } else {
+            throw new Error('Keine 2FA-Sitzung aktiv');
+          }
         }
 
         set({ isLoading: true });
         try {
-          const response = await authApi.validate2FA(twoFactor.tempToken, token);
+          const response = await authApi.validate2FA(twoFactor.tempToken!, token);
           // Mark login timestamp to prevent race condition in checkAuth
           markLoginComplete();
+          // Clear 2FA session on success
+          clear2FASession();
           set({
             user: response.user,
             company: response.company,
@@ -169,16 +226,26 @@ export const useAuthStore = create<AuthState>()(
       },
 
       complete2FAWithBackup: async (backupCode: string) => {
-        const { twoFactor } = get();
+        let { twoFactor } = get();
+
+        // Try to restore from sessionStorage if not in memory (page refresh case)
         if (!twoFactor.tempToken) {
-          throw new Error('Keine 2FA-Sitzung aktiv');
+          const restored = restore2FAFromSession();
+          if (restored) {
+            twoFactor = restored;
+            set({ twoFactor: restored });
+          } else {
+            throw new Error('Keine 2FA-Sitzung aktiv');
+          }
         }
 
         set({ isLoading: true });
         try {
-          const response = await authApi.useBackupCode(twoFactor.tempToken, backupCode);
+          const response = await authApi.useBackupCode(twoFactor.tempToken!, backupCode);
           // Mark login timestamp to prevent race condition in checkAuth
           markLoginComplete();
+          // Clear 2FA session on success
+          clear2FASession();
           set({
             user: response.user,
             company: response.company,
@@ -196,6 +263,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       cancel2FA: () => {
+        // Clear sessionStorage when cancelling 2FA
+        clear2FASession();
         set({
           twoFactor: { requires2FA: false, tempToken: null, userId: null },
         });

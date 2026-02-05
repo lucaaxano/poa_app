@@ -152,14 +152,21 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-white',
+        'fixed left-0 top-0 z-40 h-screen border-r bg-white transition-[width] duration-200 ease-in-out',
         collapsed ? 'w-[72px]' : 'w-64'
       )}
+      role="navigation"
+      aria-label="Hauptnavigation"
     >
       <div className="flex h-full flex-col overflow-hidden">
         {/* Logo */}
         <div className="flex h-16 shrink-0 items-center border-b px-4">
-          <Link href="/dashboard" prefetch={false} className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            prefetch={false}
+            className="flex items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
+            aria-label="Zum Dashboard"
+          >
             {collapsed ? (
               <Image
                 src="/logo-icon.png"
@@ -186,6 +193,7 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
         <nav
           className="flex-1 overflow-y-auto overflow-x-hidden space-y-1.5 px-3 py-4 scrollbar-thin will-change-scroll"
           style={{ contain: 'layout paint' }}
+          aria-label="Seitennavigation"
         >
           {navItemsWithStatus.map((item) => (
             <Link
@@ -195,12 +203,15 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
               scroll={false}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 item.isActive
                   ? 'bg-primary text-primary-foreground shadow-soft'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 collapsed && 'justify-center px-2'
               )}
               title={collapsed ? item.title : undefined}
+              aria-label={item.title}
+              aria-current={item.isActive ? 'page' : undefined}
             >
               {item.icon}
               {!collapsed && <span>{item.title}</span>}
@@ -218,6 +229,8 @@ export const Sidebar = memo(function Sidebar({ collapsed = false, onCollapsedCha
               collapsed ? 'px-2' : 'justify-start'
             )}
             onClick={() => onCollapsedChange?.(!collapsed)}
+            aria-label={collapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
+            aria-expanded={!collapsed}
           >
             {collapsed ? (
               <ChevronRight className="h-4 w-4" />

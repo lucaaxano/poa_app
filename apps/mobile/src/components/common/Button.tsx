@@ -10,7 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../constants/theme';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+/**
+ * Button component with variants aligned to web app
+ * Web variants: default, destructive, outline, secondary, ghost, link
+ * Mobile variants: primary (=default), secondary, outline, ghost, danger (=destructive), link
+ */
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'link';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -72,6 +77,19 @@ const variantStyles: Record<ButtonVariant, { container: ViewStyle; text: TextSty
     },
     text: {
       color: colors.white,
+    },
+  },
+  // Added for consistency with web app
+  link: {
+    container: {
+      backgroundColor: colors.transparent,
+      borderWidth: 0,
+      paddingHorizontal: 0,
+      paddingVertical: 0,
+    },
+    text: {
+      color: colors.primary[600],
+      textDecorationLine: 'underline',
     },
   },
 };

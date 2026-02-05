@@ -318,6 +318,9 @@ model Claim {
   @@index([accidentDate])
   @@index([reporterUserId])
   @@index([driverUserId])
+  // Performance indexes for common queries
+  @@index([claimNumber(sort: Desc)]) // Critical for generateClaimNumber()
+  @@index([companyId, createdAt(sort: Desc)]) // Composite for company dashboard queries
   @@map("claims")
 }
 

@@ -62,10 +62,11 @@ export interface ClaimWithRelations extends Claim {
 
 @Injectable()
 export class AdminService {
-  // In-memory cache for system stats (30 second TTL)
+  // In-memory cache for system stats (120 second TTL)
+  // Increased from 30s to reduce DB load on frequent dashboard access
   private statsCache: AdminStats | null = null;
   private statsCacheExpiry: number = 0;
-  private static readonly STATS_CACHE_TTL_MS = 30000; // 30 seconds
+  private static readonly STATS_CACHE_TTL_MS = 120000; // 120 seconds
 
   constructor(private prisma: PrismaService) {}
 

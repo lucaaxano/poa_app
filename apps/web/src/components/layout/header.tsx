@@ -46,10 +46,11 @@ export const Header = memo(function Header({ onMenuClick, showMenuButton = false
 
         {/* Search - Hidden on mobile */}
         <div className="hidden md:flex relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="Suchen..."
             className="w-64 pl-9 h-10 rounded-xl bg-muted/50 border-0 focus-visible:bg-white focus-visible:ring-1"
+            aria-label="Suchfeld"
           />
         </div>
       </div>

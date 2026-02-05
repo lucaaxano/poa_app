@@ -583,12 +583,15 @@ apiClient.interceptors.response.use(
       ? (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED')
       : (status !== undefined && status >= 502 && status <= 504);
 
+    // Increased retry count from 1 to 2 for better resilience against 502/503/504
     if (isRetryableError && !isLoggingOut) {
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 1) {
-        originalRequest._retryCount = 1;
-        console.warn(`[API] Retryable error (${error.code || status}), retrying in 1s...`);
-        await sleep(1000);
+      if (retryCount < 2) {
+        originalRequest._retryCount = retryCount + 1;
+        // Exponential backoff: 1s, 2s
+        const delay = 1000 * (retryCount + 1);
+        console.warn(`[API] Retryable error (${error.code || status}), retry ${retryCount + 1}/2 in ${delay}ms...`);
+        await sleep(delay);
         return apiClient(originalRequest);
       }
     }

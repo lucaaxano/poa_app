@@ -11,13 +11,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Navigation } from '@/navigation';
 import { useAuthStore, useNetworkStore } from '@/stores';
 
-// Create a client
+// Create a client - aligned with web app settings for consistency
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
       staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
+      gcTime: 1000 * 60 * 10, // 10 minutes (reduced from 30 to match web for memory efficiency)
     },
   },
 });

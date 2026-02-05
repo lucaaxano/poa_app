@@ -34,7 +34,7 @@
 
     /* Muted */
     --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 20% 35%;  /* Darkened for WCAG AA compliance (was 215 16% 47%) */
 
     /* Accent */
     --accent: 210 40% 96%;
@@ -51,6 +51,35 @@
 
     /* Radius - increased for modern look */
     --radius: 1rem;
+
+    /* Claim Status Colors - consistent with mobile (see packages/shared/src/design-tokens.ts) */
+    --status-draft-bg: 220 14% 96%;
+    --status-draft-text: 217 19% 27%;
+    --status-draft-border: 216 12% 84%;
+
+    --status-submitted-bg: 245 100% 94%;
+    --status-submitted-text: 245 75% 42%;
+    --status-submitted-border: 245 95% 76%;
+
+    --status-approved-bg: 141 84% 93%;
+    --status-approved-text: 142 72% 29%;
+    --status-approved-border: 142 71% 45%;
+
+    --status-sent-bg: 214 95% 93%;
+    --status-sent-text: 221 83% 53%;
+    --status-sent-border: 217 91% 60%;
+
+    --status-acknowledged-bg: 138 76% 97%;
+    --status-acknowledged-text: 142 76% 36%;
+    --status-acknowledged-border: 142 71% 45%;
+
+    --status-closed-bg: 220 14% 96%;
+    --status-closed-text: 215 14% 34%;
+    --status-closed-border: 218 11% 65%;
+
+    --status-rejected-bg: 0 93% 94%;
+    --status-rejected-text: 0 74% 42%;
+    --status-rejected-border: 0 84% 60%;
   }
 
   .dark {
