@@ -11,10 +11,9 @@ import { PrismaClient } from '@poa/database';
 // &pool_timeout=20 - Max time to wait for connection (seconds)
 // &connect_timeout=10 - Max time for initial connection (seconds)
 
-// Keep-alive interval - balance between connection freshness and server load
-// 45s interval coordinates with Docker healthcheck (also 45s) for ~1 ping every 22s
-// Stays within PostgreSQL tcp_keepalives_idle of 30s
-const KEEPALIVE_INTERVAL_MS = 45000; // 45 seconds
+// Keep-alive interval - MUST be under PostgreSQL tcp_keepalives_idle (30s)
+// 20s interval ensures connections stay alive before PostgreSQL times them out
+const KEEPALIVE_INTERVAL_MS = 20000; // 20 seconds
 
 // Max consecutive failures before forcing reconnect
 const MAX_CONSECUTIVE_FAILURES = 3;
@@ -44,11 +43,11 @@ export class PrismaService
       await this.connectWithRetry();
     } catch (error) {
       this.logger.error(
-        'CRITICAL: Database connection failed at startup. ' +
-        'App will start WITHOUT database connectivity. ' +
-        'Keep-alive will attempt reconnection.',
+        'CRITICAL: Database connection failed at startup. Terminating process.',
         error,
       );
+      // Exit so container orchestrator can restart the container
+      process.exit(1);
     }
     this.startKeepAlive();
   }
@@ -84,47 +83,35 @@ export class PrismaService
 
   /**
    * Warmup the connection pool with queries
-   * Phase 1: parallel connection warmup (reduced to 3 to limit pool usage)
-   * Phase 2: sequential table warmups (reuses already-opened connections)
+   * Phase 1: parallel connection warmup (5 queries to open more connections)
+   * Phase 2: critical table warmups to prepare query plans
    */
   private async warmupConnectionPool(): Promise<void> {
     try {
       const startTime = Date.now();
 
-      // Phase 1: Basic connection warmup (3 parallel SELECT 1)
-      // Opens 3 connections (~7.5% of pool) to reduce first-request latency
-      const basicWarmup = Array(3)
-        .fill(null)
-        .map(() => this.$queryRaw`SELECT 1`);
-      await Promise.all(basicWarmup);
+      // Phase 1: Aggressive connection warmup (5 parallel SELECT 1)
+      // Opens 5 connections to reduce first-request latency
+      await Promise.all([
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+      ]);
 
-      // Phase 2: Table-specific warmup to prepare query plans
-      // Run sequentially to reuse already-opened connections from Phase 1
-      // Using non-existent IDs to return quickly but still warm up query plans
-      await this.user
-        .findFirst({
-          where: { email: 'warmup@nonexistent.local' },
-          select: { id: true },
-        })
-        .catch(() => null);
-
-      await this.user
-        .findFirst({
-          where: { id: '00000000-0000-0000-0000-000000000000' },
-          include: { company: true },
-        })
-        .catch(() => null);
-
-      await this.company
-        .findFirst({
-          where: { id: '00000000-0000-0000-0000-000000000000' },
-        })
-        .catch(() => null);
+      // Phase 2: Critical table warmups to prepare query plans
+      // Using findFirst with select: { id: true } for minimal data transfer
+      await Promise.all([
+        this.user.findFirst({ select: { id: true } }).catch(() => null),
+        this.company.findFirst({ select: { id: true } }).catch(() => null),
+        this.claim.findFirst({ select: { id: true } }).catch(() => null),
+      ]);
 
       this.consecutiveFailures = 0;
       this.lastSuccessfulQuery = Date.now();
       this.logger.log(
-        `Database warmup completed in ${Date.now() - startTime}ms (connections + query plans)`,
+        `Database warmup completed in ${Date.now() - startTime}ms (5 connections + 3 tables)`,
       );
     } catch (error) {
       this.logger.error('Database warmup failed:', error);

@@ -87,9 +87,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      # PERFORMANCE FIX: Reduced connection limit from 50 to 20
-      # Too many connections can overwhelm the database
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=20&pool_timeout=30&connect_timeout=15
+      # PERFORMANCE FIX: Connection pool with keep-alive to prevent idle connection drops
+      # - connection_limit=40: Headroom for parallel requests
+      # - keepAlive=true: Prevents PostgreSQL from closing idle connections
+      # - keepAliveInitialDelayMillis=10000: Start keep-alive pings after 10s idle
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=15&keepAlive=true&keepAliveInitialDelayMillis=10000
       # CRITICAL: Node.js memory limit to prevent OOM crashes
       - NODE_OPTIONS=--max-old-space-size=768
       - JWT_SECRET=${JWT_SECRET}
@@ -115,6 +117,12 @@ services:
         condition: service_healthy
       storage:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - poa-network
     labels:
