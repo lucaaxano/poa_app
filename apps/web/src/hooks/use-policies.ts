@@ -13,6 +13,7 @@ import {
   type UpdatePolicyData,
   type Insurer,
 } from '@/lib/api/policies';
+import { useAuthStore } from '@/stores/auth-store';
 
 // Query keys
 export const policyKeys = {
@@ -28,6 +29,12 @@ export const insurerKeys = {
   lists: () => [...insurerKeys.all, 'list'] as const,
 };
 
+// Helper to check if user is not a broker (brokers don't have a single companyId)
+function useIsNotBroker() {
+  const user = useAuthStore((state) => state.user);
+  return user?.role !== 'BROKER';
+}
+
 // Insurers hooks
 export function useInsurers() {
   return useQuery<Insurer[], Error>({
@@ -38,17 +45,20 @@ export function useInsurers() {
 
 // Policies hooks
 export function usePolicies() {
+  const isNotBroker = useIsNotBroker();
   return useQuery<Policy[], Error>({
     queryKey: policyKeys.lists(),
     queryFn: getPolicies,
+    enabled: isNotBroker,
   });
 }
 
 export function usePolicy(id: string) {
+  const isNotBroker = useIsNotBroker();
   return useQuery<Policy, Error>({
     queryKey: policyKeys.detail(id),
     queryFn: () => getPolicyById(id),
-    enabled: !!id,
+    enabled: !!id && isNotBroker,
   });
 }
 

@@ -30,18 +30,28 @@ export const companyKeys = {
     [...companyKeys.all, 'stats', 'quota', year] as const,
 };
 
+// Helper to check if user is not a broker (brokers don't have a single companyId)
+function useIsNotBroker() {
+  const user = useAuthStore((state) => state.user);
+  return user?.role !== 'BROKER';
+}
+
 // Hooks
 export function useCompany() {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.current(),
     queryFn: companiesApi.getCurrent,
+    enabled: isNotBroker,
   });
 }
 
 export function useCompanyStats() {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.stats(),
     queryFn: companiesApi.getStats,
+    enabled: isNotBroker,
   });
 }
 
@@ -49,37 +59,47 @@ export function useStatsTimeline(
   period: 'week' | 'month' = 'month',
   range: number = 12
 ) {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.statsTimeline(period, range),
     queryFn: () => companiesApi.getStatsTimeline(period, range),
+    enabled: isNotBroker,
   });
 }
 
 export function useStatsByVehicle(limit: number = 10) {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.statsByVehicle(limit),
     queryFn: () => companiesApi.getStatsByVehicle(limit),
+    enabled: isNotBroker,
   });
 }
 
 export function useStatsByDriver(limit: number = 10) {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.statsByDriver(limit),
     queryFn: () => companiesApi.getStatsByDriver(limit),
+    enabled: isNotBroker,
   });
 }
 
 export function useStatsByCategory() {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.statsByCategory(),
     queryFn: companiesApi.getStatsByCategory,
+    enabled: isNotBroker,
   });
 }
 
 export function useQuotaStats(year?: number) {
+  const isNotBroker = useIsNotBroker();
   return useQuery({
     queryKey: companyKeys.statsQuota(year),
     queryFn: () => companiesApi.getQuotaStats(year),
+    enabled: isNotBroker,
   });
 }
 
