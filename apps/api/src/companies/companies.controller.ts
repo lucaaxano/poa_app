@@ -13,7 +13,6 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserRole } from '@poa/database';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   CompaniesService,
@@ -29,7 +28,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AuthenticatedRequest } from '../auth/interfaces/authenticated-request.interface';
 import { UpdateCompanyDto } from './dto/company.dto';
-import { Company } from '@poa/database';
+import { Company, UserRole } from '@poa/database';
 import { StorageService } from '../storage/storage.service';
 
 @Controller('companies')

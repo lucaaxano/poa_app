@@ -92,7 +92,8 @@ export class ClaimsController {
     // Brokers: Use broker service to get claims from linked companies
     if (role === UserRole.BROKER) {
       const result = await this.brokerService.getClaims(userId, {
-        status: filters.status,
+        // BrokerClaimFilterDto expects single status, take first if array provided
+        status: filters.status?.[0],
         search: filters.search,
         page: filters.page || 1,
         limit: filters.pageSize || 20,
