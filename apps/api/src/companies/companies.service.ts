@@ -180,26 +180,39 @@ export class CompaniesService {
     }
 
     // Use SQL aggregation instead of loading all claims into memory
-    const truncFn = period === 'month' ? 'month' : 'week';
-    const dbRows = await this.prisma.$queryRaw<
-      Array<{
-        period: string;
-        claim_count: bigint;
-        total_estimated_cost: number | null;
-        total_final_cost: number | null;
-      }>
-    >`
-      SELECT
-        TO_CHAR(DATE_TRUNC(${truncFn}, accident_date), 'YYYY-MM') AS period,
-        COUNT(*)::bigint AS claim_count,
-        COALESCE(SUM(estimated_cost), 0)::float AS total_estimated_cost,
-        COALESCE(SUM(final_cost), 0)::float AS total_final_cost
-      FROM claims
-      WHERE company_id = ${companyId}
-        AND accident_date >= ${startDate}
-      GROUP BY DATE_TRUNC(${truncFn}, accident_date)
-      ORDER BY DATE_TRUNC(${truncFn}, accident_date)
-    `;
+    // Note: DATE_TRUNC interval must be a literal, not a parameter, so we branch
+    type TimelineRow = {
+      period: string;
+      claim_count: bigint;
+      total_estimated_cost: number | null;
+      total_final_cost: number | null;
+    };
+
+    const dbRows = period === 'month'
+      ? await this.prisma.$queryRaw<TimelineRow[]>`
+          SELECT
+            TO_CHAR(DATE_TRUNC('month', accident_date), 'YYYY-MM') AS period,
+            COUNT(*)::bigint AS claim_count,
+            COALESCE(SUM(estimated_cost), 0)::float AS total_estimated_cost,
+            COALESCE(SUM(final_cost), 0)::float AS total_final_cost
+          FROM claims
+          WHERE company_id = ${companyId}
+            AND accident_date >= ${startDate}
+          GROUP BY DATE_TRUNC('month', accident_date)
+          ORDER BY DATE_TRUNC('month', accident_date)
+        `
+      : await this.prisma.$queryRaw<TimelineRow[]>`
+          SELECT
+            TO_CHAR(DATE_TRUNC('week', accident_date), 'YYYY-MM') AS period,
+            COUNT(*)::bigint AS claim_count,
+            COALESCE(SUM(estimated_cost), 0)::float AS total_estimated_cost,
+            COALESCE(SUM(final_cost), 0)::float AS total_final_cost
+          FROM claims
+          WHERE company_id = ${companyId}
+            AND accident_date >= ${startDate}
+          GROUP BY DATE_TRUNC('week', accident_date)
+          ORDER BY DATE_TRUNC('week', accident_date)
+        `;
 
     // Build a map from DB results for quick lookup
     const dbMap = new Map<string, TimelineDataPoint>();
