@@ -170,6 +170,7 @@ model User {
   emailVerifications    EmailVerification[]
 
   @@index([companyId])
+  @@index([companyId, isActive])
   @@index([email])
   @@map("users")
 }
@@ -199,6 +200,7 @@ model Vehicle {
 
   @@unique([companyId, licensePlate])
   @@index([companyId])
+  @@index([companyId, isActive])
   @@map("vehicles")
 }
 
@@ -247,6 +249,7 @@ model Policy {
 
   @@unique([companyId, policyNumber])
   @@index([companyId])
+  @@index([companyId, isActive])
   @@map("policies")
 }
 
@@ -321,6 +324,8 @@ model Claim {
   // Performance indexes for common queries
   @@index([claimNumber(sort: Desc)]) // Critical for generateClaimNumber()
   @@index([companyId, createdAt(sort: Desc)]) // Composite for company dashboard queries
+  @@index([companyId, status]) // Composite for claim.groupBy status WHERE companyId
+  @@index([companyId, accidentDate]) // Composite for claim.findMany accidentDate range
   @@map("claims")
 }
 

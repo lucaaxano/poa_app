@@ -179,70 +179,63 @@ export class CompaniesService {
       startDate.setDate(now.getDate() - range * 7);
     }
 
-    const claims = await this.prisma.claim.findMany({
-      where: {
-        companyId,
-        accidentDate: {
-          gte: startDate,
-        },
-      },
-      select: {
-        accidentDate: true,
-        estimatedCost: true,
-        finalCost: true,
-      },
-    });
+    // Use SQL aggregation instead of loading all claims into memory
+    const truncFn = period === 'month' ? 'month' : 'week';
+    const dbRows = await this.prisma.$queryRaw<
+      Array<{
+        period: string;
+        claim_count: bigint;
+        total_estimated_cost: number | null;
+        total_final_cost: number | null;
+      }>
+    >`
+      SELECT
+        TO_CHAR(DATE_TRUNC(${truncFn}, accident_date), 'YYYY-MM') AS period,
+        COUNT(*)::bigint AS claim_count,
+        COALESCE(SUM(estimated_cost), 0)::float AS total_estimated_cost,
+        COALESCE(SUM(final_cost), 0)::float AS total_final_cost
+      FROM claims
+      WHERE company_id = ${companyId}
+        AND accident_date >= ${startDate}
+      GROUP BY DATE_TRUNC(${truncFn}, accident_date)
+      ORDER BY DATE_TRUNC(${truncFn}, accident_date)
+    `;
 
-    // Group by period
-    const dataMap = new Map<string, TimelineDataPoint>();
-
-    // Initialize all periods with zero values
-    for (let i = 0; i < range; i++) {
-      const date = new Date(startDate);
-      if (period === 'month') {
-        date.setMonth(startDate.getMonth() + i);
-        const periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        dataMap.set(periodKey, {
-          period: periodKey,
-          claimCount: 0,
-          totalEstimatedCost: 0,
-          totalFinalCost: 0,
-        });
-      } else {
-        date.setDate(startDate.getDate() + i * 7);
-        const periodKey = `${date.getFullYear()}-W${String(this.getWeekNumber(date)).padStart(2, '0')}`;
-        dataMap.set(periodKey, {
-          period: periodKey,
-          claimCount: 0,
-          totalEstimatedCost: 0,
-          totalFinalCost: 0,
-        });
-      }
+    // Build a map from DB results for quick lookup
+    const dbMap = new Map<string, TimelineDataPoint>();
+    for (const row of dbRows) {
+      dbMap.set(row.period, {
+        period: row.period,
+        claimCount: Number(row.claim_count),
+        totalEstimatedCost: Number(row.total_estimated_cost || 0),
+        totalFinalCost: Number(row.total_final_cost || 0),
+      });
     }
 
-    // Aggregate claims
-    for (const claim of claims) {
-      const accidentDate = new Date(claim.accidentDate);
+    // Initialize all periods with zero values, overlay DB data
+    const dataArr: TimelineDataPoint[] = [];
+    for (let i = 0; i < range; i++) {
+      const date = new Date(startDate);
       let periodKey: string;
-
       if (period === 'month') {
-        periodKey = `${accidentDate.getFullYear()}-${String(accidentDate.getMonth() + 1).padStart(2, '0')}`;
+        date.setMonth(startDate.getMonth() + i);
+        periodKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       } else {
-        periodKey = `${accidentDate.getFullYear()}-W${String(this.getWeekNumber(accidentDate)).padStart(2, '0')}`;
+        date.setDate(startDate.getDate() + i * 7);
+        periodKey = `${date.getFullYear()}-W${String(this.getWeekNumber(date)).padStart(2, '0')}`;
       }
-
-      const existing = dataMap.get(periodKey);
-      if (existing) {
-        existing.claimCount += 1;
-        existing.totalEstimatedCost += Number(claim.estimatedCost || 0);
-        existing.totalFinalCost += Number(claim.finalCost || 0);
-      }
+      dataArr.push(
+        dbMap.get(periodKey) || {
+          period: periodKey,
+          claimCount: 0,
+          totalEstimatedCost: 0,
+          totalFinalCost: 0,
+        },
+      );
     }
 
     const result: TimelineStats = {
-      data: Array.from(dataMap.values()).sort((a, b) =>
-        a.period.localeCompare(b.period),
-      ),
+      data: dataArr.sort((a, b) => a.period.localeCompare(b.period)),
     };
 
     this.setCache(cacheKey, result);
@@ -437,24 +430,29 @@ export class CompaniesService {
     const quotaThreshold =
       policies.find((p) => p.quotaThreshold !== null)?.quotaThreshold || null;
 
-    // Get claims for the year
-    const claims = await this.prisma.claim.findMany({
-      where: {
-        companyId,
-        accidentDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      select: {
-        accidentDate: true,
-        finalCost: true,
-        estimatedCost: true,
-      },
-    });
+    // Use SQL aggregation instead of loading all claims into memory
+    const monthlyRows = await this.prisma.$queryRaw<
+      Array<{
+        month: string;
+        claim_count: bigint;
+        claim_cost: number | null;
+      }>
+    >`
+      SELECT
+        TO_CHAR(DATE_TRUNC('month', accident_date), 'YYYY-MM') AS month,
+        COUNT(*)::bigint AS claim_count,
+        COALESCE(SUM(COALESCE(final_cost, estimated_cost, 0)), 0)::float AS claim_cost
+      FROM claims
+      WHERE company_id = ${companyId}
+        AND accident_date >= ${startDate}
+        AND accident_date <= ${endDate}
+      GROUP BY DATE_TRUNC('month', accident_date)
+      ORDER BY DATE_TRUNC('month', accident_date)
+    `;
 
-    const totalClaimCost = claims.reduce(
-      (sum, c) => sum + Number(c.finalCost || c.estimatedCost || 0),
+    // Compute total claim cost from aggregated rows
+    const totalClaimCost = monthlyRows.reduce(
+      (sum, r) => sum + Number(r.claim_cost || 0),
       0,
     );
 
@@ -463,27 +461,21 @@ export class CompaniesService {
         ? Math.round((totalClaimCost / totalPremium) * 100 * 10) / 10
         : 0;
 
-    // Group by month
+    // Build monthly data: initialize all 12 months, overlay DB results
+    const dbMonthMap = new Map(
+      monthlyRows.map((r) => [
+        r.month,
+        { month: r.month, claimCost: Number(r.claim_cost || 0), claimCount: Number(r.claim_count) },
+      ]),
+    );
+
     const monthlyMap = new Map<string, QuotaMonthlyData>();
     for (let month = 0; month < 12; month++) {
       const monthKey = `${targetYear}-${String(month + 1).padStart(2, '0')}`;
-      monthlyMap.set(monthKey, {
-        month: monthKey,
-        claimCost: 0,
-        claimCount: 0,
-      });
-    }
-
-    for (const claim of claims) {
-      const accidentDate = new Date(claim.accidentDate);
-      const monthKey = `${accidentDate.getFullYear()}-${String(accidentDate.getMonth() + 1).padStart(2, '0')}`;
-      const existing = monthlyMap.get(monthKey);
-      if (existing) {
-        existing.claimCost += Number(
-          claim.finalCost || claim.estimatedCost || 0,
-        );
-        existing.claimCount += 1;
-      }
+      monthlyMap.set(
+        monthKey,
+        dbMonthMap.get(monthKey) || { month: monthKey, claimCost: 0, claimCount: 0 },
+      );
     }
 
     const result: QuotaStats = {

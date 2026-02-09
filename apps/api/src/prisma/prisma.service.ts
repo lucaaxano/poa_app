@@ -146,7 +146,12 @@ export class PrismaService
 
     try {
       const startTime = Date.now();
-      await this.$queryRaw`SELECT 1`;
+      // Send 3 parallel keep-alive queries to warm more pool connections
+      await Promise.all([
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+        this.$queryRaw`SELECT 1`,
+      ]);
       const latency = Date.now() - startTime;
 
       // Reset failure counter on success

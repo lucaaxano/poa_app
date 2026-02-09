@@ -95,8 +95,8 @@ let activeWarmupPromise: Promise<boolean> | null = null;
 // PERFORMANCE FIX: Drastically reduced warmup frequency
 // The API client has built-in retry logic, so warmup is mostly redundant
 // These settings minimize background API calls to reduce server load
-const BASE_WARMUP_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (was 10)
-const MIN_WARMUP_INTERVAL_MS = 15 * 60 * 1000; // Minimum 15 minutes between warmups
+const BASE_WARMUP_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+const MIN_WARMUP_INTERVAL_MS = 10 * 60 * 1000; // Minimum 10 minutes between warmups
 const MAX_PAUSE_DURATION_MS = 30 * 60 * 1000; // Max 30 minutes pause after failures
 const MAX_CONSECUTIVE_FAILURES = 2; // Pause after just 2 failures
 
@@ -217,9 +217,9 @@ export const startApiWarmup = (): void => {
           }
         }
 
-        // Token still valid - only warmup if tab was hidden for more than 5 minutes
+        // Token still valid - only warmup if tab was hidden for more than 3 minutes
         const timeSinceLastWarmup = Date.now() - lastWarmupTime;
-        if (timeSinceLastWarmup > 5 * 60 * 1000) { // 5 minutes threshold
+        if (timeSinceLastWarmup > 3 * 60 * 1000) { // 3 minutes threshold
           // Store the warmup promise so the request interceptor can await it
           activeWarmupPromise = axios.get(`${API_URL}/warmup`, { timeout: 3000 })
             .then(() => {

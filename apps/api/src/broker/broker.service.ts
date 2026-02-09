@@ -11,7 +11,30 @@ import {
 
 @Injectable()
 export class BrokerService {
+  private cache = new Map<string, { data: unknown; expiry: number }>();
+  private static readonly CACHE_TTL_MS = 120000; // 2 minutes
+
   constructor(private prisma: PrismaService) {}
+
+  private getCached<T>(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (entry && Date.now() < entry.expiry) {
+      return entry.data as T;
+    }
+    this.cache.delete(key);
+    return null;
+  }
+
+  private setCache(key: string, data: unknown): void {
+    this.cache.set(key, {
+      data,
+      expiry: Date.now() + BrokerService.CACHE_TTL_MS,
+    });
+    if (this.cache.size > 100) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+  }
 
   /**
    * Get all companies linked to a broker with their stats
@@ -56,6 +79,10 @@ export class BrokerService {
    * Get aggregated stats across all linked companies
    */
   async getAggregatedStats(brokerUserId: string): Promise<BrokerAggregatedStats> {
+    const cacheKey = `broker-agg:${brokerUserId}`;
+    const cached = this.getCached<BrokerAggregatedStats>(cacheKey);
+    if (cached) return cached;
+
     // Get all linked company IDs
     const brokerLinks = await this.prisma.brokerCompanyLink.findMany({
       where: { brokerUserId },
@@ -134,7 +161,7 @@ export class BrokerService {
       pendingCount: pendingMap.get(item.companyId) || 0,
     }));
 
-    return {
+    const result: BrokerAggregatedStats = {
       totalCompanies: companyIds.length,
       totalClaims,
       totalVehicles,
@@ -142,6 +169,9 @@ export class BrokerService {
       claimsByStatus: claimsByStatusObj,
       claimsByCompany: claimsByCompanyArr,
     };
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   /**
@@ -175,6 +205,10 @@ export class BrokerService {
       throw new ForbiddenException('Kein Zugriff auf diese Firma');
     }
 
+    const cacheKey = `broker-company:${brokerUserId}:${companyId}`;
+    const cached = this.getCached<BrokerCompanyStats>(cacheKey);
+    if (cached) return cached;
+
     const [totalClaims, totalVehicles, totalUsers, claimsByStatus] = await Promise.all([
       this.prisma.claim.count({ where: { companyId } }),
       this.prisma.vehicle.count({ where: { companyId, isActive: true } }),
@@ -191,12 +225,15 @@ export class BrokerService {
       claimsByStatusObj[item.status] = item._count.status;
     });
 
-    return {
+    const result: BrokerCompanyStats = {
       totalClaims,
       totalVehicles,
       totalUsers,
       claimsByStatus: claimsByStatusObj,
     };
+
+    this.setCache(cacheKey, result);
+    return result;
   }
 
   /**
