@@ -105,8 +105,8 @@ async function bootstrap() {
   const AI_TIMEOUT_MS = 55000;
 
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
-    // Skip timeout for health checks (needed for Docker healthcheck)
-    if (req.path === '/api/health' || req.path === '/api/health/deep') {
+    // Skip timeout for health checks and warmup (needed for Docker healthcheck)
+    if (req.path === '/api/health' || req.path === '/api/health/deep' || req.path === '/api/warmup') {
       return next();
     }
 

@@ -63,6 +63,9 @@ COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 # Copy email templates to the correct location in dist
 COPY --from=builder /app/apps/api/src/email/templates ./apps/api/dist/apps/api/src/email/templates
 
+# Copy DB wait script for startup readiness check
+COPY --from=builder /app/docker/wait-for-db.js ./docker/wait-for-db.js
+
 WORKDIR /app/apps/api
 
 # Expose port
@@ -72,5 +75,5 @@ EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Run migrations and start the application
-CMD ["sh", "-c", "cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && node dist/apps/api/src/main.js"]
+# Run DB wait check, then migrations, then start the application
+CMD ["sh", "-c", "node /app/docker/wait-for-db.js && cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && node dist/apps/api/src/main.js"]

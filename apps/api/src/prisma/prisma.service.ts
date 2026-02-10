@@ -28,6 +28,15 @@ export class PrismaService
   private consecutiveFailures = 0;
   private isReconnecting = false;
   private lastSuccessfulQuery = Date.now();
+  private _isConnected = false;
+
+  /**
+   * Whether the database connection is established.
+   * Used by health-check to report "connecting" vs "connected" status.
+   */
+  get connected(): boolean {
+    return this._isConnected;
+  }
 
   constructor() {
     super({
@@ -41,21 +50,62 @@ export class PrismaService
   async onModuleInit() {
     try {
       await this.connectWithRetry();
+      this._isConnected = true;
+      this.startKeepAlive();
     } catch (error) {
       this.logger.error(
-        'CRITICAL: Database connection failed at startup. Terminating process.',
+        'Database connection failed at startup. Starting background retry (container stays alive).',
         error,
       );
-      // Exit so container orchestrator can restart the container
-      process.exit(1);
+      this.startBackgroundRetry();
     }
-    this.startKeepAlive();
+  }
+
+  /**
+   * Background retry: tries to connect to the DB every 5s (max 60 attempts = 5 min).
+   * Keeps the container alive so Traefik doesn't get stuck in a restart loop.
+   * Once connected, starts the keep-alive interval automatically.
+   */
+  private startBackgroundRetry(): void {
+    const RETRY_INTERVAL_MS = 5000;
+    const MAX_BACKGROUND_RETRIES = 60;
+    let attempt = 0;
+
+    const interval = setInterval(async () => {
+      attempt++;
+      this.logger.log(
+        `Background DB reconnection attempt ${attempt}/${MAX_BACKGROUND_RETRIES}...`,
+      );
+
+      try {
+        await this.$connect();
+        await this.$queryRaw`SELECT 1`;
+        this._isConnected = true;
+        this.consecutiveFailures = 0;
+        this.lastSuccessfulQuery = Date.now();
+        clearInterval(interval);
+        this.logger.log('Background DB reconnection successful');
+        this.startKeepAlive();
+      } catch (error) {
+        this.logger.warn(
+          `Background DB reconnection attempt ${attempt} failed:`,
+          error instanceof Error ? error.message : error,
+        );
+
+        if (attempt >= MAX_BACKGROUND_RETRIES) {
+          clearInterval(interval);
+          this.logger.error(
+            `Background DB reconnection gave up after ${MAX_BACKGROUND_RETRIES} attempts (${(MAX_BACKGROUND_RETRIES * RETRY_INTERVAL_MS) / 1000}s). Container stays alive but DB is unreachable.`,
+          );
+        }
+      }
+    }, RETRY_INTERVAL_MS);
   }
 
   /**
    * Connect to database with retry logic
    */
-  private async connectWithRetry(maxRetries = 3): Promise<void> {
+  private async connectWithRetry(maxRetries = 5): Promise<void> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const startTime = Date.now();
@@ -75,8 +125,8 @@ export class PrismaService
         if (attempt === maxRetries) {
           throw error;
         }
-        // Wait before retry (exponential backoff)
-        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        // Wait before retry (exponential backoff: 2s, 4s, 6s, 8s)
+        await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
       }
     }
   }
@@ -185,6 +235,7 @@ export class PrismaService
     }
 
     this.isReconnecting = true;
+    this._isConnected = false;
     this.logger.warn(
       'Forcing database reconnection due to consecutive failures...',
     );
@@ -198,9 +249,11 @@ export class PrismaService
 
       // Reconnect
       await this.connectWithRetry(3);
+      this._isConnected = true;
       this.consecutiveFailures = 0;
       this.logger.log('Database reconnection successful');
     } catch (error) {
+      this._isConnected = false;
       this.logger.error('Database reconnection failed:', error);
     } finally {
       this.isReconnecting = false;

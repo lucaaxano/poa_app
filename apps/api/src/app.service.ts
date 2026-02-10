@@ -12,22 +12,25 @@ export class AppService {
    * Used by Docker healthcheck - MUST return DB status
    */
   async healthCheck() {
-    let dbStatus = 'disconnected';
+    let dbStatus: string = this.prisma.connected ? 'connected' : 'connecting';
     let dbLatency = 0;
 
-    try {
-      const start = Date.now();
-      await this.prisma.$queryRaw`SELECT 1`;
-      dbLatency = Date.now() - start;
-      dbStatus = 'connected';
-    } catch (error) {
-      this.logger.error('Health check DB query failed:', error);
-      dbStatus = 'error';
+    if (this.prisma.connected) {
+      try {
+        const start = Date.now();
+        await this.prisma.$queryRaw`SELECT 1`;
+        dbLatency = Date.now() - start;
+        dbStatus = 'connected';
+      } catch (error) {
+        this.logger.error('Health check DB query failed:', error);
+        dbStatus = 'error';
+      }
     }
 
     return {
       status: dbStatus === 'connected' ? 'ok' : 'unhealthy',
       timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
       service: 'POA API',
       version: '0.0.1',
       database: {
