@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'de.poa-platform.ios',
+  appId: 'de.poaplatform.ios',
   appName: 'POA',
   webDir: 'www',
   server: {
@@ -17,7 +17,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchAutoHide: false,
+      launchAutoHide: true,
+      launchShowDuration: 3000,
       backgroundColor: '#1e40af',
       showSpinner: false,
       splashFullScreen: true,
