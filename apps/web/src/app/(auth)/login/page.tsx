@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
-import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail, Fingerprint } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 import { isNativeApp, initializeNativeFeatures, triggerHaptic } from '@/lib/capacitor-bridge';
 
 export default function LoginPage() {
@@ -469,7 +469,7 @@ export default function LoginPage() {
                     onClick={handleBiometricLogin}
                     disabled={isLoading}
                   >
-                    <Fingerprint className="mr-2 h-5 w-5" />
+                    <KeyRound className="mr-2 h-5 w-5" />
                     Mit Face ID / Touch ID anmelden
                   </Button>
                 </div>
