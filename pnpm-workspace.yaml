@@ -1,4 +1,3 @@
 packages:
   - 'apps/*'
-  - 'apps/ios-wrapper'
   - 'packages/*'

@@ -29,6 +29,10 @@ out
 npm-debug.log*
 pnpm-debug.log*
 
+# iOS wrapper (not needed for web/api Docker builds)
+apps/ios-wrapper
+apps/android-twa
+
 # OS files
 .DS_Store
 Thumbs.db
