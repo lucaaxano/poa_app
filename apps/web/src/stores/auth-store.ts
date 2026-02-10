@@ -4,6 +4,14 @@ import type { User } from '@poa/shared';
 import { authApi, type Company, type LoginData, type RegisterData, requires2FA } from '@/lib/api/auth';
 import { getAccessToken, clearTokens, setLoggingOut, stopApiWarmup, getLoggingOut, resetAuthState } from '@/lib/api/client';
 import { clearQueryCache, cancelAllQueries } from '@/providers/query-provider';
+import {
+  isNativeApp,
+  isBiometricAvailable,
+  storeBiometricCredentials,
+  getBiometricCredentials,
+  clearBiometricCredentials,
+  hasBiometricCredentials,
+} from '@/lib/capacitor-bridge';
 
 // Track login timestamp to prevent race conditions after login
 // Instead of a boolean flag, we use a timestamp which is more robust
@@ -109,6 +117,10 @@ interface AuthState {
   linkedCompanies: BrokerCompany[] | null;
   activeCompany: BrokerCompany | null;
 
+  // Biometric auth state (iOS native app)
+  biometricAvailable: boolean;
+  biometricEnrolled: boolean;
+
   // Actions
   login: (data: LoginData) => Promise<{ requires2FA: boolean }>;
   complete2FA: (token: string) => Promise<void>;
@@ -118,6 +130,11 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   setUser: (user: User | null, company: Company | null) => void;
+
+  // Biometric actions
+  checkBiometric: () => Promise<void>;
+  loginWithBiometric: () => Promise<boolean>;
+  enrollBiometric: () => Promise<boolean>;
 
   // Broker-specific actions
   setLinkedCompanies: (companies: BrokerCompany[]) => void;
@@ -140,6 +157,10 @@ export const useAuthStore = create<AuthState>()(
         tempToken: null,
         userId: null,
       },
+
+      // Biometric auth state
+      biometricAvailable: false,
+      biometricEnrolled: false,
 
       // Broker-specific state
       linkedCompanies: null,
@@ -302,6 +323,9 @@ export const useAuthStore = create<AuthState>()(
           // Reset login timestamp to prevent race conditions
           resetLoginTimestamp();
 
+          // Clear biometric credentials on logout
+          clearBiometricCredentials();
+
           // API logout call FIRST - it clears tokens and fires API request
           // This is fire-and-forget, returns immediately after clearing tokens
           authApi.logout().catch(() => {
@@ -440,6 +464,77 @@ export const useAuthStore = create<AuthState>()(
           company,
           isAuthenticated: !!user,
         });
+      },
+
+      // Biometric actions
+      checkBiometric: async () => {
+        if (!isNativeApp()) return;
+        const available = await isBiometricAvailable();
+        const enrolled = available ? await hasBiometricCredentials() : false;
+        set({ biometricAvailable: available, biometricEnrolled: enrolled });
+      },
+
+      loginWithBiometric: async () => {
+        if (!isNativeApp()) return false;
+        try {
+          set({ isLoading: true });
+          const credentials = await getBiometricCredentials();
+          if (!credentials) {
+            set({ isLoading: false });
+            return false;
+          }
+
+          // Use the stored refresh token to get a new session
+          const response = await authApi.refreshToken(credentials.refreshToken);
+
+          markLoginComplete();
+          set({
+            user: response.user,
+            company: response.company,
+            isAuthenticated: true,
+            isLoading: false,
+            isInitialized: true,
+            linkedCompanies: null,
+            activeCompany: null,
+          });
+
+          // Update stored refresh token with the new one
+          await storeBiometricCredentials({
+            email: credentials.email,
+            refreshToken: response.tokens.refreshToken,
+          });
+
+          return true;
+        } catch {
+          // Biometric auth failed (token expired, user cancelled, etc.)
+          await clearBiometricCredentials();
+          set({ isLoading: false, biometricEnrolled: false });
+          return false;
+        }
+      },
+
+      enrollBiometric: async () => {
+        if (!isNativeApp()) return false;
+        const { user } = get();
+        if (!user) return false;
+
+        const available = await isBiometricAvailable();
+        if (!available) return false;
+
+        // Get current refresh token from storage
+        const refreshToken = typeof window !== 'undefined'
+          ? localStorage.getItem('poa_refresh_token')
+          : null;
+        if (!refreshToken) return false;
+
+        const success = await storeBiometricCredentials({
+          email: user.email,
+          refreshToken,
+        });
+        if (success) {
+          set({ biometricEnrolled: true });
+        }
+        return success;
       },
 
       // Broker-specific actions

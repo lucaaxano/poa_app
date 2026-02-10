@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.de.poa-platform.ios",
+        "paths": [
+          "/dashboard",
+          "/dashboard/*",
+          "/claims",
+          "/claims/*",
+          "/vehicles",
+          "/vehicles/*",
+          "/settings",
+          "/settings/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["TEAM_ID.de.poa-platform.ios"]
+  }
+}

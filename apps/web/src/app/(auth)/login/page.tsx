@@ -14,11 +14,15 @@ import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
-import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail, Fingerprint } from 'lucide-react';
+import { isNativeApp, initializeNativeFeatures, triggerHaptic } from '@/lib/capacitor-bridge';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, complete2FA, complete2FAWithBackup, cancel2FA, isLoading, twoFactor } = useAuthStore();
+  const {
+    login, complete2FA, complete2FAWithBackup, cancel2FA, isLoading, twoFactor,
+    biometricAvailable, biometricEnrolled, checkBiometric, loginWithBiometric,
+  } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorCode, setTwoFactorCode] = useState(['', '', '', '', '', '']);
   const [useBackupCode, setUseBackupCode] = useState(false);
@@ -41,6 +45,14 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  // Initialize native features and check biometric availability
+  useEffect(() => {
+    if (isNativeApp()) {
+      initializeNativeFeatures();
+      checkBiometric();
+    }
+  }, [checkBiometric]);
 
   // Restore 2FA session from sessionStorage on page load (refresh safety)
   useEffect(() => {
@@ -71,6 +83,21 @@ export default function LoginPage() {
   const getRedirectPath = () => {
     const user = useAuthStore.getState().user;
     return user?.role === 'SUPERADMIN' ? '/admin' : '/dashboard';
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const success = await loginWithBiometric();
+      if (success) {
+        await triggerHaptic('success');
+        toast.success('Erfolgreich angemeldet');
+        router.push(getRedirectPath());
+      } else {
+        toast.error('Biometrische Anmeldung fehlgeschlagen');
+      }
+    } catch {
+      toast.error('Biometrische Anmeldung fehlgeschlagen');
+    }
   };
 
   const onSubmit = async (data: LoginSchema) => {
@@ -423,6 +450,30 @@ export default function LoginPage() {
                   {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
                 </Button>
               </form>
+
+              {/* Biometric Login Button (iOS native app only) */}
+              {biometricAvailable && biometricEnrolled && (
+                <div className="mt-6">
+                  <div className="relative mb-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">oder</span>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 w-full rounded-xl text-base"
+                    onClick={handleBiometricLogin}
+                    disabled={isLoading}
+                  >
+                    <Fingerprint className="mr-2 h-5 w-5" />
+                    Mit Face ID / Touch ID anmelden
+                  </Button>
+                </div>
+              )}
 
               {/* Footer */}
               <p className="mt-8 text-center text-sm text-muted-foreground">
