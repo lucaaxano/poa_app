@@ -8,7 +8,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Navigation */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-lg pt-[env(safe-area-inset-top)]">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center">
             <Image

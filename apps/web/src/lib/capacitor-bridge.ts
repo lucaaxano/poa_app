@@ -65,6 +65,7 @@ export async function configureStatusBar(): Promise<void> {
     const plugin = getPlugin('StatusBar');
     if (!plugin) return;
     await plugin.setStyle({ style: 'DARK' });
+    await plugin.setOverlaysWebView({ overlay: false });
   } catch {
     // Not in native context or plugin not available
   }

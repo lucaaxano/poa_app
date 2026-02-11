@@ -11,15 +11,15 @@ const config: CapacitorConfig = {
   },
   ios: {
     scheme: 'POA',
-    contentInset: 'automatic',
+    contentInset: 'never',
     allowsLinkPreview: false,
     scrollEnabled: true,
   },
   plugins: {
     SplashScreen: {
       launchAutoHide: true,
-      launchShowDuration: 3000,
-      backgroundColor: '#1e40af',
+      launchShowDuration: 2000,
+      backgroundColor: '#ffffff',
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
@@ -30,7 +30,7 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#1e40af',
+      overlaysWebView: false,
     },
   },
 };

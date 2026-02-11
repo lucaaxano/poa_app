@@ -113,6 +113,21 @@
   }
 }
 
+/* Native iOS feel inside Capacitor WebView */
+body {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  overscroll-behavior: none;
+}
+
+/* Keep inputs and textareas selectable */
+input, textarea, [contenteditable="true"], .selectable {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 @layer base {
   * {
     @apply border-border;

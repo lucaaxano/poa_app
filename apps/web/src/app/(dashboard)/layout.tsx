@@ -70,7 +70,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-muted/30 overflow-x-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar
