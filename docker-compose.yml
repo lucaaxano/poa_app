@@ -79,7 +79,18 @@ services:
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
     labels:
-      # Traefik service configuration
+      - "traefik.enable=true"
+      # Router: HTTPS
+      - "traefik.http.routers.poa-api.rule=Host(`api.poa-platform.de`)"
+      - "traefik.http.routers.poa-api.entryPoints=https"
+      - "traefik.http.routers.poa-api.tls=true"
+      - "traefik.http.routers.poa-api.tls.certresolver=letsencrypt"
+      # Router: HTTP → redirect to HTTPS
+      - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.de`)"
+      - "traefik.http.routers.poa-api-http.entryPoints=http"
+      - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # Service configuration
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
       - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
       # Traefik health check (in addition to Docker health check)
