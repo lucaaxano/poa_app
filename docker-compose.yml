@@ -79,38 +79,9 @@ services:
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
     labels:
-      - "traefik.enable=true"
-      # Router: HTTPS
-      - "traefik.http.routers.poa-api.rule=Host(`api.poa-platform.de`)"
-      - "traefik.http.routers.poa-api.entryPoints=https"
-      - "traefik.http.routers.poa-api.tls=true"
-      - "traefik.http.routers.poa-api.tls.certresolver=letsencrypt"
-      # Router: HTTP → redirect to HTTPS
-      - "traefik.http.routers.poa-api-http.rule=Host(`api.poa-platform.de`)"
-      - "traefik.http.routers.poa-api-http.entryPoints=http"
-      - "traefik.http.routers.poa-api-http.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      # Service configuration
+      # Coolify manages routing (traefik.enable, routers, TLS) automatically
+      # We only define the service port so Traefik knows where to connect
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
-      - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
-      # Traefik health check (in addition to Docker health check)
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=30s"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=15s"
-      # Buffering middleware
-      - "traefik.http.middlewares.poa-api-buffering.buffering.maxRequestBodyBytes=10485760"
-      - "traefik.http.middlewares.poa-api-buffering.buffering.maxResponseBodyBytes=10485760"
-      # CORS middleware - ensures CORS headers even on proxy error responses (502/503/504)
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowheaders=Content-Type,Authorization,Accept,Origin,X-Requested-With"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://poa-platform.de,https://www.poa-platform.de"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
-      - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=86400"
-      # Retry middleware - retry on 502/503 with 500ms delay
-      - "traefik.http.middlewares.poa-api-retry.retry.attempts=2"
-      - "traefik.http.middlewares.poa-api-retry.retry.initialinterval=500ms"
-      # Middleware chain on router
-      - "traefik.http.routers.poa-api.middlewares=api-cors,poa-api-buffering,poa-api-retry"
     stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
