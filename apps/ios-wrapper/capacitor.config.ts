@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'POA',
   webDir: 'www',
   server: {
-    url: 'https://poa-platform.de',
+    url: 'https://poa-platform.de/login',
     cleartext: false,
     allowNavigation: ['poa-platform.de', '*.poa-platform.de'],
   },
