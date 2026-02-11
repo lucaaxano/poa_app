@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { StorageService } from './storage/storage.service';
 
 @Injectable()
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
 
   /**
    * Health check that verifies DB connection
@@ -58,8 +62,12 @@ export class AppService {
       this.logger.warn('Database health check failed:', error);
     }
 
+    const storageHealth = await this.storageService.healthCheck();
+
+    const allHealthy = dbStatus === 'connected' && storageHealth.status === 'connected';
+
     return {
-      status: dbStatus === 'connected' ? 'ok' : 'degraded',
+      status: allHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       service: 'POA API',
       version: '0.0.1',
@@ -68,6 +76,7 @@ export class AppService {
         status: dbStatus,
         latency: dbLatency,
       },
+      storage: storageHealth,
     };
   }
 

@@ -117,7 +117,7 @@ services:
       db:
         condition: service_healthy
       storage:
-        condition: service_started
+        condition: service_healthy
     networks:
       - poa-network
       - coolify
@@ -200,6 +200,12 @@ services:
       - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-minioadmin}
     labels:
       - "traefik.http.services.storage.loadbalancer.server.port=9000"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     volumes:
       - minio_data:/data
     networks:

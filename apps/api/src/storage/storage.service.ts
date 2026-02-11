@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,11 +12,13 @@ export interface UploadedFile {
 
 @Injectable()
 export class StorageService implements OnModuleInit {
+  private readonly logger = new Logger(StorageService.name);
   private minioClient: Minio.Client;
   private bucketName: string;
   private endpoint: string;
   private port: number;
   private useSSL: boolean;
+  private bucketReady = false;
 
   constructor(private configService: ConfigService) {
     // Parse endpoint URL
@@ -38,16 +40,59 @@ export class StorageService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    // Ensure bucket exists
-    try {
-      const exists = await this.minioClient.bucketExists(this.bucketName);
-      if (!exists) {
-        await this.minioClient.makeBucket(this.bucketName);
-        console.log(`Bucket ${this.bucketName} created successfully`);
+    const maxRetries = 5;
+    const retryDelay = 2000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await this.initBucket();
+        this.logger.log(`Storage ready: bucket "${this.bucketName}" with public-read policy`);
+        return;
+      } catch (error) {
+        if (attempt < maxRetries) {
+          this.logger.warn(
+            `Storage init attempt ${attempt}/${maxRetries} failed, retrying in ${retryDelay}ms...`,
+            error instanceof Error ? error.message : error,
+          );
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        } else {
+          this.logger.error(
+            `Storage init failed after ${maxRetries} attempts. Will retry on first upload.`,
+            error instanceof Error ? error.stack : error,
+          );
+        }
       }
-    } catch (error) {
-      console.error('Error checking/creating bucket:', error);
     }
+  }
+
+  private async initBucket(): Promise<void> {
+    const exists = await this.minioClient.bucketExists(this.bucketName);
+    if (!exists) {
+      await this.minioClient.makeBucket(this.bucketName);
+      this.logger.log(`Bucket "${this.bucketName}" created`);
+    }
+
+    // Set public-read policy so uploaded files are accessible via browser
+    const policy = JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: { AWS: ['*'] },
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${this.bucketName}/*`],
+        },
+      ],
+    });
+    await this.minioClient.setBucketPolicy(this.bucketName, policy);
+
+    this.bucketReady = true;
+  }
+
+  private async ensureBucket(): Promise<void> {
+    if (this.bucketReady) return;
+    await this.initBucket();
+    this.logger.log(`Storage ready (lazy init): bucket "${this.bucketName}" with public-read policy`);
   }
 
   /**
@@ -57,19 +102,36 @@ export class StorageService implements OnModuleInit {
     file: Express.Multer.File,
     folder: string = 'attachments',
   ): Promise<UploadedFile> {
+    await this.ensureBucket();
+
     const fileExtension = file.originalname.split('.').pop() || '';
     const uniqueFileName = `${folder}/${uuidv4()}.${fileExtension}`;
 
-    await this.minioClient.putObject(
-      this.bucketName,
-      uniqueFileName,
-      file.buffer,
-      file.size,
-      {
-        'Content-Type': file.mimetype,
-        'x-amz-acl': 'public-read',
-      },
-    );
+    try {
+      await this.minioClient.putObject(
+        this.bucketName,
+        uniqueFileName,
+        file.buffer,
+        file.size,
+        {
+          'Content-Type': file.mimetype,
+          'x-amz-acl': 'public-read',
+        },
+      );
+    } catch (error) {
+      // Single retry on transient error
+      this.logger.warn('Upload failed, retrying once...', error instanceof Error ? error.message : error);
+      await this.minioClient.putObject(
+        this.bucketName,
+        uniqueFileName,
+        file.buffer,
+        file.size,
+        {
+          'Content-Type': file.mimetype,
+          'x-amz-acl': 'public-read',
+        },
+      );
+    }
 
     // Build public URL
     const publicUrl = this.getPublicUrl(uniqueFileName);
@@ -117,6 +179,18 @@ export class StorageService implements OnModuleInit {
       stream.on('end', () => resolve(Buffer.concat(chunks)));
       stream.on('error', reject);
     });
+  }
+
+  /**
+   * Health check for storage connectivity
+   */
+  async healthCheck(): Promise<{ status: string; bucket: string }> {
+    try {
+      await this.minioClient.bucketExists(this.bucketName);
+      return { status: 'connected', bucket: this.bucketName };
+    } catch {
+      return { status: 'error', bucket: this.bucketName };
+    }
   }
 
   /**

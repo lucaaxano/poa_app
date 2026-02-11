@@ -137,11 +137,7 @@ export const companiesApi = {
   async uploadLogo(file: File): Promise<Company> {
     const formData = new FormData();
     formData.append('logo', file);
-    const response = await apiClient.post<Company>('/companies/current/logo', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await apiClient.post<Company>('/companies/current/logo', formData);
     return response.data;
   },
 
