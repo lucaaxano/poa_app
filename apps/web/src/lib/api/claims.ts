@@ -146,7 +146,7 @@ export const claimsApi = {
     formData.append('file', file);
     const response = await apiClient.post<ClaimAttachment>(`/claims/${id}/attachments`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': undefined,
       },
     });
     return response.data;

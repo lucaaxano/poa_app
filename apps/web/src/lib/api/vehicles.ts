@@ -52,7 +52,7 @@ export const vehiclesApi = {
     const response = await apiClient.post<VehicleImportResult>(
       '/vehicles/import',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } },
+      { headers: { 'Content-Type': undefined } },
     );
     return response.data;
   },
