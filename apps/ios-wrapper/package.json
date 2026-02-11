@@ -4,9 +4,10 @@
   "private": true,
   "description": "iOS native wrapper for POA web app using Capacitor",
   "scripts": {
-    "cap:sync": "npx cap sync ios",
+    "cap:sync": "npx cap sync ios && npm run copy:icon",
     "cap:open": "npx cap open ios",
-    "cap:build": "npx cap sync ios"
+    "cap:build": "npx cap sync ios && npm run copy:icon",
+    "copy:icon": "cp resources/AppIcon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.0",

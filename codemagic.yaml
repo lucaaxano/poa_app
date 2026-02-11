@@ -35,6 +35,11 @@ workflows:
           cd apps/ios-wrapper
           npx cap sync ios
 
+      - name: Copy app icon
+        script: |
+          cd apps/ios-wrapper
+          cp resources/AppIcon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+
       - name: Install CocoaPods dependencies
         script: |
           cd apps/ios-wrapper/ios/App
@@ -103,6 +108,11 @@ workflows:
         script: |
           cd apps/ios-wrapper
           npx cap sync ios
+
+      - name: Copy app icon
+        script: |
+          cd apps/ios-wrapper
+          cp resources/AppIcon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
 
       - name: Install CocoaPods dependencies
         script: |
