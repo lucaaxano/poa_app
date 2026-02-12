@@ -3,6 +3,12 @@
 #
 # Diese Datei ist speziell für Coolify v4 optimiert.
 # Coolify übernimmt SSL/TLS und Reverse Proxy automatisch.
+#
+# !! CRITICAL RULE — DO NOT CHANGE !!
+# The "web" service must NEVER have depends_on for the "api" service.
+# The frontend is a static client-side app and must always start independently.
+# Adding depends_on:api causes 504 Gateway Timeouts whenever the API is slow/restarting.
+# This has caused production outages multiple times. DO NOT reintroduce this dependency.
 
 services:
   # ===========================================
@@ -35,8 +41,8 @@ services:
           memory: 1536M
         reservations:
           memory: 768M
-    # No depends_on — Web starts immediately and independently
-    # The API is only needed for client-side data requests after page load
+    # !! DO NOT ADD depends_on: api — see header comment. This caused repeated 504 outages.
+    # The web frontend is a static client-side app. It does NOT need the API to start.
     networks:
       - poa-network
       - coolify
