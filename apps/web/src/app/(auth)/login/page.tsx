@@ -47,19 +47,49 @@ export default function LoginPage() {
     },
   });
 
-  // Track visual viewport height so the container shrinks when the iOS keyboard opens,
-  // enabling overflow-y-auto scrolling to reach the password field
+  // Track body height changes so the container shrinks when the iOS keyboard opens.
+  // Capacitor's "resize: body" sets body.style.height to the visible area;
+  // we mirror that onto the container so overflow-y-auto can scroll.
   useEffect(() => {
-    const vv = window.visualViewport;
     const el = containerRef.current;
-    if (!vv || !el) return;
-    const update = () => { el.style.height = `${vv.height}px`; };
-    update();
-    vv.addEventListener('resize', update);
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      const bodyH = document.body.clientHeight;
+      if (bodyH > 0) {
+        el.style.height = `${bodyH}px`;
+      }
+    });
+
+    ro.observe(document.body);
+
+    // Set initial height
+    const bodyH = document.body.clientHeight;
+    if (bodyH > 0) {
+      el.style.height = `${bodyH}px`;
+    }
+
     return () => {
-      vv.removeEventListener('resize', update);
+      ro.disconnect();
       el.style.height = '';
     };
+  }, []);
+
+  // Scroll focused input into view after keyboard opens and container resizes
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof HTMLInputElement) {
+        setTimeout(() => {
+          (e.target as HTMLInputElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    };
+
+    el.addEventListener('focusin', handleFocusIn);
+    return () => el.removeEventListener('focusin', handleFocusIn);
   }, []);
 
   // Initialize native features and check biometric availability
