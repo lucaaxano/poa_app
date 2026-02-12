@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { useAuthStore } from '@/stores/auth-store';
-import { warmupApi } from '@/lib/api/client';
+import { warmupApi, SESSION_EXPIRED_EVENT } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({
@@ -27,11 +27,31 @@ export default function DashboardLayout({
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [apiUnavailable, setApiUnavailable] = useState(false);
 
   // Auto-close mobile sidebar on navigation
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname]);
+
+  // Listen for API server errors to show/hide connection banner
+  const handleSessionEvent = useCallback((event: Event) => {
+    const { reason } = (event as CustomEvent<{ reason: string }>).detail;
+    if (reason === 'server_error') {
+      setApiUnavailable(true);
+      // Auto-retry after 10s — if warmup succeeds, hide the banner
+      const timer = setTimeout(async () => {
+        const ok = await warmupApi(true);
+        if (ok) setApiUnavailable(false);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionEvent);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionEvent);
+  }, [handleSessionEvent]);
 
   // PERFORMANCE FIX: Non-blocking API warmup - fire and forget
   // Don't block the dashboard on warmup - let it load immediately
@@ -112,6 +132,11 @@ export default function DashboardLayout({
           hideMenuOnMobile
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
+        {apiUnavailable && (
+          <div className="mx-4 mt-2 sm:mx-6 lg:mx-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+            Verbindung zum Server wird hergestellt... Bitte warten.
+          </div>
+        )}
         <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8 overflow-hidden">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>

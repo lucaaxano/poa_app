@@ -25,19 +25,18 @@ services:
     labels: []   # No proxy labels needed - Traefik is configured via Coolify
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 15s
-      retries: 5
-      start_period: 90s
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
           memory: 1536M
         reservations:
           memory: 768M
-    depends_on:
-      api:
-        condition: service_healthy
+    # No depends_on — Web starts immediately and independently
+    # The API is only needed for client-side data requests after page load
     networks:
       - poa-network
       - coolify
@@ -82,13 +81,17 @@ services:
       # Coolify manages routing (traefik.enable, routers, TLS) automatically
       # We only define the service port so Traefik knows where to connect
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
+      # Health check: Traefik only routes to API when it's actually ready
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=15s"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=5s"
     stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
-      interval: 30s
-      timeout: 15s
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 180s  # Increased from 90s to prevent cascading failures during slow DB warmup
+      start_period: 60s
     deploy:
       resources:
         limits:
