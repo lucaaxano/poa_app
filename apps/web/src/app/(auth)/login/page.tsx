@@ -213,10 +213,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="flex h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Left Side - Form */}
-      <div className="flex w-full flex-col justify-center px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
-        <div className="mx-auto w-full max-w-sm">
+      <div className="flex w-full flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
+        <div className="mx-auto my-auto w-full max-w-sm">
           {/* Logo */}
           <Link href="/" prefetch={false} className="mb-12 inline-flex items-center gap-3">
             <Image

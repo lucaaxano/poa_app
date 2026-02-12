@@ -137,7 +137,7 @@ export default function DashboardLayout({
             Verbindung zum Server wird hergestellt... Bitte warten.
           </div>
         )}
-        <main className="p-4 sm:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8 overflow-hidden">
+        <main className="p-4 sm:p-6 lg:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6 lg:pb-8 overflow-hidden">
           <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>

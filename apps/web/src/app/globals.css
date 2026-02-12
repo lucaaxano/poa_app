@@ -10,6 +10,11 @@
   --sal: env(safe-area-inset-left, 0px);
 }
 
+/* Push Sonner toasts below the notch/Dynamic Island on iOS */
+[data-sonner-toaster][data-y-position="top"] {
+  top: env(safe-area-inset-top, 0px) !important;
+}
+
 @layer base {
   :root {
     /* Background & Foreground */

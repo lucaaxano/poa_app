@@ -226,10 +226,8 @@ export async function initializeNativeFeatures(): Promise<void> {
   // Configure status bar
   await configureStatusBar();
 
-  // Hide splash screen after a short delay to ensure content is ready
-  setTimeout(() => {
-    hideSplashScreen();
-  }, 500);
+  // Hide splash screen now that content is ready
+  await hideSplashScreen();
 
   // Listen for app state changes
   try {
