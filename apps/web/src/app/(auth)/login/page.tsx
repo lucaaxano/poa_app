@@ -33,6 +33,7 @@ export default function LoginPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isConnectionError, setIsConnectionError] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -45,6 +46,21 @@ export default function LoginPage() {
       password: '',
     },
   });
+
+  // Track visual viewport height so the container shrinks when the iOS keyboard opens,
+  // enabling overflow-y-auto scrolling to reach the password field
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = containerRef.current;
+    if (!vv || !el) return;
+    const update = () => { el.style.height = `${vv.height}px`; };
+    update();
+    vv.addEventListener('resize', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      el.style.height = '';
+    };
+  }, []);
 
   // Initialize native features and check biometric availability
   useEffect(() => {
@@ -213,7 +229,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div ref={containerRef} className="flex h-[100dvh] pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       {/* Left Side - Form */}
       <div className="flex w-full flex-col overflow-y-auto px-4 py-12 sm:px-6 lg:w-1/2 lg:px-20 xl:px-24">
         <div className="mx-auto my-auto w-full max-w-sm">
