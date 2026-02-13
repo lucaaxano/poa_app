@@ -9,8 +9,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 // Default endpoints get standard timeout
 // Quick endpoints for fast operations
 const TIMEOUT_CONFIG = {
-  auth: 45000,      // 45s for Login/Logout (increased for cold starts with DB warmup + bcrypt)
-  default: 30000,   // 30s standard (increased from 15s for concurrent dashboard requests)
+  auth: 30000,      // 30s for Login/Logout (bcrypt + DB warmup)
+  default: 15000,   // 15s standard
   quick: 5000,      // 5s for health checks and fast endpoints
 };
 
@@ -272,7 +272,7 @@ export const isApiReady = (): boolean => isApiWarmedUp;
  *
  * Use this before login to prevent timeout errors during cold starts
  */
-export const ensureApiReady = async (maxAttempts = 2): Promise<boolean> => {
+export const ensureApiReady = async (maxAttempts = 1): Promise<boolean> => {
   // Skip if logging out
   if (isLoggingOut) {
     return false;
@@ -286,7 +286,7 @@ export const ensureApiReady = async (maxAttempts = 2): Promise<boolean> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await axios.get(`${API_URL}/warmup`, {
-        timeout: 8000, // 8s timeout to allow for cold start DB warmup
+        timeout: 5000, // 5s timeout for warmup check
       });
 
       if (response.data?.status === 'ok') {
@@ -583,14 +583,14 @@ apiClient.interceptors.response.use(
       ? (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED')
       : (status !== undefined && status >= 502 && status <= 504);
 
-    // Increased retry count from 1 to 2 for better resilience against 502/503/504
+    // Single retry with 1s delay to prevent retry amplification
     if (isRetryableError && !isLoggingOut) {
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 2) {
+      if (retryCount < 1) {
         originalRequest._retryCount = retryCount + 1;
-        // Exponential backoff: 1s, 2s
-        const delay = 1000 * (retryCount + 1);
-        console.warn(`[API] Retryable error (${error.code || status}), retry ${retryCount + 1}/2 in ${delay}ms...`);
+        // Flat 1s delay for single retry
+        const delay = 1000;
+        console.warn(`[API] Retryable error (${error.code || status}), retry ${retryCount + 1}/1 in ${delay}ms...`);
         await sleep(delay);
         return apiClient(originalRequest);
       }

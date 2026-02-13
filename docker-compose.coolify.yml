@@ -39,9 +39,8 @@ services:
           memory: 1536M
         reservations:
           memory: 768M
-    depends_on:
-      api:
-        condition: service_healthy
+    # !! DO NOT ADD depends_on: api — the web frontend must start independently.
+    # Adding depends_on:api causes 504 Gateway Timeouts when the API is slow/restarting.
     networks:
       - poa-network
 

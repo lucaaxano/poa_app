@@ -25,8 +25,8 @@ services:
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
       - NEXT_PUBLIC_STRIPE_PRICE_ID=${NEXT_PUBLIC_STRIPE_PRICE_ID:-}
       - WATCHPACK_POLLING=true
-    depends_on:
-      - api
+    # !! DO NOT ADD depends_on: api — the web frontend must start independently.
+    # Adding depends_on:api causes timeouts when the API is slow/restarting.
     networks:
       - poa-network
 

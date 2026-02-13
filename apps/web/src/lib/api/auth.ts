@@ -131,7 +131,7 @@ export const authApi = {
   async login(data: LoginData): Promise<LoginResponse> {
     // Pre-check: ensure API is reachable before attempting login
     // This prevents CORS errors when backend is still starting after deployment
-    await ensureApiReady(3);
+    await ensureApiReady(1);
 
     const response = await apiClient.post<LoginResponse>('/auth/login', data);
     // Only set tokens if login is complete (no 2FA required)

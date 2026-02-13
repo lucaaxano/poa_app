@@ -39,12 +39,6 @@ export default function DashboardLayout({
     const { reason } = (event as CustomEvent<{ reason: string }>).detail;
     if (reason === 'server_error') {
       setApiUnavailable(true);
-      // Auto-retry after 10s — if warmup succeeds, hide the banner
-      const timer = setTimeout(async () => {
-        const ok = await warmupApi(true);
-        if (ok) setApiUnavailable(false);
-      }, 10000);
-      return () => clearTimeout(timer);
     }
   }, []);
 
@@ -52,6 +46,16 @@ export default function DashboardLayout({
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionEvent);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionEvent);
   }, [handleSessionEvent]);
+
+  // Periodic retry: when API is unavailable, retry every 15s until it recovers
+  useEffect(() => {
+    if (!apiUnavailable) return;
+    const interval = setInterval(async () => {
+      const ok = await warmupApi(true);
+      if (ok) setApiUnavailable(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [apiUnavailable]);
 
   // PERFORMANCE FIX: Non-blocking API warmup - fire and forget
   // Don't block the dashboard on warmup - let it load immediately
