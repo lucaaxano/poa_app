@@ -6,6 +6,14 @@ const nextConfig = {
   experimental: {
     typedRoutes: true,
   },
+  // Skip type checking and linting during Docker builds — CI handles this separately.
+  // This prevents Coolify build timeouts during the "Linting and checking validity of types" phase.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // Disable image optimization to reduce server load
   // Images will be served as-is without on-the-fly optimization
   images: {
