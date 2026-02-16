@@ -81,9 +81,10 @@ services:
       # Traefik service configuration
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
       - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
-      # NOTE: No Traefik healthcheck labels — they cause Traefik to stop routing
-      # during API restarts, returning 502 without CORS headers → "Network Error".
-      # Docker healthcheck (below) handles container restart policies instead.
+      # Traefik health check (in addition to Docker health check)
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=30s"
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=15s"
       # Buffering middleware
       - "traefik.http.middlewares.poa-api-buffering.buffering.maxRequestBodyBytes=10485760"
       - "traefik.http.middlewares.poa-api-buffering.buffering.maxResponseBodyBytes=10485760"
