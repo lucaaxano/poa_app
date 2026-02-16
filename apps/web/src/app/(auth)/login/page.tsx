@@ -47,19 +47,46 @@ export default function LoginPage() {
     },
   });
 
-  // Track visual viewport height so the container shrinks when the iOS keyboard opens,
-  // enabling overflow-y-auto scrolling to reach the password field
+  // Shrink container to match body height when iOS keyboard opens.
+  // Capacitor "resize: body" sets document.body.style.height to
+  // (screen height - keyboard height). We mirror that onto our
+  // container so the inner overflow-y-auto div becomes scrollable.
   useEffect(() => {
-    const vv = window.visualViewport;
     const el = containerRef.current;
-    if (!vv || !el) return;
-    const update = () => { el.style.height = `${vv.height}px`; };
-    update();
-    vv.addEventListener('resize', update);
+    if (!el) return;
+
+    const sync = () => {
+      const bodyH = document.body.clientHeight;
+      if (bodyH > 0) {
+        el.style.height = `${bodyH}px`;
+      }
+    };
+
+    const ro = new ResizeObserver(sync);
+    ro.observe(document.body);
+    sync();
+
     return () => {
-      vv.removeEventListener('resize', update);
+      ro.disconnect();
       el.style.height = '';
     };
+  }, []);
+
+  // Scroll focused input into view after keyboard resize
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        setTimeout(() => {
+          (e.target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 350);
+      }
+    };
+
+    el.addEventListener('focusin', handleFocusIn);
+    return () => el.removeEventListener('focusin', handleFocusIn);
   }, []);
 
   // Initialize native features and check biometric availability
