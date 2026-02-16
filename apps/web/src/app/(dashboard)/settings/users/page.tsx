@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Users, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, Loader2, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { Search, Users, Mail, MoreHorizontal, Shield, UserX, UserCheck, Clock, Loader2, Trash2, Archive, ArchiveRestore, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,6 +141,18 @@ export default function UsersSettingsPage() {
   return (
     <div className="space-y-6">
       <OnboardingDialog pageKey="users" />
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href={'/settings' as Route}>
+          <Button variant="ghost" size="icon" className="rounded-xl">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Benutzer</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Mitarbeiter und Einladungen</p>
+        </div>
+      </div>
       <Tabs defaultValue="users" className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList className="rounded-xl">

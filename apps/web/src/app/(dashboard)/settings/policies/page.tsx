@@ -49,7 +49,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FileText, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
 import { toast } from 'sonner';
 import type { Policy, CreatePolicyData, UpdatePolicyData } from '@/lib/api/policies';
 import { OnboardingDialog } from '@/components/help';
@@ -242,11 +244,16 @@ export default function PoliciesPage() {
     <div className="space-y-6">
       <OnboardingDialog pageKey="policies" />
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Policen</h2>
-          <p className="text-muted-foreground">
-            Verwalten Sie Ihre Versicherungspolicen
-          </p>
+        <div className="flex items-center gap-4">
+          <Link href={'/settings' as Route}>
+            <Button variant="ghost" size="icon" className="rounded-xl">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Versicherungen</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Policen und Versicherer verwalten</p>
+          </div>
         </div>
         <Button onClick={openCreateDialog}>
           <Plus className="mr-2 h-4 w-4" />

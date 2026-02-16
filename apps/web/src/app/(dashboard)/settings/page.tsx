@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard, HelpCircle } from 'lucide-react';
+import { Building2, Users, FileText, Bell, ArrowRight, Shield, Briefcase, CreditCard, HelpCircle, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { OnboardingDialog, InlineHelp } from '@/components/help';
@@ -107,7 +107,10 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Einstellungen</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl flex items-center gap-3">
+            <Settings className="h-8 w-8 text-primary" />
+            Einstellungen
+          </h1>
           <InlineHelp topicKey="settings-profile" />
         </div>
         <p className="text-muted-foreground">

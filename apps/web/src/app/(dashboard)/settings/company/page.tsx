@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, Building2, Globe, Phone, MapPin, Upload, Trash2, ImageIcon } from 'lucide-react';
+import { Loader2, Building2, Globe, Phone, MapPin, Upload, Trash2, ImageIcon, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,6 +137,18 @@ export default function CompanySettingsPage() {
   return (
     <div className="space-y-6">
       <OnboardingDialog pageKey="company" />
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href={'/settings' as Route}>
+          <Button variant="ghost" size="icon" className="rounded-xl">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Firma</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Firmendaten verwalten</p>
+        </div>
+      </div>
       {/* Logo Upload - Outside form */}
       <Card className="rounded-2xl border shadow-soft">
         <CardHeader>

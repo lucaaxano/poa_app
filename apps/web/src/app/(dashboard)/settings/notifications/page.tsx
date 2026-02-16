@@ -128,14 +128,14 @@ export default function NotificationSettingsPage() {
         <Button
           onClick={handleSave}
           disabled={!hasChanges || updateSettings.isPending}
-          className="gap-2"
+          className="gap-2 shrink-0"
         >
           {updateSettings.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Save className="h-4 w-4" />
           )}
-          Speichern
+          <span className="hidden sm:inline">Speichern</span>
         </Button>
       </div>
 

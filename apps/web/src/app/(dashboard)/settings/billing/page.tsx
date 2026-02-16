@@ -8,7 +8,10 @@ import { SubscriptionCard } from '@/components/billing/subscription-card';
 import { PricingCalculator } from '@/components/billing/pricing-calculator';
 import { useSubscription, useRefreshSubscription, useStripeConfig } from '@/hooks/use-subscription';
 import { toast } from 'sonner';
-import { CreditCard, Car, Receipt, CheckCircle2 } from 'lucide-react';
+import { CreditCard, Car, Receipt, CheckCircle2, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
+import { Button } from '@/components/ui/button';
 
 export default function BillingSettingsPage() {
   const searchParams = useSearchParams();
@@ -52,6 +55,19 @@ export default function BillingSettingsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href={'/settings' as Route}>
+          <Button variant="ghost" size="icon" className="rounded-xl">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Abrechnung</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Abonnement und Rechnungen</p>
+        </div>
+      </div>
+
       {/* Subscription Status */}
       {hasSubscription ? (
         <SubscriptionCard />
