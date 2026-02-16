@@ -47,5 +47,11 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>POA verwendet Face ID, um Sie schnell und sicher anzumelden.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>POA verwendet Ihren Standort, um den Unfallort bei der Schadenmeldung automatisch zu erfassen.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>POA benötigt Zugriff auf die Kamera, um Fotos von Fahrzeugschäden aufzunehmen.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>POA benötigt Zugriff auf Ihre Fotomediathek, um Bilder von Fahrzeugschäden hochzuladen.</string>
 </dict>
 </plist>
