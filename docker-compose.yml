@@ -87,10 +87,10 @@ services:
       # Coolify manages routing (traefik.enable, routers, TLS) automatically
       # We only define the service port so Traefik knows where to connect
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
-      # Health check: Traefik only routes to API when it's actually ready
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=15s"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=5s"
+      # NOTE: Do NOT add Traefik healthcheck labels here.
+      # They cause Traefik to stop routing during API restarts, returning 502
+      # WITHOUT CORS headers → browser sees "Network Error" → connection error toast.
+      # Docker healthcheck (below) is sufficient for container restart policies.
     stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
