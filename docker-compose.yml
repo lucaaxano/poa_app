@@ -83,14 +83,7 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
-    labels:
-      # Coolify manages routing (traefik.enable, routers, TLS) automatically
-      # We only define the service port so Traefik knows where to connect
-      - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
-      # Health check: Traefik only routes to API when it's actually ready
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=15s"
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=5s"
+    labels: []  # No custom labels — Coolify manages all Traefik routing/services automatically
     stop_grace_period: 15s
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
