@@ -56,9 +56,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           duration: 5000,
         });
       } else if (reason === 'server_error') {
-        toast.error('Serververbindung unterbrochen', {
-          description: 'Die Verbindung wird wiederhergestellt...',
-          duration: 3000,
+        toast.info('System wird aktualisiert', {
+          description: 'Bitte warten Sie einen Moment...',
+          duration: 5000,
         });
       }
     };

@@ -596,6 +596,16 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // 502/503 after retry exhausted = API is deploying/restarting
+    if (status === 502 || status === 503) {
+      const maintenanceError = new Error(
+        'Das System wird gerade aktualisiert. Bitte warten Sie einen Moment.'
+      );
+      (maintenanceError as any).isMaintenanceError = true;
+      (maintenanceError as any).isConnectionError = true;
+      return Promise.reject(maintenanceError);
+    }
+
     // After retry exhausted: provide user-friendly error for network errors
     if (isCorsOrNetworkError) {
       console.error('[API] Network error persists after retry');

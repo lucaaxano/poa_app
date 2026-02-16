@@ -37,7 +37,7 @@ export default function DashboardLayout({
   // Listen for API server errors to show/hide connection banner
   const handleSessionEvent = useCallback((event: Event) => {
     const { reason } = (event as CustomEvent<{ reason: string }>).detail;
-    if (reason === 'server_error') {
+    if (reason === 'server_error' || reason === 'network_error') {
       setApiUnavailable(true);
     }
   }, []);
@@ -137,8 +137,9 @@ export default function DashboardLayout({
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
         {apiUnavailable && (
-          <div className="mx-4 mt-2 sm:mx-6 lg:mx-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
-            Verbindung zum Server wird hergestellt... Bitte warten.
+          <div className="mx-4 mt-2 sm:mx-6 lg:mx-8 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200 flex items-center gap-3">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent shrink-0" />
+            System wird aktualisiert... Bitte warten Sie einen Moment.
           </div>
         )}
         <main className="p-4 sm:p-6 lg:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-6 lg:pb-8 overflow-hidden">

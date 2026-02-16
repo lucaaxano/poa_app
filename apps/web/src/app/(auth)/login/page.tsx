@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/lib/api/auth';
-import { getErrorMessage } from '@/lib/api/client';
+import { getErrorMessage, ensureApiReady } from '@/lib/api/client';
 import { Eye, EyeOff, ArrowRight, Car, Shield, BarChart3, KeyRound, ArrowLeft, Mail } from 'lucide-react';
 import { isNativeApp, initializeNativeFeatures, triggerHaptic } from '@/lib/capacitor-bridge';
 
@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isConnectionError, setIsConnectionError] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +98,20 @@ export default function LoginPage() {
     }
   }, [checkBiometric]);
 
+  // Auto-retry when in maintenance mode: poll API every 5s until it's back
+  useEffect(() => {
+    if (!isMaintenanceMode) return;
+    const interval = setInterval(async () => {
+      const ready = await ensureApiReady(1);
+      if (ready) {
+        setIsMaintenanceMode(false);
+        setIsConnectionError(false);
+        setLoginError(null);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isMaintenanceMode]);
+
   // Restore 2FA session from sessionStorage on page load (refresh safety)
   useEffect(() => {
     const stored = sessionStorage.getItem('poa-2fa-session');
@@ -157,10 +172,17 @@ export default function LoginPage() {
       // If 2FA is required, the UI will switch to show the 2FA input
     } catch (error) {
       const errorMessage = getErrorMessage(error);
+      const err = error as any;
+      // Check if it's a maintenance/deployment error (502/503)
+      if (err.isMaintenanceError) {
+        setIsMaintenanceMode(true);
+        setIsConnectionError(false);
+        setLoginError(null);
       // Check if it's a connection/CORS error (server not reachable)
-      if ((error as Error & { isConnectionError?: boolean }).isConnectionError) {
-        setIsConnectionError(true);
-        setLoginError(errorMessage);
+      } else if (err.isConnectionError) {
+        setIsMaintenanceMode(true);
+        setIsConnectionError(false);
+        setLoginError(null);
       // Check if it's an email verification error
       } else if (errorMessage.includes('E-Mail-Adresse') && errorMessage.includes('bestätigen')) {
         setEmailNotVerified(true);
@@ -330,8 +352,25 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Connection Error Message - server not reachable */}
-          {isConnectionError && loginError && (
+          {/* Maintenance Mode — system is updating, auto-retry active */}
+          {isMaintenanceMode && (
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950">
+              <div className="flex items-center gap-3">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    System wird aktualisiert
+                  </p>
+                  <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                    Die Anmeldung wird automatisch fortgesetzt...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Connection Error Message - only show when NOT in maintenance mode */}
+          {isConnectionError && loginError && !isMaintenanceMode && (
             <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
               <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                 {loginError}
@@ -487,10 +526,10 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   className="h-12 w-full rounded-xl text-base"
-                  disabled={isLoading}
+                  disabled={isLoading || isMaintenanceMode}
                 >
-                  {isLoading ? 'Wird angemeldet...' : 'Anmelden'}
-                  {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
+                  {isMaintenanceMode ? 'Warte auf Server...' : isLoading ? 'Wird angemeldet...' : 'Anmelden'}
+                  {!isLoading && !isMaintenanceMode && <ArrowRight className="ml-2 h-5 w-5" />}
                 </Button>
               </form>
 
