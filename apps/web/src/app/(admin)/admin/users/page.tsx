@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Rolle" />
               </SelectTrigger>
               <SelectContent>
@@ -114,7 +114,7 @@ export default function AdminUsersPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -142,6 +142,7 @@ export default function AdminUsersPage() {
             </div>
           ) : (
             <>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -226,6 +227,7 @@ export default function AdminUsersPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
 
               {/* Pagination */}
               {data && data.totalPages > 1 && (

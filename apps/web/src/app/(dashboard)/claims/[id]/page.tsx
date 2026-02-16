@@ -379,7 +379,7 @@ export default function ClaimDetailPage() {
                   onValueChange={handleAssignPolicy}
                   disabled={updateMutation.isPending}
                 >
-                  <SelectTrigger className="w-[250px] rounded-xl">
+                  <SelectTrigger className="w-full sm:w-[250px] rounded-xl">
                     <SelectValue placeholder="Police zuweisen..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -613,7 +613,7 @@ export default function ClaimDetailPage() {
             <CardContent className="space-y-6">
               {/* Upload Area */}
               <div
-                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                className={`border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-colors ${
                   isDragging
                     ? 'border-primary bg-primary/5'
                     : 'border-muted-foreground/25 hover:border-primary/50'

@@ -76,6 +76,7 @@ export default function AdminCompaniesPage() {
             </div>
           ) : (
             <>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -149,6 +150,7 @@ export default function AdminCompaniesPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
 
               {/* Pagination */}
               {data && data.totalPages > 1 && (

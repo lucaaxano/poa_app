@@ -646,7 +646,7 @@ export default function NewClaimPage() {
           <CardContent className="space-y-4">
             {/* Drop Zone */}
             <div
-              className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors cursor-pointer ${
+              className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 sm:p-8 transition-colors cursor-pointer ${
                 isDragging
                   ? 'border-primary bg-primary/5'
                   : 'border-muted-foreground/25 hover:border-muted-foreground/50'
@@ -683,7 +683,7 @@ export default function NewClaimPage() {
 
             {/* Preview Grid */}
             {stagedPhotos.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {stagedPhotos.map((photo: StagedPhoto) => (
                   <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-xl border">
                     {/* eslint-disable-next-line @next/next/no-img-element */}

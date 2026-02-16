@@ -124,8 +124,8 @@ export default function NotificationsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <div className="w-48">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+            <div className="w-full sm:w-48">
               <label className="text-sm font-medium mb-2 block">Typ</label>
               <Select value={typeFilter} onValueChange={handleTypeFilterChange}>
                 <SelectTrigger>
@@ -139,7 +139,7 @@ export default function NotificationsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div className="w-full sm:w-48">
               <label className="text-sm font-medium mb-2 block">Status</label>
               <Select value={readFilter} onValueChange={handleReadFilterChange}>
                 <SelectTrigger>

@@ -320,7 +320,7 @@ export default function ClaimsPage() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <InlineHelp topicKey="claims-filters" className="ml-0" />
               <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-                <SelectTrigger className="w-[180px] rounded-xl">
+                <SelectTrigger className="w-full sm:w-[180px] rounded-xl">
                   <SelectValue placeholder="Status filtern" />
                 </SelectTrigger>
                 <SelectContent>
