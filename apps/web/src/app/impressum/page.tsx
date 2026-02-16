@@ -56,7 +56,7 @@ export default function ImpressumPage() {
             <p>
               Telefon: +49 711 96939999<br />
               E-Mail: support@poa-platform.de<br />
-              Website: <a href="https://www.axano.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">www.axano.com</a>
+              Website: <a href="https://poa-platform.de" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">poa-platform.de</a>
             </p>
 
             <h2>Registereintrag</h2>
