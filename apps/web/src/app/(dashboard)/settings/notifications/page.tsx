@@ -118,9 +118,9 @@ export default function NotificationSettingsPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Benachrichtigungseinstellungen</h1>
-            <p className="text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Benachrichtigungseinstellungen</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Verwalten Sie Ihre E-Mail-Benachrichtigungen
             </p>
           </div>

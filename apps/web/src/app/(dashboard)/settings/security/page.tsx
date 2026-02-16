@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Loader2, Shield, ShieldCheck, ShieldOff, KeyRound, Copy, Check, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Shield, ShieldCheck, ShieldOff, KeyRound, Copy, Check, RefreshCw, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import type { Route } from 'next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -172,6 +174,19 @@ export default function SecuritySettingsPage() {
   if (step === 'status') {
     return (
       <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Link href={'/settings' as Route}>
+            <Button variant="ghost" size="icon" className="rounded-xl">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Sicherheit</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Schützen Sie Ihr Konto</p>
+          </div>
+        </div>
+
         {/* 2FA Status Card */}
         <Card className="rounded-2xl border shadow-soft">
           <CardHeader>
