@@ -80,7 +80,7 @@ export default function ImpressumPage() {
 
             <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
             <p>
-              Luca Montalti<br />
+              Axano GmbH<br />
               Stettener Hauptstraße 62<br />
               70771 Leinfelden-Echterdingen
             </p>
