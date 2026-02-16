@@ -52,16 +52,10 @@ export default function ImpressumPage() {
               Deutschland
             </p>
 
-            <h2>Vertretungsberechtigte</h2>
-            <p>
-              Vertreten durch die Geschäftsführer:<br />
-              Luca Montalti, Fynn Gehrung
-            </p>
-
             <h2>Kontakt</h2>
             <p>
               Telefon: +49 711 96939999<br />
-              E-Mail: team@axano.com<br />
+              E-Mail: support@poa-platform.de<br />
               Website: <a href="https://www.axano.com" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">www.axano.com</a>
             </p>
 

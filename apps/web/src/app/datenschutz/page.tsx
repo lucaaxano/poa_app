@@ -49,11 +49,11 @@ export default function DatenschutzPage() {
               Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:
             </p>
             <p>
-              POA - Point of Accident<br />
+              Axano GmbH<br />
               Stettener Hauptstraße 62<br />
               70771 Leinfelden-Echterdingen<br />
               Deutschland<br />
-              E-Mail: info@poa-platform.de
+              E-Mail: support@poa-platform.de
             </p>
 
             <h2>2. Überblick über die Datenverarbeitung</h2>
@@ -313,7 +313,7 @@ export default function DatenschutzPage() {
               </li>
             </ul>
             <p>
-              Zur Ausübung Ihrer Rechte wenden Sie sich bitte an: <strong>info@poa-platform.de</strong>
+              Zur Ausübung Ihrer Rechte wenden Sie sich bitte an: <strong>support@poa-platform.de</strong>
             </p>
 
             <h2>12. Beschwerderecht</h2>
@@ -337,7 +337,7 @@ export default function DatenschutzPage() {
               Bei Fragen zum Datenschutz erreichen Sie uns unter:
             </p>
             <p>
-              E-Mail: <strong>info@poa-platform.de</strong><br />
+              E-Mail: <strong>support@poa-platform.de</strong><br />
               Website: <strong>https://poa-platform.de</strong>
             </p>
           </div>

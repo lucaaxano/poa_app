@@ -133,7 +133,7 @@ export default function AGBPage() {
               Geschäftszeiten durchgeführt und dem Kunden rechtzeitig angekündigt.
             </p>
             <p>
-              (3) Support erfolgt per E-Mail an team@axano.com während der Geschäftszeiten
+              (3) Support erfolgt per E-Mail an support@poa-platform.de während der Geschäftszeiten
               (Montag bis Freitag, 9:00 - 17:00 Uhr MEZ, ausgenommen gesetzliche Feiertage
               in Baden-Württemberg).
             </p>
@@ -178,7 +178,7 @@ export default function AGBPage() {
             </ul>
             <p>
               (3) Die Kündigung kann über die Plattform (Abonnement-Verwaltung) oder
-              schriftlich per E-Mail an team@axano.com erfolgen.
+              schriftlich per E-Mail an support@poa-platform.de erfolgen.
             </p>
             <p>
               (4) Nach Beendigung des Vertrages wird der Zugang des Kunden zur Plattform
