@@ -111,7 +111,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href={'/settings' as Route}>
             <Button variant="ghost" size="icon" className="rounded-xl">
@@ -119,9 +119,9 @@ export default function NotificationSettingsPage() {
             </Button>
           </Link>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Benachrichtigungseinstellungen</h1>
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight truncate">Benachrichtigungen</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Verwalten Sie Ihre E-Mail-Benachrichtigungen
+              E-Mail-Benachrichtigungen verwalten
             </p>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function NotificationSettingsPage() {
           ) : (
             <Save className="h-4 w-4" />
           )}
-          <span className="hidden sm:inline">Speichern</span>
+          Speichern
         </Button>
       </div>
 
