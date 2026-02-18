@@ -12,27 +12,47 @@ export class AppService {
   ) {}
 
   /**
-   * Health check that verifies DB connection
-   * Used by Docker healthcheck - MUST return DB status
+   * Health check with grace period (fault-tolerant)
+   * Used by Docker healthcheck - returns 503 only after prolonged DB outage (2 min).
+   * Always attempts a real DB query regardless of prisma.connected state.
    */
   async healthCheck() {
-    let dbStatus: string = this.prisma.connected ? 'connected' : 'connecting';
+    const GRACE_PERIOD_MS = 2 * 60 * 1000; // 2 minutes
+    let dbStatus = 'error';
     let dbLatency = 0;
 
-    if (this.prisma.connected) {
-      try {
-        const start = Date.now();
-        await this.prisma.$queryRaw`SELECT 1`;
-        dbLatency = Date.now() - start;
-        dbStatus = 'connected';
-      } catch (error) {
-        this.logger.error('Health check DB query failed:', error);
-        dbStatus = 'error';
-      }
+    // Always attempt a real DB query — even if prisma.connected is false
+    // (it might have reconnected since the flag was last updated)
+    try {
+      const start = Date.now();
+      await this.prisma.$queryRaw`SELECT 1`;
+      dbLatency = Date.now() - start;
+      dbStatus = 'connected';
+    } catch (error) {
+      this.logger.error('Health check DB query failed:', error);
+      dbStatus = 'error';
+    }
+
+    // Grace period: if DB was reachable within the last 2 minutes, report 'ok'
+    // This prevents Docker from restarting the container during short DB glitches
+    const lastSuccess = this.prisma.lastSuccessTime;
+    const timeSinceLastSuccess = Date.now() - lastSuccess;
+    const withinGracePeriod = timeSinceLastSuccess < GRACE_PERIOD_MS;
+
+    let status: string;
+    if (dbStatus === 'connected') {
+      status = 'ok';
+    } else if (withinGracePeriod) {
+      status = 'degraded'; // DB down but within grace period — don't restart
+      this.logger.warn(
+        `Health check: DB unreachable but within grace period (${Math.round(timeSinceLastSuccess / 1000)}s since last success)`,
+      );
+    } else {
+      status = 'unhealthy'; // DB down for >2 min — allow container restart
     }
 
     return {
-      status: dbStatus === 'connected' ? 'ok' : 'unhealthy',
+      status,
       timestamp: new Date().toISOString(),
       uptime: Math.floor(process.uptime()),
       service: 'POA API',
@@ -40,6 +60,7 @@ export class AppService {
       database: {
         status: dbStatus,
         latency: dbLatency,
+        lastSuccessAgo: Math.round(timeSinceLastSuccess / 1000),
       },
     };
   }

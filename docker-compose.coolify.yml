@@ -60,7 +60,8 @@ services:
       - PORT=4000
       - NODE_OPTIONS=--max-old-space-size=1536
       # Connection pool: 40 connections, 30s pool timeout, keepalive enabled
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=10&keepAlive=true&keepAliveInitialDelayMillis=10000
+      # keepAliveInitialDelayMillis=5000: TCP keep-alive starts after 5s idle (well under PostgreSQL's 30s threshold)
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=10&keepAlive=true&keepAliveInitialDelayMillis=5000
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
@@ -81,8 +82,9 @@ services:
       # Traefik service configuration
       - "traefik.http.services.poa-api.loadbalancer.server.port=4000"
       - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
-      # Traefik health check (in addition to Docker health check)
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      # Liveness probe: Traefik uses /api/ping (always 200) to keep API in load balancer
+      # This prevents Traefik from evicting the API during short DB glitches
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/ping"
       - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=30s"
       - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=15s"
       # Buffering middleware
@@ -185,7 +187,7 @@ services:
   storage:
     image: minio/minio
     container_name: poa-storage
-    restart: unless-stopped
+    restart: always
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"

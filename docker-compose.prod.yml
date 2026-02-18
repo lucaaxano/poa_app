@@ -90,8 +90,8 @@ services:
       # PERFORMANCE FIX: Connection pool with keep-alive to prevent idle connection drops
       # - connection_limit=40: Headroom for parallel requests
       # - keepAlive=true: Prevents PostgreSQL from closing idle connections
-      # - keepAliveInitialDelayMillis=10000: Start keep-alive pings after 10s idle
-      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=15&keepAlive=true&keepAliveInitialDelayMillis=10000
+      # - keepAliveInitialDelayMillis=5000: TCP keep-alive starts after 5s idle (well under PostgreSQL's 30s threshold)
+      - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=15&keepAlive=true&keepAliveInitialDelayMillis=5000
       # CRITICAL: Node.js memory limit to prevent OOM crashes
       - NODE_OPTIONS=--max-old-space-size=768
       - JWT_SECRET=${JWT_SECRET}
@@ -140,8 +140,9 @@ services:
       # Note: Actual timeout values are configured at Traefik entrypoint level
       - "traefik.http.services.poa-api.loadbalancer.responseforwarding.flushinterval=100ms"
       - "traefik.http.services.poa-api.loadbalancer.passhostheader=true"
-      # Health check to ensure backend is ready before routing traffic
-      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/health"
+      # Liveness probe: Traefik uses /api/ping (always 200) to keep API in load balancer
+      # This prevents Traefik from evicting the API during short DB glitches
+      - "traefik.http.services.poa-api.loadbalancer.healthcheck.path=/api/ping"
       - "traefik.http.services.poa-api.loadbalancer.healthcheck.interval=10s"
       - "traefik.http.services.poa-api.loadbalancer.healthcheck.timeout=5s"
       # CORS Headers Middleware (for error responses when backend is unavailable)
@@ -182,7 +183,7 @@ services:
   storage:
     image: minio/minio
     container_name: poa-storage
-    restart: unless-stopped
+    restart: always
     command: server /data --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}

@@ -38,6 +38,14 @@ export class PrismaService
     return this._isConnected;
   }
 
+  /**
+   * Timestamp of last successful DB query.
+   * Used by health check grace period to tolerate short DB glitches.
+   */
+  get lastSuccessTime(): number {
+    return this.lastSuccessfulQuery;
+  }
+
   constructor() {
     super({
       log:
@@ -213,6 +221,19 @@ export class PrismaService
         this.logger.warn(`Keep-alive query slow: ${latency}ms`);
       }
     } catch (error) {
+      // On first failure: immediate lightweight retry (handles short network glitches)
+      if (this.consecutiveFailures === 0) {
+        try {
+          await this.$queryRaw`SELECT 1`;
+          this.consecutiveFailures = 0;
+          this.lastSuccessfulQuery = Date.now();
+          this.logger.log('Keep-alive recovered on immediate retry');
+          return;
+        } catch {
+          // Retry also failed — fall through to normal failure handling
+        }
+      }
+
       this.consecutiveFailures++;
       this.logger.warn(
         `Keep-alive failed (${this.consecutiveFailures}/${MAX_CONSECUTIVE_FAILURES}):`,
@@ -227,7 +248,10 @@ export class PrismaService
   }
 
   /**
-   * Force disconnect and reconnect
+   * Force disconnect and reconnect.
+   * IMPORTANT: Does NOT set _isConnected = false upfront.
+   * This prevents health check from returning 503 during reconnection.
+   * _isConnected is only set to false if reconnection actually fails.
    */
   private async forceReconnect(): Promise<void> {
     if (this.isReconnecting) {
@@ -235,7 +259,8 @@ export class PrismaService
     }
 
     this.isReconnecting = true;
-    this._isConnected = false;
+    // NOTE: _isConnected stays TRUE during reconnection to avoid triggering
+    // Traefik eviction via the health check endpoint
     this.logger.warn(
       'Forcing database reconnection due to consecutive failures...',
     );
@@ -244,8 +269,8 @@ export class PrismaService
       // Disconnect
       await this.$disconnect().catch(() => {});
 
-      // Wait a moment for cleanup
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait a moment for cleanup (reduced from 1000ms)
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Reconnect
       await this.connectWithRetry(3);
@@ -253,6 +278,7 @@ export class PrismaService
       this.consecutiveFailures = 0;
       this.logger.log('Database reconnection successful');
     } catch (error) {
+      // Only mark as disconnected on actual reconnection failure
       this._isConnected = false;
       this.logger.error('Database reconnection failed:', error);
     } finally {

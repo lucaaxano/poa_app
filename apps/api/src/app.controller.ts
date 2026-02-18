@@ -6,14 +6,23 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   /**
-   * Basic health check - MUST verify DB connection for container health
-   * Docker healthcheck uses this endpoint
+   * Liveness probe - ALWAYS returns 200
+   * Traefik uses this to decide if the API should stay in the load balancer.
+   * No DB check — a short DB glitch must NOT cause Traefik to evict the API.
+   */
+  @Get('ping')
+  ping() {
+    return { status: 'alive', timestamp: new Date().toISOString() };
+  }
+
+  /**
+   * Readiness / health check - verifies DB connection with grace period
+   * Docker healthcheck uses this endpoint (container restart on prolonged DB outage)
    */
   @Get('health')
   async healthCheck() {
     const result = await this.appService.healthCheck();
-    // If DB is not connected, return 503 so Docker knows container is unhealthy
-    if (result.database?.status !== 'connected') {
+    if (result.status === 'unhealthy') {
       throw new HttpException(result, HttpStatus.SERVICE_UNAVAILABLE);
     }
     return result;
