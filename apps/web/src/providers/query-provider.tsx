@@ -53,6 +53,17 @@ export function QueryProvider({ children }: QueryProviderProps) {
             staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
             gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
             refetchOnWindowFocus: false,
+            // AVAILABILITY FIX: Auto-retry with exponential backoff
+            // Queries recover automatically when API comes back online
+            retry: (failureCount, error) => {
+              // Don't retry on auth errors or not-found
+              if (error && typeof error === 'object' && 'response' in error) {
+                const status = (error as { response?: { status?: number } }).response?.status;
+                if (status === 401 || status === 403 || status === 404) return false;
+              }
+              return failureCount < 3;
+            },
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
           },
         },
       })

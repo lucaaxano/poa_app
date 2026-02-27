@@ -76,4 +76,5 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 # Run DB wait check, then migrations, then start the application
-CMD ["sh", "-c", "node /app/docker/wait-for-db.js && cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && node dist/apps/api/src/main.js"]
+# Using exec to replace sh with node for proper SIGTERM signal handling
+CMD ["sh", "-c", "node /app/docker/wait-for-db.js && cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && exec node dist/apps/api/src/main.js"]

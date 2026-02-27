@@ -28,7 +28,20 @@ services:
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=1024
-    labels: []   # No proxy labels needed - Traefik is configured via Coolify
+    labels:
+      # Retry middleware - retries on brief unavailability during container restarts
+      - "traefik.http.middlewares.poa-web-retry.retry.attempts=3"
+      - "traefik.http.middlewares.poa-web-retry.retry.initialinterval=500ms"
+      # Health check for Traefik load balancer
+      - "traefik.http.services.poa-web.loadbalancer.server.port=3000"
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.interval=10s"
+      - "traefik.http.services.poa-web.loadbalancer.healthcheck.timeout=5s"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 15s
@@ -61,7 +74,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - NODE_OPTIONS=--max-old-space-size=1536
+      # STABILITY FIX: Reduced from 1536 to 1024 to prevent OOM kills
+      # Container limit is 2048MB - Node.js needs ~500MB for non-heap memory (Prisma, buffers, native code)
+      # 1024MB heap + 500MB non-heap = 1524MB, well within 2048MB limit
+      - NODE_OPTIONS=--max-old-space-size=1024
       # Connection pool: 40 connections, 30s pool timeout, keepalive enabled
       # keepAliveInitialDelayMillis=5000: TCP keep-alive starts after 5s idle (well under PostgreSQL's 30s threshold)
       - DATABASE_URL=postgresql://${DB_USER:-poa_admin}:${DB_PASSWORD}@db:5432/${DB_NAME:-poa_production}?connection_limit=40&pool_timeout=30&connect_timeout=10&keepAlive=true&keepAliveInitialDelayMillis=5000
@@ -104,6 +120,11 @@ services:
       # Attach middleware to the router
       - "traefik.http.routers.poa-api.middlewares=api-cors"
     stop_grace_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
       interval: 15s
@@ -144,9 +165,9 @@ services:
       - "-c"
       - "max_connections=100"
       - "-c"
-      - "shared_buffers=256MB"
+      - "shared_buffers=128MB"
       - "-c"
-      - "effective_cache_size=512MB"
+      - "effective_cache_size=256MB"
       - "-c"
       - "maintenance_work_mem=64MB"
       - "-c"
@@ -172,6 +193,11 @@ services:
       # Hard upper bound for any single query - prevents runaway queries
       - "-c"
       - "statement_timeout=30000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-poa_admin} -d ${DB_NAME:-poa_production}"]
       interval: 10s
@@ -209,14 +235,19 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+    volumes:
+      - minio_data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
           memory: 1024M
         reservations:
           memory: 512M
-    volumes:
-      - minio_data:/data
     networks:
       - poa-network
       - coolify

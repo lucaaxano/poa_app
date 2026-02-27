@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>POA - Keine Verbindung</title>
+  <title>POA - Verbindung wird hergestellt...</title>
   <style>
     * {
       margin: 0;
@@ -27,21 +27,18 @@
       max-width: 400px;
     }
 
-    .icon {
-      width: 80px;
-      height: 80px;
+    .spinner {
+      width: 48px;
+      height: 48px;
       margin: 0 auto 1.5rem;
+      border: 4px solid #e8eaf0;
+      border-top-color: #1a1a2e;
       border-radius: 50%;
-      background-color: #e8eaf0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      animation: spin 1s linear infinite;
     }
 
-    .icon svg {
-      width: 40px;
-      height: 40px;
-      color: #6b7280;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     h1 {
@@ -54,6 +51,12 @@
       font-size: 1rem;
       color: #6b7280;
       line-height: 1.5;
+      margin-bottom: 0.5rem;
+    }
+
+    .status {
+      font-size: 0.875rem;
+      color: #9ca3af;
       margin-bottom: 2rem;
     }
 
@@ -86,18 +89,35 @@
 </head>
 <body>
   <div class="container">
-    <div class="icon">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-      </svg>
-    </div>
-    <h1>Keine Internetverbindung</h1>
+    <div class="spinner"></div>
+    <h1>Verbindung wird hergestellt...</h1>
     <p>
-      POA benötigt eine aktive Internetverbindung.
-      Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut.
+      Der Server wird gerade neu gestartet.
+      Die Seite wird automatisch neu geladen.
     </p>
-    <button onclick="window.location.reload()">Erneut versuchen</button>
+    <p class="status" id="status">Warte auf Server...</p>
+    <button onclick="window.location.reload()">Jetzt neu laden</button>
     <div class="brand">POA - Point of Accident</div>
   </div>
+  <script>
+    var attempt = 0;
+    var statusEl = document.getElementById('status');
+
+    setInterval(function() {
+      attempt++;
+      statusEl.textContent = 'Versuch ' + attempt + '...';
+
+      fetch(window.location.href, { method: 'HEAD' })
+        .then(function(r) {
+          if (r.ok) {
+            statusEl.textContent = 'Verbindung hergestellt! Lade neu...';
+            window.location.reload();
+          }
+        })
+        .catch(function() {
+          // Still offline, keep trying
+        });
+    }, 5000);
+  </script>
 </body>
 </html>

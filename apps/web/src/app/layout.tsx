@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from '@/providers/auth-provider';
 import { QueryProvider } from '@/providers/query-provider';
 import { PageLoadingIndicator } from '@/components/ui/page-loading-indicator';
+import { ConnectionStatus } from '@/components/connection-status';
 import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 import './globals.css';
 
@@ -49,6 +50,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ServiceWorkerRegister />
         <PageLoadingIndicator />
+        <ConnectionStatus />
         <QueryProvider>
           <AuthProvider>
             {children}
