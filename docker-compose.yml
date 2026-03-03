@@ -21,7 +21,8 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.poa-platform.de/api}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://poa-platform.de}
-    restart: unless-stopped
+    container_name: poa-web
+    restart: always
     ports:
       - "3000:3000"
     environment:
@@ -66,7 +67,8 @@ services:
     build:
       context: .
       dockerfile: docker/api.prod.Dockerfile
-    restart: unless-stopped
+    container_name: poa-api
+    restart: always
     ports:
       - "4000:4000"
     environment:
@@ -152,6 +154,7 @@ services:
   # ===========================================
   db:
     image: postgres:15-alpine
+    container_name: poa-db
     restart: always
     environment:
       - POSTGRES_USER=${DB_USER:-poa_admin}
@@ -217,7 +220,8 @@ services:
   # Object Storage - MinIO
   # ===========================================
   storage:
-    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+    image: minio/minio
+    container_name: poa-storage
     restart: always
     command: server /data --console-address ":9001"
     ports:
