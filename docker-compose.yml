@@ -21,8 +21,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.poa-platform.de/api}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://poa-platform.de}
-    container_name: poa-web
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -67,8 +66,7 @@ services:
     build:
       context: .
       dockerfile: docker/api.prod.Dockerfile
-    container_name: poa-api
-    restart: always
+    restart: unless-stopped
     ports:
       - "4000:4000"
     environment:
@@ -117,8 +115,11 @@ services:
       - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://poa-platform.de,https://www.poa-platform.de"
       - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
       - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=86400"
+      # Retry middleware - retries on brief unavailability during container restarts
+      - "traefik.http.middlewares.poa-api-retry.retry.attempts=3"
+      - "traefik.http.middlewares.poa-api-retry.retry.initialinterval=500ms"
       # Attach middleware to the router
-      - "traefik.http.routers.poa-api.middlewares=api-cors"
+      - "traefik.http.routers.poa-api.middlewares=api-cors,poa-api-retry"
     stop_grace_period: 15s
     logging:
       driver: "json-file"
@@ -141,7 +142,7 @@ services:
       db:
         condition: service_healthy
       storage:
-        condition: service_healthy
+        condition: service_started  # MinIO not required for API startup; StorageService handles retries
     networks:
       - poa-network
       - coolify
@@ -151,7 +152,6 @@ services:
   # ===========================================
   db:
     image: postgres:15-alpine
-    container_name: poa-db
     restart: always
     environment:
       - POSTGRES_USER=${DB_USER:-poa_admin}
@@ -217,8 +217,7 @@ services:
   # Object Storage - MinIO
   # ===========================================
   storage:
-    image: minio/minio
-    container_name: poa-storage
+    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
     restart: always
     command: server /data --console-address ":9001"
     ports:
@@ -231,10 +230,10 @@ services:
       - "traefik.http.services.storage.loadbalancer.server.port=9000"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     volumes:
       - minio_data:/data
     logging:

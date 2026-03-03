@@ -45,8 +45,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install OpenSSL (required for Prisma at runtime)
-RUN apk add --no-cache openssl
+# Install OpenSSL (required for Prisma at runtime) and coreutils (for timeout command)
+RUN apk add --no-cache openssl coreutils
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
@@ -75,6 +75,7 @@ EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Run DB wait check, then migrations, then start the application
+# Run DB wait check, then migrations (with 60s timeout), then start the application
 # Using exec to replace sh with node for proper SIGTERM signal handling
-CMD ["sh", "-c", "node /app/docker/wait-for-db.js && cd /app/packages/database && npx prisma migrate deploy || echo 'WARNING: Migration failed, starting app anyway'; cd /app/apps/api && exec node dist/apps/api/src/main.js"]
+# timeout 60: prevents hanging migrations from blocking API start indefinitely
+CMD ["sh", "-c", "node /app/docker/wait-for-db.js && cd /app/packages/database && timeout 60 npx prisma migrate deploy 2>&1 || echo 'WARNING: Migration failed or timed out, starting app anyway'; cd /app/apps/api && exec node dist/apps/api/src/main.js"]
