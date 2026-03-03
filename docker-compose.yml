@@ -117,11 +117,8 @@ services:
       - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=https://poa-platform.de,https://www.poa-platform.de"
       - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
       - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=86400"
-      # Retry middleware - retries on brief unavailability during container restarts
-      - "traefik.http.middlewares.poa-api-retry.retry.attempts=3"
-      - "traefik.http.middlewares.poa-api-retry.retry.initialinterval=500ms"
       # Attach middleware to the router
-      - "traefik.http.routers.poa-api.middlewares=api-cors,poa-api-retry"
+      - "traefik.http.routers.poa-api.middlewares=api-cors"
     stop_grace_period: 15s
     logging:
       driver: "json-file"
