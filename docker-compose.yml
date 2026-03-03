@@ -141,7 +141,7 @@ services:
       db:
         condition: service_healthy
       storage:
-        condition: service_started  # MinIO not required for API startup; StorageService handles retries
+        condition: service_healthy
     networks:
       - poa-network
       - coolify

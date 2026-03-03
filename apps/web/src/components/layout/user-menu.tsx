@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { LogOut, User, Settings, ChevronDown } from 'lucide-react';
@@ -41,6 +41,7 @@ export const UserMenu = memo(function UserMenu() {
 
   const initials = getInitials(user?.firstName, user?.lastName);
   const fullName = user ? `${user.firstName} ${user.lastName}` : 'Benutzer';
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <DropdownMenu>
@@ -50,12 +51,13 @@ export const UserMenu = memo(function UserMenu() {
           className="relative h-10 gap-2 rounded-xl px-2 hover:bg-muted"
           aria-label={`Benutzermenü für ${fullName}`}
         >
-          {company?.logoUrl ? (
+          {company?.logoUrl && !logoError ? (
             <div className="flex h-8 w-8 items-center justify-center rounded-lg overflow-hidden bg-muted">
               <img
                 src={company.logoUrl}
                 alt={company.name || 'Firmenlogo'}
                 className="h-full w-full object-contain"
+                onError={() => setLogoError(true)}
               />
             </div>
           ) : (

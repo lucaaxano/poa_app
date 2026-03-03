@@ -96,10 +96,10 @@ export default function BrokerRequestsPage() {
                           src={request.company.logoUrl}
                           alt={request.company.name}
                           className="h-10 w-10 rounded-lg object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }}
                         />
-                      ) : (
-                        <Building2 className="h-6 w-6 text-primary" />
-                      )}
+                      ) : null}
+                      <Building2 className={`h-6 w-6 text-primary ${request.company.logoUrl ? 'hidden' : ''}`} />
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
